@@ -1,0 +1,7 @@
+[package]
+name = "lasgun"
+version = "0.1.0"
+authors = ["Nick Frasser <nfrasser@gmail.com>"]
+
+[dependencies]
+nalgebra = "0.15.3"
