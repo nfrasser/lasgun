@@ -3,6 +3,9 @@ use math;
 use shape::Shape;
 use shape::Intersection;
 
+/**
+    A sphere of any size positioned somewhere in 3D space
+*/
 pub struct Sphere {
     pub radius: f64,
     pub center: Point

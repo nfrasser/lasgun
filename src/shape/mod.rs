@@ -1,13 +1,18 @@
 use std::f64;
 use space::*;
 
+/**
+    A gemetric shape that lives in 3D space.
+    Must implement a way to intersect with a ray defined by the given eye and direction vector
+*/
 pub trait Shape {
     fn intersect(&self, e: &Point, d: &Direction) -> Intersection;
 }
 
 /**
-    An intersection with a Ray (as defined above) is defined by t, the distance from the (E)ye, and
-    the normal vector representing at the surface of intersection
+    An intersection with a Ray (as defined above) is defined by
+    - t: the distance from the (e)ye as a ratio of the length of the direction vector
+    - normal: vector at the surface of intersection
 */
 pub struct Intersection {
     pub t: f64, // distance to the eye based on direction vector
