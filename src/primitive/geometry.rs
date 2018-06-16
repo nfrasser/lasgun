@@ -1,4 +1,4 @@
-use ::space::{ Point, Vector };
+use ::space::*;
 use ::shape::{Shape, Intersection};
 use ::material::Material;
 
@@ -18,7 +18,7 @@ impl Primitive for Geometry {
         &*self.material
     }
 
-    fn intersect(&self, e: &Point, d: &Vector) -> (Intersection, &Primitive) {
+    fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
         (self.shape.intersect(e, d), self)
     }
 }

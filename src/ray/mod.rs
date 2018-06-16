@@ -1,4 +1,4 @@
-use space::Color;
+use space::*;
 use scene::Scene;
 
 /**

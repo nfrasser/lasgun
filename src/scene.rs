@@ -1,4 +1,4 @@
-use space::{ Vector, Point, Color };
+use space::*;
 
 use light::Light;
 use primitive::Primitive;
@@ -18,7 +18,7 @@ pub struct Scene {
 impl Scene {
     // Find the intersection for the ray defined by the given eye/direction If no intersection is
     // found, returns an intersetion at infinity with the root aggregate primitive.
-    pub fn intersect(&self, e: &Point, d: &Vector) -> (Intersection, &Primitive) {
+    pub fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
         self.aggregate.intersect(e, d)
     }
 }

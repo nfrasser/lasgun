@@ -1,4 +1,4 @@
-use space::{ Point, Vector };
+use space::*;
 use material::Material;
 use shape::Intersection;
 
@@ -6,7 +6,7 @@ use shape::Intersection;
 // All primitives can intersect with a Ray defined by an (E)ye point and (d)irection vector
 pub trait Primitive {
     fn material(&self) -> &Material;
-    fn intersect(&self, e: &Point, d: &Vector) -> (Intersection, &Primitive);
+    fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive);
 }
 
 pub mod aggregate;

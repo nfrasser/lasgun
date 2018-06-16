@@ -19,7 +19,6 @@ impl Background {
 
 impl Material for Background {
     fn color(&self, _q: &Point, _e: &Point, _n: &Vector, _scene: &Scene) -> Color {
-        // TODO
-        self.color.clone()
+        self.color
     }
 }

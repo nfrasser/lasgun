@@ -1,8 +1,9 @@
-use space::{ Vector, Point };
+use primitive::Primitive;
+use space::*;
+
 use material::Material;
 use material::background::Background;
 use shape::Intersection;
-use primitive::Primitive;
 
 /**
     A primitive that contains many primitives, all of which may be intersected with. If no
@@ -31,7 +32,7 @@ impl Primitive for Aggregate {
         &self.background
     }
 
-    fn intersect(&self, e: &Point, d: &Vector) -> (Intersection, &Primitive) {
+    fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
         let init: (Intersection, &Primitive) = (Intersection::none(), self);
 
         // Find the closest child with which this node intersects

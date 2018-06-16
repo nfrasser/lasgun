@@ -1,6 +1,7 @@
 extern crate nalgebra as na;
 
 mod space;
+mod math;
 
 pub mod material;
 pub mod shape;

@@ -1,8 +1,8 @@
 use std::f64;
-use space::{ Point, Vector };
+use space::*;
 
 pub trait Shape {
-    fn intersect(&self, e: &Point, d: &Vector) -> Intersection;
+    fn intersect(&self, e: &Point, d: &Direction) -> Intersection;
 }
 
 /**
@@ -10,11 +10,15 @@ pub trait Shape {
     the normal vector representing at the surface of intersection
 */
 pub struct Intersection {
-    pub t: f64, // distance to the eye
+    pub t: f64, // distance to the eye based on direction vector
     pub normal: Vector // normal at the point of intersection
 }
 
 impl Intersection {
+    pub fn new(t: f64, normal: Vector) -> Intersection {
+        Intersection { t, normal }
+    }
+
     pub fn none() -> Intersection {
         Intersection {
             t: f64::INFINITY,
@@ -28,4 +32,5 @@ impl Intersection {
     }
 }
 
-mod sphere;
+pub mod cuboid;
+pub mod sphere;
