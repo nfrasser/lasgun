@@ -3,5 +3,22 @@ name = "lasgun"
 version = "0.1.0"
 authors = ["Nick Frasser <nfrasser@gmail.com>"]
 
+[features]
+default = []
+bin = ["image/png_codec"]
+
+[[bin]]
+name = "cli"
+path = "src/bin/cli.rs"
+required-features = ["bin"]
+
+[[example]]
+name = "simple"
+path = "src/examples/simple.rs"
+required-features = ["bin"]
+
 [dependencies]
 nalgebra = "0.15.3"
+
+# Optional dependencies included in the above features
+image = { version = "*", optional = true }
