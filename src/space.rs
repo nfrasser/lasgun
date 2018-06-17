@@ -15,6 +15,6 @@ pub struct Direction {
 
 impl Direction {
     pub fn new(vec: Vector) -> Direction {
-        Direction { vec, inv: na::one()/vec }
+        Direction { vec, inv: Vector::new(1.0/vec.x, 1.0/vec.y, 1.0/vec.z) }
     }
 }
