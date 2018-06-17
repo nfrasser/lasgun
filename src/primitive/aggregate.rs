@@ -22,7 +22,7 @@ pub struct Aggregate {
 }
 
 impl Aggregate {
-    fn new(contents: Vec<Box<Primitive>>) -> Aggregate {
+    pub fn new(contents: Vec<Box<Primitive>>) -> Aggregate {
         Aggregate { contents, background: Background::black() }
     }
 }
