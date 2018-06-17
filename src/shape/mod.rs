@@ -32,6 +32,7 @@ impl Intersection {
     }
 
     // An Intersection exists when the distance is in the range (0, INFINITY)
+    #[inline]
     pub fn exists(&self) -> bool {
         self.t > 0.0 && self.t < f64::INFINITY
     }

@@ -7,8 +7,17 @@ use shape::Intersection;
     A sphere of any size positioned somewhere in 3D space
 */
 pub struct Sphere {
+    pub center: Point,
     pub radius: f64,
-    pub center: Point
+}
+
+impl Sphere {
+    pub fn new(center: [f64; 3], radius: f64) -> Sphere{
+        Sphere {
+            center: Point::new(center[0], center[1], center[2]),
+            radius
+        }
+    }
 }
 
 impl Shape for Sphere {

@@ -1,8 +1,12 @@
-use ::space::*;
-use ::shape::{Shape, Intersection};
-use ::material::Material;
+use std::rc::Rc;
 
+use space::*;
 use primitive::Primitive;
+use shape::{
+    Shape, Intersection,
+    sphere::Sphere
+};
+use material::Material;
 
 /**
     A primitive representing a geometric shape such as a sphere or cube.
@@ -10,7 +14,14 @@ use primitive::Primitive;
 */
 pub struct Geometry {
     pub shape: Box<Shape>,
-    pub material: Box<Material>
+    pub material: Rc<Material>
+}
+
+impl Geometry {
+    pub fn sphere(center: [f64; 3], radius: f64, material: Rc<Material>) -> Geometry {
+        let sphere = Sphere::new(center, radius);
+        Geometry { shape: Box::new(sphere), material }
+    }
 }
 
 impl Primitive for Geometry {
