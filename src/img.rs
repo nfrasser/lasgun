@@ -1,4 +1,3 @@
-use std::convert;
 use space::Color;
 
 /// Each item has a color value between 0 and 255
@@ -7,8 +6,8 @@ pub type Pixel = [u8; 3];
 /// An image is anything that can set its own pixel colour
 /// The parameter represents the size of the max dimension paramter
 /// e.g., D == u16 means the image can have a max resolution of 6
-pub trait Image<D: convert::Into<usize>> {
-    fn set_pixel_color(&mut self, x: D, y: D, color: &Color);
+pub trait Image {
+    fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color);
 }
 
 /// Queriable store of pixels.
@@ -50,7 +49,7 @@ impl ImageBuffer {
     }
 }
 
-impl Image<u16> for ImageBuffer {
+impl Image for ImageBuffer {
     fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color) {
         let offset = self.offset(x, y);
         self.pixels[offset] = [

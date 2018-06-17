@@ -18,3 +18,9 @@ impl Direction {
         Direction { vec, inv: Vector::new(1.0/vec.x, 1.0/vec.y, 1.0/vec.z) }
     }
 }
+
+#[inline]
+pub fn len(v: &Vector) -> f64 {
+    let v2 = v.component_mul(v);
+    (v2.x + v2.y + v2.z).sqrt()
+}

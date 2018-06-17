@@ -74,3 +74,18 @@ impl Shape for Sphere {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn straight_on_intersection() {
+        let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
+        let e = Point::new(0.0, 0.0, 2.0);
+        let d = Direction::new(Vector::new(0.0, 0.0, -1.0));
+        let intersection = sphere.intersect(&e, &d);
+        assert!(intersection.exists());
+        assert_eq!(intersection.t, 1.0);
+    }
+}

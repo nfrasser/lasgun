@@ -13,7 +13,7 @@ pub fn render(scene: &Scene, filename: &str) {
 }
 
 struct OutputImage(RgbImage);
-impl Image<u16> for OutputImage {
+impl Image for OutputImage {
     fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color) {
         let pixel = Rgb {
             data: [
