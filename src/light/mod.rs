@@ -1,19 +1,21 @@
 use space::{Point, Color};
 use scene::Scene;
 
+pub mod point;
+pub use self::point::PointLight;
+
 pub trait Light {
     /**
-        Get the intensity of the light received by the given point
-        in the scene.
+    Sample the light received by the given point in the scene.
 
-        e.g., For point lights, this is either
-        (A) the color, or
-        (B) the Zero vector when something blocks the light
+    The given callback will be called a number of times with a point light
+    representing a point on the light and subsequently how much energy it emits.
 
-        In the future, area lights will return an intensity based on a sample
-        from the point to the light
+    A point light is to be used in shading calculations.
+
+    Point lights passed to the callback are always visible from the given point
     */
-    fn intensity(&self, p: &Point, scene: &Scene) -> Color;
+    fn sample(&self, p: &Point, scene: &Scene,
+        callback: &Fn(&PointLight) -> Color
+    ) -> Color;
 }
-
-pub mod point;

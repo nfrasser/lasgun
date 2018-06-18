@@ -21,8 +21,8 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn intersect(&self, e: &Point, d: &Direction) -> Intersection {
-        let d = &d.vec;
+    fn intersect(&self, e: &Point, direction: &Direction) -> Intersection {
+        let d = &direction.d;
         let rad = &self.radius;
         let cen = &self.center;
 

@@ -22,10 +22,20 @@ impl PrimaryRay {
 impl Ray for PrimaryRay {
     fn cast(&self, scene: &Scene) -> Color {
         let (intersection, primitive) = scene.intersect(&self.e, &self.d);
+
+        // Get the material the interecting primitive is made of
         let material = primitive.material();
-        let direction: Vector = intersection.t * self.d.vec;
-        let point = self.e + direction;
+
+        // The vector spanning from the eye to the point of intersection
+        // eye + direction = point of intersection
+        let direction: Vector = intersection.t * self.d.d;
         let normal = Unit::new_normalize(intersection.normal);
+
+        // Add a small fraction of the normal to avoid specling due to floating point errors
+        // (the calculated point ends up inside the geometric primitive).
+        let qpoint = self.e + direction + (f64::EPSILON * 32.0) * normal.as_ref();
+
+        // Query the material for the color at the given point
         material.color(&qpoint, &self.e, &normal, scene)
     }
 }

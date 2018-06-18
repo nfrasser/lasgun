@@ -13,9 +13,9 @@ fn main() { output::render(&simple(), "simple.png"); }
 
 fn simple() -> Scene {
     // Make materials
-    let mat1 = Phong::new([0.7, 0.1, 0.7], [0.5, 0.7, 0.5], 25.0);
-    let mat2 = Phong::new([0.5, 0.5, 0.5], [0.5, 0.7, 0.5], 25.0);
-    let mat3 = Phong::new([1.0, 0.6, 0.1], [0.5, 0.7, 0.5], 25.0);
+    let mat1 = Phong::new([0.7, 0.1, 0.7], [0.5, 0.7, 0.5], 25);
+    let mat2 = Phong::new([0.5, 0.5, 0.5], [0.5, 0.7, 0.5], 25);
+    let mat3 = Phong::new([1.0, 0.6, 0.1], [0.5, 0.7, 0.5], 25);
     let (mat1, mat2, mat3) = (
         Rc::new(mat1), Rc::new(mat2), Rc::new(mat3),
     );
@@ -40,7 +40,7 @@ fn simple() -> Scene {
     // Return the resulting scene
     Scene {
         content: Box::new(aggregate),
-        dimensions: (256, 256),
+        dimensions: (512, 512),
 
         eye: Point::new(0.0, 0.0, 800.0),
         view: Vector::new(0.0, 0.0, -800.0),
