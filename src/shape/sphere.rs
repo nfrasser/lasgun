@@ -38,7 +38,7 @@ impl Shape for Sphere {
         // At^2 + Bt + C = 0
 
         // Vector from the eye to the centre of the sphere
-        let l: Vector = cen - e;
+        let l: Vector = e - cen;
 
         // A, B, and C expand to the following:
         let a = d.dot(d);
