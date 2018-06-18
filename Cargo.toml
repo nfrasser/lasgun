@@ -19,6 +19,4 @@ required-features = ["bin"]
 
 [dependencies]
 nalgebra = "0.15.3"
-
-# Optional dependencies included in the above features
 image = { version = "*", optional = true }

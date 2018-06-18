@@ -13,7 +13,6 @@ pub mod light;
 pub mod scene;
 mod ray;
 
-
 pub use space::{Point, Color, Vector};
 pub use scene::Scene;
 pub use img::{Image, ImageBuffer};

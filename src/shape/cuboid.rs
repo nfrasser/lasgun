@@ -3,7 +3,7 @@ use shape::Shape;
 use shape::Intersection;
 
 /**
-    aka "Box", aka "Rectangular prism"
+aka "Box", aka "Rectangular prism"
 */
 pub struct Cuboid {
     pub bounds: (Point, Point)
@@ -20,8 +20,8 @@ impl Cuboid {
 }
 
 impl Shape for Cuboid {
-    fn intersect(&self, e: &Point, d: &Direction) -> Intersection {
-        let (b0, b1) = (&self.bounds.0, &self.bounds.1);
+    fn intersect(&self, _e: &Point, _d: &Direction) -> Intersection {
+        let (_b0, _b1) = (&self.bounds.0, &self.bounds.1);
         Intersection::none()
     }
 }
