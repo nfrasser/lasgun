@@ -1,3 +1,4 @@
+use na::Unit;
 use space::{ Point, Vector, Color };
 use scene::Scene;
 
@@ -11,7 +12,7 @@ pub trait Material {
         &self,
         q: &Point, // Point on the scene to be lit
         e: &Point, // Eye position
-        n: &Vector, // Normal to the point and surface
+        n: &Unit<Vector>, // Normal to the point and surface
         scene: &Scene // The scene, for reference
     ) -> Color;
 }

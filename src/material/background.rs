@@ -1,3 +1,4 @@
+use na::Unit;
 use space::{ Vector, Point, Color };
 use scene::Scene;
 use material::Material;
@@ -18,7 +19,7 @@ impl Background {
 }
 
 impl Material for Background {
-    fn color(&self, _q: &Point, _e: &Point, _n: &Vector, _scene: &Scene) -> Color {
+    fn color(&self, _q: &Point, _e: &Point, _n: &Unit<Vector>, _scene: &Scene) -> Color {
         self.color
     }
 }
