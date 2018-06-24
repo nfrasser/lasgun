@@ -1,10 +1,11 @@
-use space::{ Point, Color };
+use std::f64;
+use space::{ Point, Color, Direction };
 use scene::Scene;
 use light::Light;
 
 /**
-    A Point Light has no surface area an emits in all directions
-    These don't exist in real life but are a good approximation
+A Point Light has no surface area an emits in all directions
+These don't exist in real life but are a good approximation
 */
 pub struct PointLight {
     pub position: Point,
@@ -29,8 +30,23 @@ impl Light for PointLight {
 
         f_att = falloff[0] + falloff[1]*d + fallof[2]*d*d
     */
-    fn sample(&self, _p: &Point, _scene: &Scene, cb: &Fn(&PointLight) -> Color) -> Color {
-        // TODO: Use shadow rays to check for intersection
-        cb(&self)
+    fn sample(&self, p: &Point, scene: &Scene, cb: &Fn(&PointLight) -> Color) -> Color {
+        let d = self.position - p; // direction from p to light
+
+        // Move point slighly outside the surface of the intersecting primitive
+        // accounts for floating point erros
+        let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
+        let direction = Direction::new(d);
+
+        // See if there's anything that intersects
+        let (intersection, _) = scene.intersect(&p, &direction);
+
+        if intersection.exists() && intersection.t < 1.0 {
+            // Intersection before the light, makes no contribution
+            Color::zeros()
+        } else {
+            // Callback calculates the colour contribution to the surface by this light
+            cb(&self)
+        }
     }
 }
