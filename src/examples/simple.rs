@@ -1,13 +1,15 @@
 extern crate image;
 extern crate lasgun;
 
+mod common;
+
 use std::rc::Rc;
 use lasgun::*;
 use material::phong::Phong;
 use light::{Light, point::PointLight};
 use primitive::{aggregate::Aggregate, geometry::Geometry};
 
-mod output;
+use common::output;
 
 fn main() { output::render(&simple(), "simple.png"); }
 
@@ -38,9 +40,10 @@ fn simple() -> Scene {
     ];
 
     // Return the resulting scene
-    Scene {
+    let options = scene::Options {
+
+        dimensions: (1024, 1024),
         content: Box::new(aggregate),
-        dimensions: (512, 512),
 
         eye: Point::new(0.0, 0.0, 800.0),
         view: Vector::new(0.0, 0.0, -800.0),
@@ -48,6 +51,10 @@ fn simple() -> Scene {
 
         fov: 50.0,
         ambient: Color::new(0.3, 0.3, 0.3),
-        lights
-    }
+        lights,
+
+        supersampling: 10
+    };
+
+    Scene::new(options)
 }

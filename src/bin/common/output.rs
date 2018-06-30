@@ -5,7 +5,7 @@ use image::{Rgb, RgbImage};
 use lasgun::{Scene, Image, Color};
 
 pub fn render(scene: &Scene, filename: &str) {
-    let (width, height) = scene.dimensions;
+    let (width, height) = scene.options.dimensions;
     let buffer = RgbImage::new(width as u32, height as u32);
     let mut image = OutputImage(buffer);
     lasgun::render_to(&mut image, &scene);
