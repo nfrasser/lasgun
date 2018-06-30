@@ -6,10 +6,11 @@ use lasgun::{
     primitive::aggregate::Aggregate
 };
 
-mod common::output;
+mod common;
+use common::output;
 
 fn main() {
-    let scene = Scene::new(scene::Options {
+    let options = scene::Options {
         dimensions: (256, 256),
         content: Box::new(Aggregate::new(vec![])),
         lights: vec![],
@@ -20,5 +21,7 @@ fn main() {
         fov: 50.0,
         supersampling: 1
     };
+
+    let scene = Scene::new(options);
     output::render(&scene, "image.png")
 }
