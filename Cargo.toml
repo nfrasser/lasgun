@@ -18,5 +18,6 @@ path = "src/examples/simple.rs"
 required-features = ["bin"]
 
 [dependencies]
+rand = "0.5"
 nalgebra = "0.15.3"
 image = { version = "*", optional = true }

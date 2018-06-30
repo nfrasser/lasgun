@@ -42,7 +42,7 @@ fn simple() -> Scene {
     // Return the resulting scene
     let options = scene::Options {
 
-        dimensions: (1024, 1024),
+        dimensions: (512, 512),
         content: Box::new(aggregate),
 
         eye: Point::new(0.0, 0.0, 800.0),

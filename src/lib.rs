@@ -1,4 +1,5 @@
 extern crate nalgebra as na;
+extern crate rand;
 
 use std::f64;
 
