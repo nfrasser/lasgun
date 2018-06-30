@@ -117,7 +117,7 @@ impl Scene {
     }
 
     /**
-    Get a random angle between 0 and π
+    Get a random angle (in radians) between 0 and π
     */
     pub fn random_angle(&self, rng: &mut impl Rng) -> f64 {
         self.angle_distribution.sample(rng)

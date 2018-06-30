@@ -33,7 +33,7 @@ impl PrimaryRay {
         let angle = scene.random_angle(&mut rng);
 
         // Distance from the original point of intersection
-        let distance = 0.5 * rng.sample(StandardNormal);
+        let distance = rng.sample(StandardNormal);
 
         let upoffset = scene.sample_radius * angle.sin() * distance;
         let auxoffset = scene.sample_radius * angle.cos() * distance;
