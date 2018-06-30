@@ -1,9 +1,12 @@
 use std::f64;
-use space::*;
+use rand::prelude::*;
+use rand::distributions::{Uniform};
 
+use space::*;
 use light::Light;
 use primitive::Primitive;
 use shape::Intersection;
+
 
 /**
     Description of the world to render
@@ -48,7 +51,12 @@ pub struct Scene {
     Additional scene rendering options.
     Scene content, lights, sample rates, etc. are stored here
     */
-    pub options: Options
+    pub options: Options,
+
+    /**
+        Used to generate a random angle between 0 and 2π
+    */
+    angle_distribution: Uniform<f64>,
 }
 
 /**
@@ -97,7 +105,8 @@ impl Scene {
             eye: options.eye,
             view: options.view,
             up, aux, sample_radius, supersample_power,
-            options
+            options,
+            angle_distribution: Uniform::new(0.0, f64::consts::PI)
         }
     }
 
@@ -105,6 +114,13 @@ impl Scene {
     // found, returns an intersetion at infinity with the root content primitive.
     pub fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
         self.options.content.intersect(e, d)
+    }
+
+    /**
+    Get a random angle between 0 and π
+    */
+    pub fn random_angle(&self, rng: &mut impl Rng) -> f64 {
+        self.angle_distribution.sample(rng)
     }
 
 }

@@ -14,6 +14,7 @@ The resulting colour form the `cast` function will be a pixel in the resulting i
 pub struct PrimaryRay {
     pub e: Point, // eye/camera position in space
     pub d: Vector // direction from eye into which the ray is cast
+
 }
 
 impl PrimaryRay {
@@ -27,11 +28,18 @@ impl PrimaryRay {
     */
     fn supersample(&self, scene: &Scene) -> Direction {
         let mut rng = SmallRng::from_rng(thread_rng()).unwrap();
-        let upfactor = scene.sample_radius * rng.sample(StandardNormal);
-        let auxfactor = scene.sample_radius * rng.sample(StandardNormal);
+
+        // Angle between 0 and π at which the new ray deviates
+        let angle = scene.random_angle(&mut rng);
+
+        // Distance from the original point of intersection
+        let distance = 0.5 * rng.sample(StandardNormal);
+
+        let upoffset = scene.sample_radius * angle.sin() * distance;
+        let auxoffset = scene.sample_radius * angle.cos() * distance;
 
         // New point at which the ray intersects the focal plane given this direction
-        let d = self.d + (upfactor * scene.up) + (auxfactor * scene.aux);
+        let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
         Direction::new(d)
     }
 }
