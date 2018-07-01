@@ -15,11 +15,12 @@ fn main() { output::render(&simple(), "simple.png"); }
 
 fn simple() -> Scene {
     // Make materials
-    let mat1 = Phong::new([0.7, 0.1, 0.7], [0.5, 0.7, 0.5], 25);
+    let mat1 = Phong::new([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 25);
     let mat2 = Phong::new([0.5, 0.5, 0.5], [0.5, 0.7, 0.5], 25);
     let mat3 = Phong::new([1.0, 0.6, 0.1], [0.5, 0.7, 0.5], 25);
-    let (mat1, mat2, mat3) = (
-        Rc::new(mat1), Rc::new(mat2), Rc::new(mat3),
+    let mat4 = Phong::new([0.7, 0.6, 1.0], [0.5, 0.4, 0.8], 25);
+    let (mat1, mat2, mat3, mat4) = (
+        Rc::new(mat1), Rc::new(mat2), Rc::new(mat3), Rc::new(mat4)
     );
 
     // Make and aggregate some spheres
@@ -27,9 +28,11 @@ fn simple() -> Scene {
     let s2 = Geometry::sphere([200.0, 50.0, -100.0], 150.0, mat1.clone());
     let s3 = Geometry::sphere([0.0, -1200.0, -500.0], 1000.0, mat2.clone());
     let s4 = Geometry::sphere([-100.0, 25.0, -300.0], 50.0, mat3.clone());
-    let s5 = Geometry::sphere([0.0, 100.0, -250.0], 25.0, mat3.clone());
+    let s5 = Geometry::sphere([0.0, 100.0, -250.0], 25.0, mat1.clone());
+    let b1 = Geometry::cube([-200.0, -125.0, 0.0], 100.0, mat4.clone());
     let aggregate = Aggregate::new(vec![
-        Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4), Box::new(s5)
+        Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4), Box::new(s5),
+        Box::new(b1)
     ]);
 
     // Set up scene lights
@@ -42,7 +45,7 @@ fn simple() -> Scene {
     // Return the resulting scene
     let options = scene::Options {
 
-        dimensions: (512, 512),
+        dimensions: (1024, 1024),
         content: Box::new(aggregate),
 
         eye: Point::new(0.0, 0.0, 800.0),

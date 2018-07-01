@@ -4,7 +4,8 @@ use space::*;
 use primitive::Primitive;
 use shape::{
     Shape, Intersection,
-    sphere::Sphere
+    sphere::Sphere,
+    cuboid::Cuboid
 };
 use material::Material;
 
@@ -21,6 +22,11 @@ impl Geometry {
     pub fn sphere(center: [f64; 3], radius: f64, material: Rc<Material>) -> Geometry {
         let sphere = Sphere::new(center, radius);
         Geometry { shape: Box::new(sphere), material }
+    }
+
+    pub fn cube(origin: [f64; 3], dim: f64, material: Rc<Material>) -> Geometry {
+        let cube = Cuboid::cube(origin, dim);
+        Geometry { shape: Box::new(cube), material }
     }
 }
 
