@@ -5,7 +5,8 @@ use primitive::Primitive;
 use shape::{
     Shape, Intersection,
     sphere::Sphere,
-    cuboid::Cuboid
+    cuboid::Cuboid,
+    mesh::Mesh
 };
 use material::Material;
 
@@ -27,6 +28,10 @@ impl Geometry {
     pub fn cube(origin: [f64; 3], dim: f64, material: Rc<Material>) -> Geometry {
         let cube = Cuboid::cube(origin, dim);
         Geometry { shape: Box::new(cube), material }
+    }
+
+    pub fn mesh(mesh: Mesh, material: Rc<Material>) -> Geometry {
+        Geometry { shape: Box::new(mesh), material }
     }
 }
 

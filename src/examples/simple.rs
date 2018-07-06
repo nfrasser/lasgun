@@ -2,6 +2,7 @@ extern crate image;
 extern crate lasgun;
 
 mod common;
+mod meshes;
 
 use std::rc::Rc;
 use lasgun::*;
@@ -10,10 +11,13 @@ use light::{Light, point::PointLight};
 use primitive::{aggregate::Aggregate, geometry::Geometry};
 
 use common::output;
+use meshes::smstdodeca;
 
 fn main() { output::render(&simple(), "simple.png"); }
 
 fn simple() -> Scene {
+    let ambient = Color::new(0.3, 0.3, 0.3);
+
     // Make materials
     let mat1 = Phong::new([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 25);
     let mat2 = Phong::new([0.5, 0.5, 0.5], [0.5, 0.7, 0.5], 25);
@@ -30,10 +34,12 @@ fn simple() -> Scene {
     let s4 = Geometry::sphere([-100.0, 25.0, -300.0], 50.0, mat3.clone());
     let s5 = Geometry::sphere([0.0, 100.0, -250.0], 25.0, mat1.clone());
     let b1 = Geometry::cube([-200.0, -125.0, 0.0], 100.0, mat4.clone());
+    let steldodec = Geometry::mesh(smstdodeca::smstdodeca(), mat3.clone());
     let aggregate = Aggregate::new(vec![
         Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4), Box::new(s5),
-        Box::new(b1)
-    ]);
+        Box::new(b1),
+        Box::new(steldodec)
+    ], ambient);
 
     // Set up scene lights
     let white_light = PointLight::new([-100.0, 150.0, 400.0], [0.9, 0.9, 0.9], [1.0, 0.0, 0.0]);
@@ -45,7 +51,7 @@ fn simple() -> Scene {
     // Return the resulting scene
     let options = scene::Options {
 
-        dimensions: (1024, 1024),
+        dimensions: (512, 512),
         content: Box::new(aggregate),
 
         eye: Point::new(0.0, 0.0, 800.0),
@@ -53,7 +59,7 @@ fn simple() -> Scene {
         up: Vector::new(0.0, 1.0, 0.0),
 
         fov: 50.0,
-        ambient: Color::new(0.3, 0.3, 0.3),
+        ambient,
         lights,
 
         supersampling: 10
