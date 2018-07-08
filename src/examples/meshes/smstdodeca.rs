@@ -1,4 +1,4 @@
-use lasgun::shape::mesh::Mesh;
+use lasgun::shape::triangle::Mesh;
 
 pub fn smstdodeca() -> Mesh {
     let positions = [
@@ -184,9 +184,13 @@ pub fn smstdodeca() -> Mesh {
         [-123.032750, 200.000000, -135.300550],
     ];
 
-    let faces: Vec<[usize; 3]> = (0..60).map(|index| {
-        [3*index as usize, 3*index + 1 as usize, 3*index + 2 as usize]
-    }).collect();
+    // Each group of 3 vertexes above represents a face
+    // Note the indeces here, programmatically
+    let faces: Vec<[usize; 3]> = (0..60).map(|index| [
+        3*index as usize,
+        3*index + 1 as usize,
+        3*index + 2 as usize
+    ]).collect();
 
     Mesh::new(&positions, &faces[..])
 }

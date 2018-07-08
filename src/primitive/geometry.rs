@@ -6,7 +6,7 @@ use shape::{
     Shape, Intersection,
     sphere::Sphere,
     cuboid::Cuboid,
-    mesh::Mesh
+    triangle::Triangle
 };
 use material::Material;
 
@@ -30,8 +30,8 @@ impl Geometry {
         Geometry { shape: Box::new(cube), material }
     }
 
-    pub fn mesh(mesh: Mesh, material: Rc<Material>) -> Geometry {
-        Geometry { shape: Box::new(mesh), material }
+    pub fn triangle(triangle: Triangle, material: Rc<Material>) -> Geometry {
+        Geometry { shape: Box::new(triangle), material }
     }
 }
 
