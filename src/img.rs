@@ -6,7 +6,7 @@ pub type Pixel = [u8; 3];
 /// An image is anything that can set its own pixel colour
 /// The parameter represents the size of the max dimension paramter
 /// e.g., D == u16 means the image can have a max resolution of 6
-pub trait Image {
+pub trait Film {
     fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color);
 }
 
@@ -49,7 +49,7 @@ impl ImageBuffer {
     }
 }
 
-impl Image for ImageBuffer {
+impl Film for ImageBuffer {
     fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color) {
         let offset = self.offset(x, y);
         self.pixels[offset] = [
@@ -61,7 +61,7 @@ impl Image for ImageBuffer {
 }
 
 /**
-    Convert a colour channel from between 0 and 1 to an interger between 0 and 255
+Convert a colour channel from between 0 and 1 to an interger between 0 and 255
 */
 #[inline]
 fn to_byte(channel: f64) -> u8 {
