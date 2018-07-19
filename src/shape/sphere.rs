@@ -1,4 +1,5 @@
 use space::*;
+use ray::Ray;
 use math;
 use shape::Shape;
 use shape::Intersection;
@@ -21,8 +22,8 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn intersect(&self, e: &Point, direction: &Direction) -> Intersection {
-        let d = &direction.d;
+    fn intersect(&self, ray: &Ray) -> Intersection {
+        let d = &ray.d;
         let rad = &self.radius;
         let cen = &self.center;
 
@@ -38,7 +39,7 @@ impl Shape for Sphere {
         // At^2 + Bt + C = 0
 
         // Vector from the eye to the centre of the sphere
-        let l: Vector = e - cen;
+        let l: Vector = ray.origin - cen;
 
         // A, B, and C expand to the following:
         let a = d.dot(d);
@@ -62,13 +63,13 @@ impl Shape for Sphere {
                 Intersection::none()
             } else if t0 < 0.0 {
                 // Intersects in front and behind, eye is inside the sphere!
-                Intersection { t: t1, normal: cen - (e + t1*d) }
+                Intersection { t: t1, normal: cen - (ray.origin + t1*d) }
             } else {
                 // Eye is outside the sphere, use closest root
-                Intersection { t: t0, normal: e + t0*d - cen }
+                Intersection { t: t0, normal: ray.origin + t0*d - cen }
             }
         } else if numroots == 1 && roots[0] > 0.0 {
-            Intersection { t: roots[0], normal: e + roots[0]*d - cen }
+            Intersection { t: roots[0], normal: ray.origin + roots[0]*d - cen }
         } else {
             Intersection::none()
         }

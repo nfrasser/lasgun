@@ -3,6 +3,8 @@ extern crate rand;
 
 use std::f64;
 
+#[macro_use]
+mod macros;
 mod space;
 mod math;
 mod img;
@@ -16,12 +18,14 @@ mod ray;
 
 pub use space::{Point, Color, Vector};
 pub use scene::Scene;
-pub use img::{Image, ImageBuffer};
+pub use img::{Film, ImageBuffer};
 
-use ray::Ray;
 use ray::primary::PrimaryRay;
 
-pub fn render_to(image: &mut Image, scene: &Scene) {
+/**
+Record an image of the scene on the given film
+*/
+pub fn capture(scene: &Scene, film: &mut Film) {
     let (width, height) = scene.options.dimensions;
     let up = &scene.up;
     let aux = &scene.aux;
@@ -41,15 +45,17 @@ pub fn render_to(image: &mut Image, scene: &Scene) {
             let d: Vector = vraypoint + (hoffset * aux) - scene.eye;
             let ray = PrimaryRay::new(scene.eye, d);
             let color = ray.cast(&scene);
-            image.set_pixel_color(i, j, &color);
+            film.set_pixel_color(i, j, &color);
         }
     }
 }
-
+/**
+Render a scene to the provided ImageBuffer structure
+*/
 pub fn render(scene: &Scene) -> ImageBuffer {
     let (width, height) = scene.options.dimensions;
     let mut image = ImageBuffer::new(width, height);
-    render_to(&mut image, scene);
+    capture(scene, &mut image);
     image
 }
 

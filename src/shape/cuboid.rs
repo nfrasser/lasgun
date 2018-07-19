@@ -1,6 +1,7 @@
 use std::f64;
 
 use space::*;
+use ray::Ray;
 use shape::Shape;
 use shape::Intersection;
 
@@ -25,7 +26,7 @@ impl Cuboid {
 }
 
 impl Shape for Cuboid {
-    fn intersect(&self, e: &Point, d: &Direction) -> Intersection {
+    fn intersect(&self, ray: &Ray) -> Intersection {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
 
@@ -33,8 +34,8 @@ impl Shape for Cuboid {
 
         // i ranges from X to Z
         for i in 0..3 {
-            let t1 = (self.bounds.0[i] - e[i]) * d.inv[i];
-            let t2 = (self.bounds.1[i] - e[i]) * d.inv[i];
+            let t1 = (self.bounds.0[i] - ray.origin[i]) * ray.dinv[i];
+            let t2 = (self.bounds.1[i] - ray.origin[i]) * ray.dinv[i];
 
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);
