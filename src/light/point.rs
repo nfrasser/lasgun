@@ -2,7 +2,6 @@ use std::f64;
 use space::{ len, Point, Color };
 use ray::Ray;
 use scene::Scene;
-use light::Light;
 
 /**
 A Point Light has no surface area an emits in all directions
@@ -24,7 +23,7 @@ impl PointLight {
     }
 }
 
-impl Light for PointLight {
+impl super::Light for PointLight {
     /**
     Returns the intersity of the light received at the given point. Equivalent to `I / f_att`,
     where `I` is intensity and `f_att` is attentuation based on distance (squared).

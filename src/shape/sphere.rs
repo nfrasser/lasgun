@@ -1,8 +1,7 @@
+use math;
 use space::*;
 use ray::Ray;
-use math;
-use shape::Shape;
-use shape::Intersection;
+use shape::{Shape, Intersection};
 
 /**
     A sphere of any size positioned somewhere in 3D space

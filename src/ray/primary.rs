@@ -1,11 +1,11 @@
-use rand::prelude::*;
-use rand::distributions::{StandardNormal};
-
 use std::f64;
+use rand::{ prelude::*, distributions::StandardNormal };
 use na::Unit;
+
 use space::*;
 use scene::Scene;
-use ray::Ray;
+
+use super::Ray;
 
 /**
 The initial ray that gets cast from the camera to scene.

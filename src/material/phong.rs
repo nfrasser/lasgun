@@ -3,8 +3,6 @@ use space;
 use space::{ Vector, Point, Color };
 use scene::Scene;
 
-use material::Material;
-
 // Phong-lighted material
 pub struct Phong {
     kd: Vector3<f64>,
@@ -22,7 +20,7 @@ impl Phong {
     }
 }
 
-impl Material for Phong {
+impl super::Material for Phong {
     fn color(&self,
         q: &Point, eye: &Point, normal: &Unit<Vector>,
         scene: &Scene

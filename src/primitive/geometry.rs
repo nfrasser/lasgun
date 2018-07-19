@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use primitive::Primitive;
+use ray::Ray;
 use shape::{
     Shape, Intersection,
     sphere::Sphere,
@@ -8,7 +8,7 @@ use shape::{
     triangle::Triangle
 };
 use material::Material;
-use ray::Ray;
+use super::Primitive;
 
 /**
     A primitive representing a geometric shape such as a sphere or cube.

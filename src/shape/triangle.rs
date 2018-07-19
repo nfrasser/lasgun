@@ -1,10 +1,9 @@
+use std::{ops::Index, rc::Rc};
+
 use space::*;
 use ray::Ray;
 
-use std::ops::Index;
-use std::rc::Rc;
-use shape::{Shape, Intersection};
-
+use super::{Shape, Intersection};
 
 /**
 A triangle references its parent mesh and the index within

@@ -7,6 +7,7 @@ use std::f64;
 mod macros;
 mod space;
 mod math;
+mod ray;
 mod img;
 
 pub mod material;
@@ -14,7 +15,6 @@ pub mod shape;
 pub mod primitive;
 pub mod light;
 pub mod scene;
-mod ray;
 
 pub use space::{Point, Color, Vector};
 pub use scene::Scene;

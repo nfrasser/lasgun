@@ -1,18 +1,15 @@
 use std::rc::Rc;
-use primitive::Primitive;
 use space::*;
-
-use primitive::geometry::Geometry;
-use material::Material;
-use material::background::Background;
 use ray::Ray;
+
+use material::{ Material, background::Background };
+
 use shape::{
     Intersection,
-    triangle::{
-        Triangle,
-        Mesh
-    }
+    triangle::{ Triangle, Mesh }
 };
+
+use super::{ Primitive, geometry::Geometry };
 
 
 /**

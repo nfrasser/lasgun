@@ -2,8 +2,7 @@ use std::f64;
 
 use space::*;
 use ray::Ray;
-use shape::Shape;
-use shape::Intersection;
+use super::{Shape, Intersection};
 
 /**
 aka "Box", aka "Rectangular prism"
