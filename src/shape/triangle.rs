@@ -78,7 +78,6 @@ impl Shape for Triangle {
         // 3. Shear with ray direction (S)
         // Rather than computing M = SPT, we use this more effictient approach
 
-
         // basically translate triangle by -(ray origin) and rotate so that ray looks down along z+ axis ===
 
         // Translate vertices based on ray origin
@@ -171,7 +170,6 @@ impl Shape for Triangle {
             Intersection::new(t, normal)
         }
     }
-
 }
 
 /**

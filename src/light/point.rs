@@ -1,5 +1,5 @@
 use std::f64;
-use space::{ Point, Color };
+use space::{ len, Point, Color };
 use ray::Ray;
 use scene::Scene;
 use light::Light;
@@ -33,6 +33,7 @@ impl Light for PointLight {
     */
     fn sample(&self, p: &Point, scene: &Scene, cb: &Fn(&PointLight) -> Color) -> Color {
         let d = self.position - p; // direction from p to light
+        let t = len(&d); // distance to light in world coordinates
 
         // Move point slighly outside the surface of the intersecting primitive
         // accounts for floating point erros
@@ -42,7 +43,7 @@ impl Light for PointLight {
         // See if there's anything that intersects
         let (intersection, _) = scene.intersect(&ray);
 
-        if intersection.exists() && intersection.t < 1.0 {
+        if intersection.exists() && intersection.t < t {
             // Intersection before the light, makes no contribution
             Color::zeros()
         } else {
