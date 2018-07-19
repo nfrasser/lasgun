@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use space::*;
 use primitive::Primitive;
 use shape::{
     Shape, Intersection,
@@ -9,6 +8,7 @@ use shape::{
     triangle::Triangle
 };
 use material::Material;
+use ray::Ray;
 
 /**
     A primitive representing a geometric shape such as a sphere or cube.
@@ -40,7 +40,7 @@ impl Primitive for Geometry {
         &*self.material
     }
 
-    fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
-        (self.shape.intersect(e, d), self)
+    fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive) {
+        (self.shape.intersect(ray), self)
     }
 }

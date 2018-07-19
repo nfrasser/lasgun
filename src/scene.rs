@@ -6,6 +6,7 @@ use space::*;
 use light::Light;
 use primitive::Primitive;
 use shape::Intersection;
+use ray::Ray;
 
 
 /**
@@ -112,8 +113,8 @@ impl Scene {
 
     // Find the intersection for the ray defined by the given eye/direction If no intersection is
     // found, returns an intersetion at infinity with the root content primitive.
-    pub fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
-        self.options.content.intersect(e, d)
+    pub fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive) {
+        self.options.content.intersect(ray)
     }
 
     /**

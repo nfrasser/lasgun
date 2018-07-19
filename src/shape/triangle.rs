@@ -1,6 +1,10 @@
-use std::rc::Rc;
 use space::*;
+use ray::Ray;
+
+use std::ops::Index;
+use std::rc::Rc;
 use shape::{Shape, Intersection};
+
 
 /**
 A triangle references its parent mesh and the index within
@@ -25,8 +29,7 @@ impl Triangle {
 }
 
 impl Shape for Triangle {
-    fn intersect(&self, _e: &Point, _d: &Direction) -> Intersection {
-        Intersection::none()
+    fn intersect(&self, ray: &Ray) -> Intersection {
     }
 }
 

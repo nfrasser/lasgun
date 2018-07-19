@@ -5,20 +5,6 @@ pub type Point = na::Point3<f64>;
 pub type Vector = na::Vector3<f64>;
 pub type Color = na::Vector3<f64>;
 
-/**
-    The direction of a ray with a pre-computed inverse for box intersections
-*/
-pub struct Direction {
-    pub d: Vector,
-    pub inv: Vector
-}
-
-impl Direction {
-    pub fn new(d: Vector) -> Direction {
-        Direction { d, inv: inv(&d) }
-    }
-}
-
 #[inline]
 pub fn len(v: &Vector) -> f64 {
     let squaresum: f64 = v.component_mul(v).iter().sum();
@@ -27,5 +13,11 @@ pub fn len(v: &Vector) -> f64 {
 
 #[inline]
 pub fn inv(v: &Vector) -> Vector {
-    Vector::new(1.0/v.x, 1.0/v.y, 1.0/v.z)
+    Vector::new(1.0/unzerofy(v.x), 1.0/unzerofy(v.y), 1.0/unzerofy(v.z))
+}
+
+// If a floating poing number is 0, makes it 1
+#[inline]
+fn unzerofy(n: f64) -> f64 {
+    if n == 0.0 { 1.0 } else { n }
 }

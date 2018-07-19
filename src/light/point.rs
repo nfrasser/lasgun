@@ -1,5 +1,6 @@
 use std::f64;
-use space::{ Point, Color, Direction };
+use space::{ Point, Color };
+use ray::Ray;
 use scene::Scene;
 use light::Light;
 
@@ -36,10 +37,10 @@ impl Light for PointLight {
         // Move point slighly outside the surface of the intersecting primitive
         // accounts for floating point erros
         let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
-        let direction = Direction::new(d);
+        let ray = Ray::new(p, d);
 
         // See if there's anything that intersects
-        let (intersection, _) = scene.intersect(&p, &direction);
+        let (intersection, _) = scene.intersect(&ray);
 
         if intersection.exists() && intersection.t < 1.0 {
             // Intersection before the light, makes no contribution

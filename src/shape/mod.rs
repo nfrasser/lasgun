@@ -1,12 +1,13 @@
 use std::f64;
 use space::*;
+use ray::Ray;
 
 /**
     A gemetric shape that lives in 3D space.
     Must implement a way to intersect with a ray defined by the given eye and direction vector
 */
 pub trait Shape {
-    fn intersect(&self, e: &Point, d: &Direction) -> Intersection;
+    fn intersect(&self, ray: &Ray) -> Intersection;
 }
 
 /**

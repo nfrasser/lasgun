@@ -5,6 +5,7 @@ use space::*;
 use primitive::geometry::Geometry;
 use material::Material;
 use material::background::Background;
+use ray::Ray;
 use shape::{
     Intersection,
     triangle::{
@@ -64,12 +65,12 @@ impl Primitive for Aggregate {
         &self.background
     }
 
-    fn intersect(&self, e: &Point, d: &Direction) -> (Intersection, &Primitive) {
+    fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive) {
         let init: (Intersection, &Primitive) = (Intersection::none(), self);
 
         // Find the closest child with which this node intersects
         self.contents.iter().fold(init, |closest, node| {
-            let next = node.intersect(e, d);
+            let next = node.intersect(ray);
             if next.0.t < closest.0.t { next } else { closest }
         })
     }

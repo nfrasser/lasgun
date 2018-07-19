@@ -3,6 +3,8 @@ extern crate rand;
 
 use std::f64;
 
+#[macro_use]
+mod macros;
 mod space;
 mod math;
 mod img;
@@ -18,7 +20,6 @@ pub use space::{Point, Color, Vector};
 pub use scene::Scene;
 pub use img::{Film, ImageBuffer};
 
-use ray::Ray;
 use ray::primary::PrimaryRay;
 
 /**
