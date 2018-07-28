@@ -4,8 +4,11 @@ use space::*;
 use ray::Ray;
 
 use super::{Shape, Intersection};
+use super::mesh::Mesh;
 
-/// A triangle references its parent mesh and the index within the faces array
+/// A triangle references its parent mesh and the index within the faces array. The triangle's
+/// lifetime depends on the mesh it references. This implementation ensures the smallest possible
+/// triangle implementation when storing large triangle meshes in memory.
 pub struct Triangle<'a> {
     /**
     Reference to the mesh that contains this triangle
@@ -167,82 +170,5 @@ impl<'a> Shape for Triangle<'a> {
         } else {
             Intersection::new(t, normal)
         }
-    }
-}
-
-/**
-Container representing a triangle mesh. A reference to it
-is stored by all triangles available in the scene
-*/
-pub struct Mesh {
-
-    /**
-    The vertices that make up this mesh
-    */
-    pub vertices: Vec<Point>,
-
-    /**
-    The triangular faces formed by the vertices.
-    Each element represents 3 indeces within the v vector
-    */
-    pub faces: Vec<[usize; 3]>
-}
-
-impl Mesh {
-    pub fn new(positions: &[[f64; 3]], faces: &[[usize; 3]]) -> Mesh {
-        Mesh {
-            vertices: positions.iter()
-                .map(|p| Point::new(p[0], p[1], p[2]))
-                .collect(),
-            faces: Vec::from(faces)
-        }
-    }
-}
-
-impl Shape for Mesh {
-    fn intersect(&self, ray: &Ray) -> Intersection {
-        let init = Intersection::none();
-        self.into_iter().fold(init, |closest, triangle| {
-            let next = triangle.intersect(ray);
-            if next.t < closest.t { next } else { closest }
-        })
-    }
-}
-
-impl<'a> IntoIterator for &'a Mesh {
-    type Item = Triangle<'a>;
-    type IntoIter = MeshIntoIter<'a>;
-
-    fn into_iter(self) -> Self::IntoIter { MeshIntoIter::new(self) }
-}
-
-/// Structure that allows using a mesh as an iterator
-pub struct MeshIntoIter<'a> {
-    mesh: &'a Mesh,
-    f: usize // current face index
-}
-
-impl<'a> MeshIntoIter<'a> {
-    fn new(mesh: &'a Mesh) -> MeshIntoIter<'a> {
-        MeshIntoIter { mesh, f: 0 }
-    }
-}
-
-impl<'a> Iterator for MeshIntoIter<'a> {
-    type Item = Triangle<'a>;
-
-    fn next(&mut self) -> Option<Triangle<'a>> {
-        if self.f < self.mesh.faces.len() {
-            let f = self.f;
-            self.f += 1;
-            Some(Triangle { mesh: self.mesh, f })
-        } else {
-            None
-        }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining = self.mesh.faces.len() - self.f;
-        (remaining, Some(remaining))
     }
 }

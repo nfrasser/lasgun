@@ -1,4 +1,4 @@
-use lasgun::shape::triangle::Mesh;
+use lasgun::shape::mesh::Mesh;
 
 pub fn smstdodeca() -> Mesh {
     let positions = [

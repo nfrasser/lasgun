@@ -41,4 +41,5 @@ impl Intersection {
 
 pub mod cuboid;
 pub mod sphere;
+pub mod mesh;
 pub mod triangle;

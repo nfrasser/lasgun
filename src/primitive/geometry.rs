@@ -1,4 +1,4 @@
-use shape::triangle::Mesh;
+use shape::mesh::Mesh;
 use std::rc::Rc;
 
 use ray::Ray;
