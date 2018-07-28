@@ -34,7 +34,7 @@ fn simple() -> Scene {
     let s4 = Geometry::sphere([-100.0, 25.0, -300.0], 50.0, mat3.clone());
     let s5 = Geometry::sphere([0.0, 100.0, -250.0], 25.0, mat1.clone());
     let b1 = Geometry::cube([-200.0, -125.0, 0.0], 100.0, mat4.clone());
-    let steldodec = Aggregate::triangles(smstdodeca::smstdodeca(), mat3.clone());
+    let steldodec = Geometry::mesh(smstdodeca::smstdodeca(), mat3.clone());
     let aggregate = Aggregate::new(vec![
         Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4), Box::new(s5),
         Box::new(b1),

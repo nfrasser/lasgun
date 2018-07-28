@@ -1,11 +1,11 @@
+use shape::triangle::Mesh;
 use std::rc::Rc;
 
 use ray::Ray;
 use shape::{
     Shape, Intersection,
     sphere::Sphere,
-    cuboid::Cuboid,
-    triangle::Triangle
+    cuboid::Cuboid
 };
 use material::Material;
 use super::Primitive;
@@ -30,8 +30,9 @@ impl Geometry {
         Geometry { shape: Box::new(cube), material }
     }
 
-    pub fn triangle(triangle: Triangle, material: Rc<Material>) -> Geometry {
-        Geometry { shape: Box::new(triangle), material }
+    /// Triangle mesh
+    pub fn mesh(mesh: Mesh, material: Rc<Material>) -> Geometry {
+        Geometry { shape: Box::new(mesh), material }
     }
 }
 

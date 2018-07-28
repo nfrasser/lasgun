@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use space::*;
 use ray::Ray;
 
@@ -6,10 +5,9 @@ use material::{ Material, background::Background };
 
 use shape::{
     Intersection,
-    triangle::{ Triangle, Mesh }
 };
 
-use super::{ Primitive, geometry::Geometry };
+use super::Primitive;
 
 
 /**
@@ -35,21 +33,6 @@ impl Aggregate {
 
     pub fn just(contents: Vec<Box<Primitive>>) -> Aggregate {
         Aggregate::new(contents, Color::zeros())
-    }
-
-    /**
-    Create an aggregate of Triangle shapes from the given mesh
-    */
-    pub fn triangles(mesh: Mesh, material: Rc<Material>) -> Aggregate {
-        let nfaces = mesh.f.len();
-        let mesh = Rc::new(mesh);
-        let contents = (0..nfaces)
-            .map(|i| Triangle::new(mesh.clone(), i))
-            .map(|t| Geometry::triangle(t, material.clone()))
-            .map(|g| Box::new(g) as Box<Primitive>)
-            .collect();
-
-        Aggregate::just(contents)
     }
 
     pub fn add(&mut self, primitive: Box<Primitive>) where {

@@ -1,19 +1,16 @@
-use std::{ops::Index, rc::Rc};
+use std::ops::Index;
 
 use space::*;
 use ray::Ray;
 
 use super::{Shape, Intersection};
 
-/**
-A triangle references its parent mesh and the index within
-the faces array
-*/
-pub struct Triangle {
+/// A triangle references its parent mesh and the index within the faces array
+pub struct Triangle<'a> {
     /**
-    Reference to the mesh this triangle contains
+    Reference to the mesh that contains this triangle
     */
-    mesh: Rc<Mesh>,
+    mesh: &'a Mesh,
 
     /**
     Index within `f` list of vertex indeces in the mesh vertex data
@@ -21,9 +18,9 @@ pub struct Triangle {
     f: usize
 }
 
-impl Triangle {
-    pub fn new(mesh: Rc<Mesh>, f: usize) -> Triangle {
-        assert!(f < mesh.f.len());
+impl<'a> Triangle<'a> {
+    pub fn new(mesh: &'a Mesh, f: usize) -> Triangle<'a> {
+        debug_assert!(f < mesh.faces.len());
         Triangle { mesh, f }
     }
 
@@ -32,10 +29,10 @@ impl Triangle {
     */
     #[inline]
     fn p(&self, i: usize) -> &Point {
-        assert!(i < 3);
-        let face_indeces = &self.mesh.f[self.f];
+        debug_assert!(i < 3);
+        let face_indeces = &self.mesh.faces[self.f];
         let vertex_index = face_indeces[i];
-        &self.mesh.v[vertex_index]
+        &self.mesh.vertices[vertex_index]
     }
 
     #[inline]
@@ -54,7 +51,7 @@ impl Triangle {
     }
 }
 
-impl Index<usize> for Triangle {
+impl<'a> Index<usize> for Triangle<'a> {
     type Output = Point;
     #[inline]
     fn index(&self, index: usize) -> &Point {
@@ -63,7 +60,7 @@ impl Index<usize> for Triangle {
     }
 }
 
-impl Shape for Triangle {
+impl<'a> Shape for Triangle<'a> {
     fn intersect(&self, ray: &Ray) -> Intersection {
         // 1. Get triangle vertices
         let (p0, p1, p2) = (self.p0(), self.p1(), self.p2());
@@ -180,24 +177,72 @@ is stored by all triangles available in the scene
 pub struct Mesh {
 
     /**
-    The verteces that make up this mesh
+    The vertices that make up this mesh
     */
-    pub v: Vec<Point>,
+    pub vertices: Vec<Point>,
 
     /**
     The triangular faces formed by the vertices.
     Each element represents 3 indeces within the v vector
     */
-    pub f: Vec<[usize; 3]>
+    pub faces: Vec<[usize; 3]>
 }
 
 impl Mesh {
     pub fn new(positions: &[[f64; 3]], faces: &[[usize; 3]]) -> Mesh {
         Mesh {
-            v: positions.iter()
+            vertices: positions.iter()
                 .map(|p| Point::new(p[0], p[1], p[2]))
                 .collect(),
-            f: Vec::from(faces)
+            faces: Vec::from(faces)
         }
+    }
+}
+
+impl Shape for Mesh {
+    fn intersect(&self, ray: &Ray) -> Intersection {
+        let init = Intersection::none();
+        self.into_iter().fold(init, |closest, triangle| {
+            let next = triangle.intersect(ray);
+            if next.t < closest.t { next } else { closest }
+        })
+    }
+}
+
+impl<'a> IntoIterator for &'a Mesh {
+    type Item = Triangle<'a>;
+    type IntoIter = MeshIntoIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter { MeshIntoIter::new(self) }
+}
+
+/// Structure that allows using a mesh as an iterator
+pub struct MeshIntoIter<'a> {
+    mesh: &'a Mesh,
+    f: usize // current face index
+}
+
+impl<'a> MeshIntoIter<'a> {
+    fn new(mesh: &'a Mesh) -> MeshIntoIter<'a> {
+        MeshIntoIter { mesh, f: 0 }
+    }
+}
+
+impl<'a> Iterator for MeshIntoIter<'a> {
+    type Item = Triangle<'a>;
+
+    fn next(&mut self) -> Option<Triangle<'a>> {
+        if self.f < self.mesh.faces.len() {
+            let f = self.f;
+            self.f += 1;
+            Some(Triangle { mesh: self.mesh, f })
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.mesh.faces.len() - self.f;
+        (remaining, Some(remaining))
     }
 }
