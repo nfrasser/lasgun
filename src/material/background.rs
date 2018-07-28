@@ -1,5 +1,4 @@
-use na::Unit;
-use space::{ Vector, Point, Color };
+use space::*;
 use scene::Scene;
 
 pub struct Background {
@@ -18,7 +17,7 @@ impl Background {
 }
 
 impl super::Material for Background {
-    fn color(&self, _q: &Point, _e: &Point, _n: &Unit<Vector>, _scene: &Scene) -> Color {
+    fn color(&self, _q: &Point, _e: &Point, _n: &Normal, _scene: &Scene) -> Color {
         self.color
     }
 }

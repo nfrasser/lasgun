@@ -46,7 +46,7 @@ impl PrimaryRay {
             // The vector spanning from the eye to the point of intersection
             // eye + direction = point of intersection
             let direction: Vector = intersection.t * ray.d;
-            let normal = Unit::new_normalize(intersection.normal);
+            let normal: &Normal = &intersection.normal;
 
             // Add a small fraction of the normal to avoid speckling due to floating point errors
             // (the calculated point ends up inside the geometric primitive).

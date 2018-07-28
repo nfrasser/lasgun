@@ -51,10 +51,7 @@ impl Shape for Sphere {
         // Find the closest point of intersection, it available
         if numroots == 2 {
             // Ray goes through the sphere twice
-            let (t0, t1) = (
-                roots[0].min(roots[1]),
-                roots[0].max(roots[1])
-            );
+            let (t0, t1) = (roots[0].min(roots[1]), roots[0].max(roots[1]));
 
             // Check relative intersection distances
             if t1 < 0.0 {
@@ -62,13 +59,16 @@ impl Shape for Sphere {
                 Intersection::none()
             } else if t0 < 0.0 {
                 // Intersects in front and behind, eye is inside the sphere!
-                Intersection { t: t1, normal: cen - (ray.origin + t1*d) }
+                let normal = Normal::new(cen - (ray.origin + t1*d));
+                Intersection { t: t1, normal }
             } else {
                 // Eye is outside the sphere, use closest root
-                Intersection { t: t0, normal: ray.origin + t0*d - cen }
+                let normal = Normal::new(ray.origin + t0*d - cen);
+                Intersection { t: t0, normal }
             }
         } else if numroots == 1 && roots[0] > 0.0 {
-            Intersection { t: roots[0], normal: ray.origin + roots[0]*d - cen }
+            let normal = Normal::new(ray.origin + roots[0]*d - cen);
+            Intersection { t: roots[0], normal }
         } else {
             Intersection::none()
         }
@@ -82,9 +82,11 @@ mod test {
     #[test]
     fn straight_on_intersection() {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
-        let e = Point::new(0.0, 0.0, 2.0);
+        let origin = Point::new(0.0, 0.0, 2.0);
         let d = Direction::new(Vector::new(0.0, 0.0, -1.0));
-        let intersection = sphere.intersect(&e, &d);
+        let ray = Ray::new(origin, d);
+        let intersection = sphere.intersect(&ray);
+
         assert!(intersection.exists());
         assert_eq!(intersection.t, 1.0);
     }

@@ -7,13 +7,14 @@ pub struct Ray {
     pub origin: Point,
 
     /**
-    Unit vector representing ray directoin
+    Unit vector representing ray direction
+    By convention, we guarantee that this is normalized
     */
     pub d: Vector,
 
     /**
     Ray direction except each component is inverted
-    Used for optimization
+    Used for optimizations
     */
     pub dinv: Vector
 }

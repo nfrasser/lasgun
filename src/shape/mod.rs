@@ -17,18 +17,18 @@ pub trait Shape {
 */
 pub struct Intersection {
     pub t: f64, // distance to the eye based on direction vector
-    pub normal: Vector // normal at the point of intersection
+    pub normal: Normal // normal at the point of intersection
 }
 
 impl Intersection {
     pub fn new(t: f64, normal: Vector) -> Intersection {
-        Intersection { t, normal }
+        Intersection { t, normal: Normal::new(normal) }
     }
 
     pub fn none() -> Intersection {
         Intersection {
             t: f64::INFINITY,
-            normal: Vector::zeros()
+            normal: Normal::new(Vector::zeros())
         }
     }
 

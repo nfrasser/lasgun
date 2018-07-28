@@ -1,4 +1,4 @@
-use na::{Unit, Vector3};
+use na::Vector3;
 use space::*;
 use scene::Scene;
 
@@ -21,10 +21,10 @@ impl Phong {
 
 impl super::Material for Phong {
     fn color(&self,
-        q: &Point, eye: &Point, normal: &Unit<Vector>,
+        q: &Point, eye: &Point, normal: &Normal,
         scene: &Scene
     ) -> Color {
-        let n: &Vector = normal.as_ref();
+        let n = normal.as_ref().normalize();
         let v = (eye - q).normalize();
         let mut output = scene.options.ambient.component_mul(&self.kd); // start with ambient lighting
 
