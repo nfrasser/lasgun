@@ -62,7 +62,7 @@ fn simple() -> Scene {
         ambient,
         lights,
 
-        supersampling: 10
+        supersampling: 2
     };
 
     Scene::new(options)

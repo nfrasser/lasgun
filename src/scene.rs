@@ -34,19 +34,14 @@ pub struct Scene {
     */
     pub aux: Vector,
 
-    /**
-    Half the distance between two ray intersections points on the focal plane. Primary rays with
-    supersampling enabled will sample points around the original ray / intersection. The maximum
-    distance of the sample ray interesection points on the focal plane from the original point of
-    intersetion will be no larger than this number.
-    */
+    /// Half the distance between two primrary ray intersection points on the focal plane.
+    /// Primary rays with supersampling enabled will sample points around the original ray / intersection.
+    /// The maximum distance of the sample ray interesection points on the focal plane from the
+    /// original point of intersection will be no larger than this number.
     pub sample_radius: f64,
 
-    /**
-        A number getween 0 and 1 representing the contribution of a single supersample ray.
-        Equal to 1/options.supersampling
-    */
-    pub supersample_power: f64,
+    /// Precomputed supersampling options
+    pub supersampling: Sampling,
 
     /**
     Additional scene rendering options.
@@ -80,8 +75,27 @@ pub struct Options {
 
     pub fov: f64, // field of view
 
-    // Represents the number of supersample rays to emit per pixel
+    /// Represents the number of times a pixel will be divided for supersampling operations
+    /// e.g., 0 means one sample, 1 means 4 samples, 2 means 9 samples, etc.
     pub supersampling: u8,
+}
+
+/// Pre-computed supersampling factors for a pixel
+pub struct Sampling {
+    /// The number of sections the pixel is divided into in one dimension
+    pub dim: u8,
+
+    /// The total number of super samples to take
+    /// Defined as the square of dim
+    pub count: usize,
+
+    /// Half the dimension of two supersample cells.
+    /// Supersampling is implemented by dividing each pixel into a grid and taking a random sample
+    /// from each cell.
+    pub radius: f64,
+
+    /// A number getween 0 and 1 representing the contribution of a single supersample ray.
+    pub power: f64,
 }
 
 impl Scene {
@@ -99,13 +113,32 @@ impl Scene {
         // Half the height of the point grid in model coordinates
         let ymax = distance * f64::tan((1.0/360.0) * options.fov * f64::consts::PI);
 
+        // Distance between sample points on focal plane
         let sample_radius = ymax / (height as f64);
-        let supersample_power = 1.0/(options.supersampling as f64).max(1.0);
+
+        // The number of cells on one side of the supersample grid
+        let supersample_dim = options.supersampling + 1;
+
+        // How much to scale the sample radius by when performing supersample calculations
+        let supersample_scale = 1.0/(supersample_dim as f64);
+
+        // Total Number of samples to take
+        let supersample_count = supersample_dim as usize * supersample_dim as usize;
+
+        // How much each supersample should could for
+        // computed once here so it doesn't have to be recomputed later
+        let supersample_power = 1.0/(supersample_count as f64);
 
         Scene {
             eye: options.eye,
             view: options.view,
-            up, aux, sample_radius, supersample_power,
+            up, aux, sample_radius,
+            supersampling: Sampling {
+                dim: supersample_dim,
+                count: supersample_count,
+                radius: sample_radius * supersample_scale,
+                power: supersample_power
+            },
             options,
             angle_distribution: Uniform::new(0.0, f64::consts::PI)
         }

@@ -29,17 +29,17 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     let (width, height) = scene.options.dimensions;
     let up = &scene.up;
     let aux = &scene.aux;
-    let pixelwidth = scene.sample_radius * 2.0;
+    let sample_distance = scene.sample_radius * 2.0;
 
     for j in 0..height {
 
-        let voffset = ((height as f64 - 1.0) * 0.5 - j as f64) * pixelwidth;
+        let voffset = ((height as f64 - 1.0) * 0.5 - j as f64) * sample_distance;
 
         // A point on the jth row on the same plane as the up and direction vectors
         let vraypoint: Point = scene.eye + (voffset * up) + scene.view;
 
         for i in 0..width {
-            let hoffset = (i as f64 - ((width as f64 - 1.0) * 0.5)) * pixelwidth;
+            let hoffset = (i as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
 
             // The point at which the ray intersects
             let d: Vector = vraypoint + (hoffset * aux) - scene.eye;
