@@ -94,7 +94,7 @@ impl Scene {
         let aux = aux.normalize();
 
         // First point of the target plane will be at this distance from the eye
-        let distance = len(&options.view);
+        let distance = options.view.norm();
 
         // Half the height of the point grid in model coordinates
         let ymax = distance * f64::tan((1.0/360.0) * options.fov * f64::consts::PI);

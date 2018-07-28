@@ -33,9 +33,9 @@ impl Triangle {
     #[inline]
     fn p(&self, i: usize) -> &Point {
         assert!(i < 3);
-        let face_indeces = &self.mesh.f.get(self.f).unwrap();
+        let face_indeces = &self.mesh.f[self.f];
         let vertex_index = face_indeces[i];
-        &self.mesh.v.get(vertex_index).unwrap()
+        &self.mesh.v[vertex_index]
     }
 
     #[inline]
@@ -56,7 +56,9 @@ impl Triangle {
 
 impl Index<usize> for Triangle {
     type Output = Point;
+    #[inline]
     fn index(&self, index: usize) -> &Point {
+        debug_assert!(index < 3);
         self.p(index)
     }
 }
@@ -81,9 +83,9 @@ impl Shape for Triangle {
 
         // Translate vertices based on ray origin
         let (p0t, p1t, p2t) = (
-            p0 - Vector::new(ray.origin.x, ray.origin.y, ray.origin.z),
-            p1 - Vector::new(ray.origin.x, ray.origin.y, ray.origin.z),
-            p2 - Vector::new(ray.origin.x, ray.origin.y, ray.origin.z),
+            Point::from_coordinates(p0 - ray.origin),
+            Point::from_coordinates(p1 - ray.origin),
+            Point::from_coordinates(p2 - ray.origin),
         );
 
         // Permute components of triangle vertices and ray direction

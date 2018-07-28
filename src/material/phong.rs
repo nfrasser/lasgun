@@ -1,6 +1,5 @@
 use na::{Unit, Vector3};
-use space;
-use space::{ Vector, Point, Color };
+use space::*;
 use scene::Scene;
 
 // Phong-lighted material
@@ -35,7 +34,7 @@ impl super::Material for Phong {
             output += scene_light.sample(q, scene, &|light| {
                 // vector to light and its length (distance to the light from q)
                 let l = light.position - q;
-                let d = space::len(&l);
+                let d = l.norm(); // length
                 let l = l.normalize();
                 let n_dot_l = n.dot(&l);
 

@@ -1,5 +1,5 @@
 use std::f64;
-use space::{ len, Point, Color };
+use space::{ Point, Color };
 use ray::Ray;
 use scene::Scene;
 
@@ -32,7 +32,7 @@ impl super::Light for PointLight {
     */
     fn sample(&self, p: &Point, scene: &Scene, cb: &Fn(&PointLight) -> Color) -> Color {
         let d = self.position - p; // direction from p to light
-        let t = len(&d); // distance to light in world coordinates
+        let t = d.norm(); // distance to light in world coordinates
 
         // Move point slighly outside the surface of the intersecting primitive
         // accounts for floating point erros
