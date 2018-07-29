@@ -8,23 +8,29 @@ use super::{Shape, Intersection};
 aka "Box", aka "Rectangular prism"
 */
 pub struct Cuboid {
-    pub bounds: (Point, Point)
+    pub bounds: Bounds
 }
 
 impl Cuboid {
     pub fn new(minbound: [f64; 3], maxbound: [f64; 3]) -> Cuboid {
         let minbound = Point::new(minbound[0], minbound[1], minbound[2]);
         let maxbound = Point::new(maxbound[0], maxbound[1], maxbound[2]);
-        Cuboid { bounds: (minbound, maxbound) }
+        Cuboid { bounds: Bounds::new(minbound, maxbound) }
     }
 
     pub fn cube(origin: [f64; 3], dim: f64) -> Cuboid {
         let origin = Point::new(origin[0], origin[1], origin[2]);
-        Cuboid { bounds: (origin, origin + Vector::repeat(dim)) }
+        Cuboid { bounds: Bounds::new(origin, origin + Vector::repeat(dim)) }
     }
 }
 
 impl Shape for Cuboid {
+    fn intersect(&self, ray: &Ray) -> Intersection {
+        self.bounds.intersect(ray)
+    }
+}
+
+impl Shape for Bounds {
     fn intersect(&self, ray: &Ray) -> Intersection {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
@@ -33,8 +39,8 @@ impl Shape for Cuboid {
 
         // i ranges from X to Z
         for i in 0..3 {
-            let t1 = (self.bounds.0[i] - ray.origin[i]) * ray.dinv[i];
-            let t2 = (self.bounds.1[i] - ray.origin[i]) * ray.dinv[i];
+            let t1 = (self.min[i] - ray.origin[i]) * ray.dinv[i];
+            let t2 = (self.max[i] - ray.origin[i]) * ray.dinv[i];
 
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);

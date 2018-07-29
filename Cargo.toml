@@ -19,5 +19,7 @@ required-features = ["bin"]
 
 [dependencies]
 rand = "0.5"
-nalgebra = "0.15.3"
+nalgebra = "0.16.0"
+num-traits = "0.2"
+# alga = "0.7.1"
 image = { version = "*", optional = true }

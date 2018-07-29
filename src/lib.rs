@@ -1,3 +1,5 @@
+// extern crate alga;
+extern crate num_traits as num;
 extern crate nalgebra as na;
 extern crate rand;
 

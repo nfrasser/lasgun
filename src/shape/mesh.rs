@@ -19,22 +19,33 @@ pub struct Mesh {
     The triangular faces formed by the vertices.
     Each element represents 3 indeces within the vertices vector
     */
-    pub faces: Vec<[usize; 3]>
+    pub faces: Vec<[usize; 3]>,
+
+    /// Mesh bounding box
+    bounds: Bounds
 }
 
 impl Mesh {
     pub fn new(positions: &[[f64; 3]], faces: &[[usize; 3]]) -> Mesh {
+        let vertices: Vec<Point> = positions.iter()
+            .map(|p| Point::new(p[0], p[1], p[2]))
+            .collect();
+
+        let bounds = vertices.iter()
+            .fold(Bounds::none(), |bounds, vertex| bounds.point_union(vertex));
+
         Mesh {
-            vertices: positions.iter()
-                .map(|p| Point::new(p[0], p[1], p[2]))
-                .collect(),
-            faces: Vec::from(faces)
+            vertices, faces: Vec::from(faces),
+            bounds
         }
     }
 }
 
 impl Shape for Mesh {
     fn intersect(&self, ray: &Ray) -> Intersection {
+        // Check if intersects with bounding box before doing triangle intersection
+        if !self.bounds.intersect(ray).exists() { return Intersection::none() }
+
         let init = Intersection::none();
         self.into_iter().fold(init, |closest, triangle| {
             let next = triangle.intersect(ray);
