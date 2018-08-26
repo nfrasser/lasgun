@@ -4,7 +4,6 @@ use rand::distributions::{Uniform};
 
 use space::*;
 use light::Light;
-// use material::Material;
 use primitive::Primitive;
 use shape::Intersection;
 use ray::Ray;
@@ -68,7 +67,6 @@ pub struct Options {
     pub content: Box<Primitive>,
 
     pub lights: Vec<Box<Light>>, // point-light sources in the scene
-    // pub materials: Vec<Arc<Material>>,
     pub ambient: Color, // ambient lighting
 
     pub eye: Point,
