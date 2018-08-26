@@ -7,7 +7,9 @@ pub type Pixel = [u8; 3];
 /// The parameter represents the size of the max dimension paramter
 /// e.g., D == u16 means the image can have a max resolution of 6
 pub trait Film {
-    fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color);
+    // fn dim() -> (u16, u16);
+    fn pixel(&self, x: u16, y: u16) -> &Pixel;
+    fn pixel_mut(&mut self, x: u16, y: u16) -> &mut Pixel;
 }
 
 /// Queriable store of pixels.
@@ -27,11 +29,6 @@ impl ImageBuffer {
         }
     }
 
-    pub fn get(&self, x: u16, y: u16) -> &Pixel {
-        let offset = self.offset(x, y);
-        &self.pixels[offset]
-    }
-
     pub fn foreach<F>(&self, func: F) where F: Fn(&Pixel, u16, u16) -> () {
         let mut offset = 0;
         for x in 0..self.width {
@@ -49,15 +46,32 @@ impl ImageBuffer {
     }
 }
 
+
 impl Film for ImageBuffer {
-    fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color) {
+    // fn dim(&self) -> (u16, u16) {
+    //     (self.width, self.height)
+    // }
+
+    #[inline]
+    fn pixel(&self, x: u16, y: u16) -> &Pixel {
+        assert!(x < self.width && y < self.height);
         let offset = self.offset(x, y);
-        self.pixels[offset] = [
-            to_byte(color.x),
-            to_byte(color.y),
-            to_byte(color.z),
-        ]
+        &self.pixels[offset]
     }
+
+    #[inline]
+    fn pixel_mut(&mut self, x: u16, y: u16) -> &mut Pixel {
+        assert!(x < self.width && y < self.height);
+        let offset = self.offset(x, y);
+        &mut self.pixels[offset]
+    }
+}
+
+#[inline]
+pub fn set_pixel_color(pixel: &mut Pixel, color: &Color) {
+    pixel[0] = to_byte(color[0]);
+    pixel[1] = to_byte(color[1]);
+    pixel[2] = to_byte(color[2]);
 }
 
 /**

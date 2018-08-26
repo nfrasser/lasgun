@@ -78,6 +78,10 @@ pub struct Options {
     /// Represents the number of times a pixel will be divided for supersampling operations
     /// e.g., 0 means one sample, 1 means 4 samples, 2 means 9 samples, etc.
     pub supersampling: u8,
+
+    /// Number of CPU render threads to use
+    /// Settings this to 0 means default to the system concurrency
+    pub concurrency: u8
 }
 
 /// Pre-computed supersampling factors for a pixel

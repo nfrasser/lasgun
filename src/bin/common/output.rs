@@ -1,8 +1,8 @@
 extern crate image;
 extern crate lasgun;
 
-use image::{Rgb, RgbImage};
-use lasgun::{Scene, Film, Color};
+use image::{RgbImage};
+use lasgun::{Scene, Film, Pixel};
 
 pub fn render(scene: &Scene, filename: &str) {
     let (width, height) = scene.options.dimensions;
@@ -14,20 +14,11 @@ pub fn render(scene: &Scene, filename: &str) {
 
 struct OutputImage(RgbImage);
 impl Film for OutputImage {
-    fn set_pixel_color(&mut self, x: u16, y: u16, color: &Color) {
-        let pixel = Rgb {
-            data: [
-                to_byte(color.x),
-                to_byte(color.y),
-                to_byte(color.z)
-            ]
-        };
-        self.0.put_pixel(x as u32, y as u32, pixel)
+    fn pixel(&self, x: u16, y: u16) -> &Pixel {
+        &self.0.get_pixel(x as u32, y as u32).data
     }
-}
 
-// Convert a colour channel between 0 and 1 to an interger between 0 and 255
-#[inline]
-fn to_byte(channel: f64) -> u8 {
-    (channel.max(0.0).min(1.0) * 255.0).round() as u8
+    fn pixel_mut(&mut self, x: u16, y: u16) -> &mut Pixel {
+        &mut self.0.get_pixel_mut(x as u32, y as u32).data
+    }
 }

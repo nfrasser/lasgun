@@ -10,9 +10,14 @@ use super::Ray;
 The initial ray that gets cast from the camera to scene.
 The resulting colour form the `cast` function will be a pixel in the resulting image.
 */
+#[derive(Debug, Clone)]
 pub struct PrimaryRay {
-    origin: Point,
-    d: Vector, // not normalized
+    // Pixel grid index coordinates
+    pub x: u16,
+    pub y: u16,
+    pub origin: Point,
+    pub d: Vector, // not normalized
+    pub color: Color,
 }
 
 impl PrimaryRay {
@@ -20,13 +25,12 @@ impl PrimaryRay {
     Create a new primary ray from an origin point and a vector that spans from the origin
     to the focal plane
     */
-    pub fn new(origin: Point, d: Vector) -> PrimaryRay {
-        PrimaryRay { origin, d }
+    pub fn new(x: u16, y: u16, origin: Point, d: Vector) -> PrimaryRay {
+        PrimaryRay { x, y, origin, d, color: Color::zeros() }
     }
 
-    pub fn cast(&self, scene: &Scene) -> Color {
+    pub fn cast(&mut self, scene: &Scene) {
         let dim = scene.supersampling.dim as i32;
-        let mut color = Color::zeros();
 
         for i in 0..scene.supersampling.count as i32 {
             // Calculate offset from the origin as factors of the supersampling radius
@@ -58,10 +62,12 @@ impl PrimaryRay {
             let qpoint = ray.origin + direction + (f64::EPSILON * 32.0) * normal.as_ref();
 
             // Query the material for the color at the given point
-            color += material.color(&qpoint, &ray.origin, normal, scene)
+            self.color += material.color(&qpoint, &ray.origin, normal, scene)
 
         }
 
-        color * scene.supersampling.power
+        self.color *= scene.supersampling.power
     }
+
+
 }
