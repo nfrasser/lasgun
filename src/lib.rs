@@ -3,6 +3,7 @@ extern crate num_traits as num;
 extern crate nalgebra as na;
 extern crate rand;
 extern crate num_cpus;
+extern crate crossbeam_utils;
 
 #[macro_use]
 mod macros;
@@ -21,7 +22,7 @@ pub use space::{Point, Color, Vector};
 pub use scene::Scene;
 pub use img::{Film, ImageBuffer, Pixel};
 
-use std::thread;
+use crossbeam_utils::thread;
 use ray::primary::PrimaryRay;
 
 /**
@@ -60,15 +61,15 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     // of the threads.
 
     // Get number of threads, defaulting to what's allowed by the system
-    let barrel_count = if scene.options.concurrency == 0 {
+    let barrel_count = if scene.options.threads == 0 {
         num_cpus::get()
     } else {
-        scene.options.concurrency as usize
+        scene.options.threads as usize
     };
 
     // Calculate the chunk size such that we can yield n chunks,
     // where n is the number of threads
-    let capacity = (width * height) as usize; // total ray capacity
+    let capacity = width as usize * height as usize; // total ray capacity
 
     // Capacity per barrel
     let mag_size = capacity / barrel_count + (capacity % barrel_count).min(1);
@@ -92,8 +93,8 @@ pub fn capture(scene: &Scene, film: &mut Film) {
             let d: Vector = vraypoint + (hoffset * aux) - scene.eye;
 
             // Calculate the position within the ammo vector
-            let idx = (width * j + i) as usize; // pixel index/label
-            let pos = (idx % barrel_count) * mag_size + (idx % mag_size);
+            let idx = (width as usize) * (j as usize) + (i as usize); // pixel index/label
+            let pos = (idx % barrel_count) * mag_size + (idx / barrel_count);
 
             // Update the ray with the correct direction position information
             let mut ray = &mut ammo[pos];
@@ -101,9 +102,26 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         }
     }
 
-    let (first_mag, rest_mags) = ammo.as_mut_slice().split_at_mut(mag_size);
-    for mag in rest_mags.chunks_mut(mag_size) {
-        thread::spawn(move || for ray in mag.iter_mut() { ray.cast(scene) });
+    // Here the spawned threads are guaranteed join the main thread before the
+    // end of the scoped block. The built-in threads library makes no such
+    // guarantee, so they expect everything to be moved into them.
+    // This is unfavourable.
+    thread::scope(|scope| {
+        // Get the first chunk, which will be processed by the main thread
+        let (first_mag, rest_mags) = ammo.as_mut_slice().split_at_mut(mag_size);
+
+        // Process the other chunk in parallel
+        for mag in rest_mags.chunks_mut(mag_size) {
+            scope.spawn(move || for ray in mag.iter_mut() { ray.cast(scene) });
+        }
+
+        // Main thread computation
+        for ray in first_mag.iter_mut() { ray.cast(scene) }
+    });
+
+    // Get the resulting pixel colours
+    for ray in ammo.into_iter() {
+        img::set_pixel_color(film.pixel_mut(ray.x, ray.y), &ray.color)
     }
 }
 
@@ -119,7 +137,7 @@ pub fn render(scene: &Scene) -> ImageBuffer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
     #[test]
     fn it_works() {
         assert!(true);

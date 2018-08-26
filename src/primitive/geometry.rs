@@ -1,5 +1,5 @@
+use std::sync::Arc;
 use shape::mesh::Mesh;
-use std::rc::Rc;
 
 use ray::Ray;
 use shape::{
@@ -16,22 +16,22 @@ use super::Primitive;
 */
 pub struct Geometry {
     pub shape: Box<Shape>,
-    pub material: Rc<Material>
+    pub material: Arc<Material>
 }
 
 impl Geometry {
-    pub fn sphere(center: [f64; 3], radius: f64, material: Rc<Material>) -> Geometry {
+    pub fn sphere(center: [f64; 3], radius: f64, material: Arc<Material>) -> Geometry {
         let sphere = Sphere::new(center, radius);
         Geometry { shape: Box::new(sphere), material }
     }
 
-    pub fn cube(origin: [f64; 3], dim: f64, material: Rc<Material>) -> Geometry {
+    pub fn cube(origin: [f64; 3], dim: f64, material: Arc<Material>) -> Geometry {
         let cube = Cuboid::cube(origin, dim);
         Geometry { shape: Box::new(cube), material }
     }
 
     /// Triangle mesh
-    pub fn mesh(mesh: Mesh, material: Rc<Material>) -> Geometry {
+    pub fn mesh(mesh: Mesh, material: Arc<Material>) -> Geometry {
         Geometry { shape: Box::new(mesh), material }
     }
 }
@@ -45,3 +45,5 @@ impl Primitive for Geometry {
         (self.shape.intersect(ray), self)
     }
 }
+
+unsafe impl Sync for Geometry {}

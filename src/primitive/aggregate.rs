@@ -2,10 +2,7 @@ use space::*;
 use ray::Ray;
 
 use material::{ Material, background::Background };
-
-use shape::{
-    Intersection,
-};
+use shape::Intersection;
 
 use super::Primitive;
 

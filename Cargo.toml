@@ -22,4 +22,10 @@ rand = "0.5"
 nalgebra = "0.16.0"
 num-traits = "0.2"
 num_cpus = "1.0"
+crossbeam-utils = "0.5"
 image = { version = "*", optional = true }
+
+[profile.release]
+debug = false
+lto = true
+# opt-level = 's'

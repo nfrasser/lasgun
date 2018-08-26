@@ -4,6 +4,7 @@ use rand::distributions::{Uniform};
 
 use space::*;
 use light::Light;
+// use material::Material;
 use primitive::Primitive;
 use shape::Intersection;
 use ray::Ray;
@@ -67,6 +68,7 @@ pub struct Options {
     pub content: Box<Primitive>,
 
     pub lights: Vec<Box<Light>>, // point-light sources in the scene
+    // pub materials: Vec<Arc<Material>>,
     pub ambient: Color, // ambient lighting
 
     pub eye: Point,
@@ -81,7 +83,7 @@ pub struct Options {
 
     /// Number of CPU render threads to use
     /// Settings this to 0 means default to the system concurrency
-    pub concurrency: u8
+    pub threads: u8
 }
 
 /// Pre-computed supersampling factors for a pixel
@@ -162,3 +164,5 @@ impl Scene {
     }
 
 }
+
+unsafe impl Sync for Scene {}
