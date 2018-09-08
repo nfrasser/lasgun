@@ -7,7 +7,7 @@ use light::Light;
 use primitive::Primitive;
 use shape::Intersection;
 use ray::Ray;
-
+use material::Material;
 
 /**
     Description of the world to render
@@ -65,7 +65,7 @@ pub struct Options {
 
     // The primitives in the scene
     pub content: Box<Primitive>,
-
+    pub materials: Vec<Box<Material>>, // available materials for primitives in the scene
     pub lights: Vec<Box<Light>>, // point-light sources in the scene
     pub ambient: Color, // ambient lighting
 

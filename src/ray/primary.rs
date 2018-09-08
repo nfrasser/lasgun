@@ -50,7 +50,7 @@ impl PrimaryRay {
             let (intersection, primitive) = scene.intersect(&ray);
 
             // Get the material the interecting primitive is made of
-            let material = primitive.material();
+            let material = primitive.material(scene);
 
             // The vector spanning from the eye to the point of intersection
             // eye + direction = point of intersection
@@ -63,7 +63,6 @@ impl PrimaryRay {
 
             // Query the material for the color at the given point
             self.color += material.color(&qpoint, &ray.origin, normal, scene)
-
         }
 
         self.color *= scene.supersampling.power
