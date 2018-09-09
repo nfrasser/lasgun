@@ -65,7 +65,7 @@ fn simple() -> Scene {
         lights,
 
         supersampling: 2,
-        threads: 1
+        threads: 0
     };
 
     Scene::new(options)

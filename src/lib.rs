@@ -37,14 +37,25 @@ use crossbeam_utils::thread;
 #[cfg(feature = "bin")]
 pub fn capture(scene: &Scene, film: &mut Film) {
     let pixel_ptr = film.data.raw_pixels_mut();
+    let barrel_count = if scene.options.threads == 0 {
+        num_cpus::get() as u8
+    } else {
+        scene.options.threads
+    };
 
-    // All of this funky unsafe code is to allow concurrent access to the
-    // constant scene pointer and pixel buffer without requiring mutex primitives
-    let sendable_pixel_ptr = Wrapper(unsafe { NonNull::new_unchecked(pixel_ptr) });
     thread::scope(|scope| {
-        scope.spawn(move || {
-            capture_chunk(0, 1, scene, sendable_pixel_ptr.0.as_ptr())
-        });
+        for i in 1..barrel_count {
+            // All of this funky unsafe code is to allow concurrent access to the
+            // constant scene pointer and pixel buffer without requiring mutex primitives
+            let sendable_pixel_ptr = Wrapper(unsafe { NonNull::new_unchecked(pixel_ptr) });
+            scope.spawn(move || {
+                capture_chunk(i, barrel_count, scene, sendable_pixel_ptr.0.as_ptr())
+            });
+        }
+
+        // Ensure main thread does processing
+        let sendable_pixel_ptr = Wrapper(unsafe { NonNull::new_unchecked(pixel_ptr) });
+        capture_chunk(0, barrel_count, scene, sendable_pixel_ptr.0.as_ptr())
     })
 }
 
