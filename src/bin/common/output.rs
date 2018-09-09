@@ -1,7 +1,7 @@
 extern crate image;
 extern crate lasgun;
 
-use std::ops::{Index, IndexMut};
+use std::{mem, ops::{Index, IndexMut}};
 use image::RgbaImage;
 use lasgun::{Scene, Film, Pixel, PixelBuffer};
 
@@ -45,4 +45,16 @@ impl IndexMut<usize> for Image {
 
 impl PixelBuffer for Image {
     fn save(&self, filename: &str) { self.0.save(filename).unwrap() }
+
+    // Get the image container data as lasgun Pixels ([u8; 4])
+
+    fn raw_pixels(&self) -> *const Pixel {
+        let pixels: &[Pixel] = unsafe { mem::transmute(&*self.0) };
+        pixels.as_ptr()
+    }
+
+    fn raw_pixels_mut(&mut self) -> *mut Pixel {
+        let pixels: &mut [Pixel] = unsafe { mem::transmute(&mut *self.0) };
+        pixels.as_mut_ptr()
+    }
 }

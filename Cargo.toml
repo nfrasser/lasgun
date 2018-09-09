@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Nick Frasser <nfrasser@gmail.com>"]
 
 [features]
-default = []
+default = ["bin"]
 bin = ["image/png_codec", "num_cpus", "crossbeam-utils"]
 
 [[bin]]

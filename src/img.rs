@@ -8,11 +8,20 @@ pub type Pixel = [u8; 4];
 /// Lineraly stored container of pixels
 /// Index access assumes that memory is arranged in row-major order
 pub trait PixelBuffer: Index<usize> + IndexMut<usize> {
+    fn raw_pixels(&self) -> *const Pixel;
+    fn raw_pixels_mut(&mut self) -> *mut Pixel;
     fn save(&self, _filename: &str) { unimplemented!() }
 }
 
-impl PixelBuffer for Vec<Pixel> {}
-impl PixelBuffer for [Pixel] {}
+impl PixelBuffer for Vec<Pixel> {
+    fn raw_pixels(&self) -> *const Pixel { self[..].as_ptr() }
+    fn raw_pixels_mut(&mut self) -> *mut Pixel { self[..].as_mut_ptr() }
+}
+
+impl PixelBuffer for [Pixel] {
+    fn raw_pixels(&self) -> *const Pixel { self.as_ptr() }
+    fn raw_pixels_mut(&mut self) -> *mut Pixel { self.as_mut_ptr() }
+}
 
 /// Queriable store of pixels.
 /// Returns value of the render function for use in custom image-loading clients.
