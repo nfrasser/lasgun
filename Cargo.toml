@@ -5,7 +5,7 @@ authors = ["Nick Frasser <nfrasser@gmail.com>"]
 
 [features]
 default = []
-bin = ["image/png_codec"]
+bin = ["image/png_codec", "num_cpus", "crossbeam-utils"]
 
 [[bin]]
 name = "cli"
@@ -21,8 +21,8 @@ required-features = ["bin"]
 rand = "0.5"
 nalgebra = "0.16.0"
 num-traits = "0.2"
-num_cpus = "1.0"
-crossbeam-utils = "0.5"
+num_cpus = { version = "1.0", optional = true }
+crossbeam-utils = {version = "0.5", optional = true }
 image = { version = "*", optional = true }
 
 [profile.release]

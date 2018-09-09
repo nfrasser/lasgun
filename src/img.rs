@@ -1,44 +1,59 @@
 use space::Color;
+use std::ops::{Index, IndexMut};
 
+/// RGBA pixel representation, with A being the Alpha channel
 /// Each item has a color value between 0 and 255
-pub type Pixel = [u8; 3];
+pub type Pixel = [u8; 4];
 
-/// An image is anything that can set its own pixel colour
-/// The parameter represents the size of the max dimension paramter
-/// e.g., D == u16 means the image can have a max resolution of 6
-pub trait Film {
-    // fn dim() -> (u16, u16);
-    fn pixel(&self, x: u16, y: u16) -> &Pixel;
-    fn pixel_mut(&mut self, x: u16, y: u16) -> &mut Pixel;
+/// Lineraly stored container of pixels
+/// Index access assumes that memory is arranged in row-major order
+pub trait PixelBuffer: Index<usize> + IndexMut<usize> {
+    fn save(&self, _filename: &str) { unimplemented!() }
 }
+
+impl PixelBuffer for Vec<Pixel> {}
+impl PixelBuffer for [Pixel] {}
 
 /// Queriable store of pixels.
 /// Returns value of the render function for use in custom image-loading clients.
-pub struct ImageBuffer {
+pub struct Film {
     pub width: u16,
     pub height: u16,
-    pixels: Vec<Pixel>
+    pub data: Box<PixelBuffer<Output = Pixel>>
 }
 
-impl ImageBuffer {
-    pub fn new(width: u16, height: u16) -> ImageBuffer {
-        let size = width as usize * height as usize;
-        ImageBuffer {
-            width, height,
-            pixels: vec!([0, 0, 0]; size)
-        }
+impl Film {
+    pub fn new(width: u16, height: u16) -> Film {
+        let data = vec![[0, 0, 0, 0]; (width as usize) * (height as usize)];
+        let data = Box::new(data);
+        Film { width, height, data }
     }
 
-    pub fn foreach<F>(&self, func: F) where F: Fn(&Pixel, u16, u16) -> () {
+    /// Create a new film with a pre-allocated box of data
+    /// Use this to avoid using extra memory when writing to
+    pub fn new_with_data(width: u16, height: u16, data: Box<PixelBuffer<Output = Pixel>>) -> Film {
+        Film { width, height, data }
+    }
+
+    pub fn get(&self, x: u16, y: u16) -> &Pixel {
+        let offset = self.offset(x, y);
+        &self.data[offset]
+    }
+
+    pub fn set(&mut self, x: u16, y: u16, color: &Color) {
+        let offset = self.offset(x, y);
+        set_pixel_color(&mut self.data[offset], color)
+    }
+
+    pub fn foreach<F>(&self, func: F) where F: Fn(u16, u16, &Pixel) -> () {
         let mut offset = 0;
         for x in 0..self.width {
             for y in 0..self.height {
-                func(&self.pixels[offset], x, y);
+                func(x, y, &self.data[offset]);
                 offset += 1;
             }
         }
     }
-
     // Retrieves the offset into the pixel vector
     #[inline]
     fn offset(&self, x: u16, y: u16) -> usize {
@@ -47,36 +62,16 @@ impl ImageBuffer {
 }
 
 
-impl Film for ImageBuffer {
-    // fn dim(&self) -> (u16, u16) {
-    //     (self.width, self.height)
-    // }
-
-    #[inline]
-    fn pixel(&self, x: u16, y: u16) -> &Pixel {
-        assert!(x < self.width && y < self.height);
-        let offset = self.offset(x, y);
-        &self.pixels[offset]
-    }
-
-    #[inline]
-    fn pixel_mut(&mut self, x: u16, y: u16) -> &mut Pixel {
-        assert!(x < self.width && y < self.height);
-        let offset = self.offset(x, y);
-        &mut self.pixels[offset]
-    }
-}
-
+/// Set the color of the given pixel
 #[inline]
 pub fn set_pixel_color(pixel: &mut Pixel, color: &Color) {
     pixel[0] = to_byte(color[0]);
     pixel[1] = to_byte(color[1]);
     pixel[2] = to_byte(color[2]);
+    pixel[3] = 255;
 }
 
-/**
-Convert a colour channel from between 0 and 1 to an interger between 0 and 255
-*/
+/// Convert a colour channel from between 0 and 1 to an interger between 0 and 255
 #[inline]
 fn to_byte(channel: f64) -> u8 {
     (channel.max(0.0).min(1.0) * 255.0).round() as u8

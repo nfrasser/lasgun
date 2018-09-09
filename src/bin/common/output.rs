@@ -1,24 +1,48 @@
 extern crate image;
 extern crate lasgun;
 
-use image::{RgbImage};
-use lasgun::{Scene, Film, Pixel};
+use std::ops::{Index, IndexMut};
+use image::RgbaImage;
+use lasgun::{Scene, Film, Pixel, PixelBuffer};
 
 pub fn render(scene: &Scene, filename: &str) {
     let (width, height) = scene.options.dimensions;
-    let buffer = RgbImage::new(width as u32, height as u32);
-    let mut image = OutputImage(buffer);
-    lasgun::capture(&scene, &mut image);
-    image.0.save(filename).unwrap();
+
+    // Pre-allocate traced image data
+    let rgba = RgbaImage::new(width as u32, height as u32);
+    let image = Box::new(Image(rgba));
+    let mut film = Film::new_with_data(width, height, image);
+
+    // Capture the image
+    lasgun::capture(&scene, &mut film);
+    film.data.save(filename)
 }
 
-struct OutputImage(RgbImage);
-impl Film for OutputImage {
-    fn pixel(&self, x: u16, y: u16) -> &Pixel {
-        &self.0.get_pixel(x as u32, y as u32).data
-    }
+struct Image(RgbaImage);
 
-    fn pixel_mut(&mut self, x: u16, y: u16) -> &mut Pixel {
-        &mut self.0.get_pixel_mut(x as u32, y as u32).data
+impl Index<usize> for Image {
+    type Output = Pixel;
+    #[inline]
+    fn index(&self, index: usize) -> &Pixel {
+        let (x, y) = (
+            (index % self.0.width() as usize) as u32,
+            (index / self.0.height() as usize) as u32
+        );
+        &self.0.get_pixel(x, y).data
     }
+}
+
+impl IndexMut<usize> for Image {
+    #[inline]
+    fn index_mut(&mut self, index: usize) -> &mut Pixel {
+        let (x, y) = (
+            (index % self.0.width() as usize) as u32,
+            (index / self.0.height() as usize) as u32
+        );
+        &mut self.0.get_pixel_mut(x, y).data
+    }
+}
+
+impl PixelBuffer for Image {
+    fn save(&self, filename: &str) { self.0.save(filename).unwrap() }
 }

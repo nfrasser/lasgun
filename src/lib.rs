@@ -2,7 +2,10 @@
 extern crate num_traits as num;
 extern crate nalgebra as na;
 extern crate rand;
+
+#[cfg(feature = "bin")]
 extern crate num_cpus;
+#[cfg(feature = "bin")]
 extern crate crossbeam_utils;
 
 #[macro_use]
@@ -20,14 +23,14 @@ pub mod scene;
 
 pub use space::{Point, Color, Vector};
 pub use scene::Scene;
-pub use img::{Film, ImageBuffer, Pixel};
-
-use crossbeam_utils::thread;
+pub use img::{Film, Pixel, PixelBuffer};
 use ray::primary::PrimaryRay;
 
-/**
-Record an image of the scene on the given film
-*/
+#[cfg(feature = "bin")]
+use crossbeam_utils::thread;
+
+/// Record an image of the scene on the given film
+#[cfg(feature = "bin")]
 pub fn capture(scene: &Scene, film: &mut Film) {
     let (width, height) = scene.options.dimensions;
     let up = &scene.up;
@@ -74,10 +77,6 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     // Capacity per barrel
     let mag_size = capacity / barrel_count + (capacity % barrel_count).min(1);
 
-    // Allocate and initialize the rays
-    let mut ammo: Vec<PrimaryRay> = Vec::with_capacity(capacity);
-    ammo.resize(capacity, PrimaryRay::new(0, 0, scene.eye, Vector::zeros()));
-
     // Build up the rays
     for j in 0..height {
 
@@ -97,11 +96,13 @@ pub fn capture(scene: &Scene, film: &mut Film) {
             let pos = (idx % barrel_count) * mag_size + (idx / barrel_count);
 
             // Update the ray with the correct direction position information
-            let mut ray = &mut ammo[pos];
-            ray.x = i; ray.y = j; ray.d = d;
+            let ray = PrimaryRay::new(scene.eye, d);
+            let color = ray.cast(scene);
+            film.set(i, j, &color)
         }
     }
 
+    /*
     // Here the spawned threads are guaranteed join the main thread before the
     // end of the scoped block. The built-in threads library makes no such
     // guarantee, so they expect everything to be moved into them.
@@ -118,21 +119,7 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         // Main thread computation
         for ray in first_mag.iter_mut() { ray.cast(scene) }
     });
-
-    // Get the resulting pixel colours
-    for ray in ammo.into_iter() {
-        img::set_pixel_color(film.pixel_mut(ray.x, ray.y), &ray.color)
-    }
-}
-
-/**
-Render a scene to the provided ImageBuffer structure
-*/
-pub fn render(scene: &Scene) -> ImageBuffer {
-    let (width, height) = scene.options.dimensions;
-    let mut image = ImageBuffer::new(width, height);
-    capture(scene, &mut image);
-    image
+    */
 }
 
 #[cfg(test)]
