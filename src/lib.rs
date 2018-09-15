@@ -102,17 +102,15 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
 
     // Skip over irrelevant chunks
     for offset in ((k as isize)..capacity).step_by(n as usize) {
-        let x: u16 = (offset % width as isize) as u16;
-        let y: u16 = (offset / height as isize) as u16;
+        let x = (offset % width as isize) as f64;
+        let y = (offset / height as isize) as f64;
 
-        let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
-        let voffset = ((height as f64 - 1.0) * 0.5 - y as f64) * sample_distance;
+        // Calculate offsets distances from the view vector
+        let hoffset = (x - ((width as f64 - 1.0) * 0.5)) * sample_distance;
+        let voffset = ((height as f64 - 1.0) * 0.5 - y) * sample_distance;
 
-        // A point on the yth row on the same plane as the up and direction vectors
-        let vraypoint: Point = scene.eye + (voffset * up) + scene.view;
-
-        // The point at which the ray intersects
-        let d: Vector = vraypoint + (hoffset * aux) - scene.eye;
+        // The direction in which this ray travels
+        let d: Vector = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene);
