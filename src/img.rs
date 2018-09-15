@@ -5,7 +5,7 @@ use std::ops::{Index, IndexMut};
 /// Each item has a color value between 0 and 255
 pub type Pixel = [u8; 4];
 
-/// Lineraly stored container of pixels
+/// Linearly-stored container of pixels
 /// Index access assumes that memory is arranged in row-major order
 pub trait PixelBuffer: Index<usize> + IndexMut<usize> {
     fn raw_pixels(&self) -> *const Pixel;
@@ -38,8 +38,14 @@ impl Film {
         Film { width, height, data }
     }
 
-    /// Create a new film with a pre-allocated box of data
-    /// Use this to avoid using extra memory when writing to
+    /// Create a new film with a pre-allocated box of data/ Use this when a
+    /// buffer for an image has already been allocated externally and you want
+    /// to avoid using extra memory for caching pixel data.
+    ///
+    /// Can use this with a Vec or slice of pixels.
+    ///
+    /// Assumes that that data has room for width * height * 4 bytes worth of
+    /// pixels.
     pub fn new_with_data(width: u16, height: u16, data: Box<PixelBuffer<Output = Pixel>>) -> Film {
         Film { width, height, data }
     }
