@@ -83,8 +83,7 @@ mod test {
     fn straight_on_intersection() {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
         let origin = Point::new(0.0, 0.0, 2.0);
-        let d = Direction::new(Vector::new(0.0, 0.0, -1.0));
-        let ray = Ray::new(origin, d);
+        let ray = Ray::new(origin, Vector::new(0.0, 0.0, -1.0));
         let intersection = sphere.intersect(&ray);
 
         assert!(intersection.exists());

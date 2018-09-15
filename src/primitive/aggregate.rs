@@ -1,11 +1,9 @@
 use space::*;
 use ray::Ray;
+use scene::Scene;
 
 use material::{ Material, background::Background };
-
-use shape::{
-    Intersection,
-};
+use shape::Intersection;
 
 use super::Primitive;
 
@@ -41,7 +39,8 @@ impl Aggregate {
 }
 
 impl Primitive for Aggregate {
-    fn material(&self) -> &Material {
+    #[inline]
+    fn material(&self, _scene: &Scene) -> &Material {
         &self.background
     }
 

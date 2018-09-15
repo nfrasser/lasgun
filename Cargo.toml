@@ -4,8 +4,9 @@ version = "0.1.0"
 authors = ["Nick Frasser <nfrasser@gmail.com>"]
 
 [features]
-default = []
-bin = ["image/png_codec"]
+default = ["bin"]
+bin = ["image/png_codec", "num_cpus"]
+lib = []
 
 [[bin]]
 name = "cli"
@@ -21,5 +22,9 @@ required-features = ["bin"]
 rand = "0.5"
 nalgebra = "0.16.0"
 num-traits = "0.2"
-# alga = "0.7.1"
+num_cpus = { version = "1.0", optional = true }
 image = { version = "*", optional = true }
+
+[profile.release]
+debug = false
+lto = true

@@ -8,9 +8,7 @@ macro_rules! zip_points {
     }
 }
 
-/**
-Bounding box
-*/
+/// Bounding box
 #[derive(Debug, Copy, Clone)]
 pub struct Bounds3<N: Scalar> {
     pub min: Point3<N>,
@@ -29,7 +27,7 @@ impl<N: Scalar> Bounds3<N> {
     }
 }
 
-// Return one of the two corners
+/// Return one of the two corners
 impl<N: Scalar> Index<u8> for Bounds3<N> {
     type Output = Point3<N>;
     #[inline]
@@ -83,18 +81,14 @@ impl<N: Scalar + Real> Bounds3<N> {
         self.max.iter().zip(other.min.iter()).all(|(max, min)| max <= min)
     }
 
-    /**
-    Return true if the point is within the given bounds
-    */
+    /// Return true if the point is within the given bounds
     #[inline]
     pub fn contains(&self, p: Point3<N>) -> bool {
         p.iter().zip(self.min.iter()).all(|(coord, min)| coord >= min) &&
         p.iter().zip(self.max.iter()).all(|(coord, max)| coord <= max)
     }
 
-    /**
-    Return true if the point is within the bounds but not at the max edges
-    */
+    /// Return true if the point is within the bounds but not at the max edges
     #[inline]
     pub fn contains_exclusive(&self, p: Point3<N>) -> bool {
         p.iter().zip(self.min.iter()).all(|(coord, min)| coord >= min) &&

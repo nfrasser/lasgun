@@ -10,9 +10,10 @@ use super::Ray;
 The initial ray that gets cast from the camera to scene.
 The resulting colour form the `cast` function will be a pixel in the resulting image.
 */
+#[derive(Debug, Clone)]
 pub struct PrimaryRay {
-    origin: Point,
-    d: Vector, // not normalized
+    pub origin: Point,
+    pub d: Vector // not normalized
 }
 
 impl PrimaryRay {
@@ -46,7 +47,7 @@ impl PrimaryRay {
             let (intersection, primitive) = scene.intersect(&ray);
 
             // Get the material the interecting primitive is made of
-            let material = primitive.material();
+            let material = primitive.material(scene);
 
             // The vector spanning from the eye to the point of intersection
             // eye + direction = point of intersection
@@ -59,7 +60,6 @@ impl PrimaryRay {
 
             // Query the material for the color at the given point
             color += material.color(&qpoint, &ray.origin, normal, scene)
-
         }
 
         color * scene.supersampling.power

@@ -12,14 +12,16 @@ use common::output;
 fn main() {
     let options = scene::Options {
         dimensions: (256, 256),
-        content: Box::new(Aggregate::new(vec![])),
+        content: Box::new(Aggregate::new(vec![], Color::zeros())),
         lights: vec![],
+        materials: vec![],
         ambient: Color::zeros(),
         eye: Point::new(0.0, 0.0, 0.0),
         view: Vector::zeros(),
         up: Vector::zeros(),
         fov: 50.0,
-        supersampling: 1
+        supersampling: 1,
+        threads: 1
     };
 
     let scene = Scene::new(options);

@@ -3,10 +3,8 @@ use space::{ Point, Color };
 use ray::Ray;
 use scene::Scene;
 
-/**
-A Point Light has no surface area an emits in all directions
-These don't exist in real life but are a good approximation
-*/
+/// A Point Light has no surface area an emits in all directions
+/// These don't exist in real life but are a good approximation
 pub struct PointLight {
     pub position: Point,
     pub intensity: Color,
@@ -24,12 +22,12 @@ impl PointLight {
 }
 
 impl super::Light for PointLight {
-    /**
-    Returns the intersity of the light received at the given point. Equivalent to `I / f_att`,
-    where `I` is intensity and `f_att` is attentuation based on distance (squared).
 
-        f_att = falloff[0] + falloff[1]*d + fallof[2]*d*d
-    */
+    /// Returns the intersity of the light received at the given point.
+    /// Equivalent to `I / f_att`, where `I` is intensity and `f_att` is
+    /// attentuation based on distance (squared).
+    ///
+    /// f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d
     fn sample(&self, p: &Point, scene: &Scene, cb: &Fn(&PointLight) -> Color) -> Color {
         let d = self.position - p; // direction from p to light
         let t = d.norm(); // distance to light in world coordinates

@@ -1,13 +1,11 @@
 use std::f64;
-use rand::prelude::*;
-use rand::distributions::{Uniform};
 
 use space::*;
 use light::Light;
 use primitive::Primitive;
 use shape::Intersection;
 use ray::Ray;
-
+use material::Material;
 
 /**
     Description of the world to render
@@ -47,12 +45,7 @@ pub struct Scene {
     Additional scene rendering options.
     Scene content, lights, sample rates, etc. are stored here
     */
-    pub options: Options,
-
-    /**
-        Used to generate a random angle between 0 and 2π
-    */
-    angle_distribution: Uniform<f64>,
+    pub options: Options
 }
 
 /**
@@ -65,7 +58,7 @@ pub struct Options {
 
     // The primitives in the scene
     pub content: Box<Primitive>,
-
+    pub materials: Vec<Box<Material>>, // available materials for primitives in the scene
     pub lights: Vec<Box<Light>>, // point-light sources in the scene
     pub ambient: Color, // ambient lighting
 
@@ -78,6 +71,10 @@ pub struct Options {
     /// Represents the number of times a pixel will be divided for supersampling operations
     /// e.g., 0 means one sample, 1 means 4 samples, 2 means 9 samples, etc.
     pub supersampling: u8,
+
+    /// Number of CPU render threads to use
+    /// Settings this to 0 means default to the system concurrency
+    pub threads: u8
 }
 
 /// Pre-computed supersampling factors for a pixel
@@ -139,8 +136,7 @@ impl Scene {
                 radius: sample_radius * supersample_scale,
                 power: supersample_power
             },
-            options,
-            angle_distribution: Uniform::new(0.0, f64::consts::PI)
+            options
         }
     }
 
@@ -149,12 +145,4 @@ impl Scene {
     pub fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive) {
         self.options.content.intersect(ray)
     }
-
-    /**
-    Get a random angle (in radians) between 0 and π
-    */
-    pub fn random_angle(&self, rng: &mut impl Rng) -> f64 {
-        self.angle_distribution.sample(rng)
-    }
-
 }
