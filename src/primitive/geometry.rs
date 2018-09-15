@@ -48,5 +48,3 @@ impl Primitive for Geometry {
         (self.shape.intersect(ray), self)
     }
 }
-
-unsafe impl Sync for Geometry {}

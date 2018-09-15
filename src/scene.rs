@@ -146,5 +146,3 @@ impl Scene {
         self.options.content.intersect(ray)
     }
 }
-
-unsafe impl Sync for Scene {}
