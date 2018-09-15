@@ -37,7 +37,9 @@ pub fn render(scene: &Scene) -> Film {
     film
 }
 
-/// Record an image of the scene on the given film
+/// Record an image of the scene on the given film. The film must have at least
+/// (scene.options.width * scene.options.height) pixels reserved in the Film
+/// data field.
 pub fn capture(scene: &Scene, film: &mut Film) {
 
     // Get number of threads to use. Uses one by default
@@ -82,8 +84,9 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     for thread in threads { thread.join().unwrap() }
 }
 
-/// Capture chunk k of n for the given scene
-/// The pixels pointer is the start of the image buffer
+/// Capture chunk k of n for the given scene.
+/// The pixels pointer is the start of the image buffer.
+/// The pointer must allow data access into (width * height) pixels.
 fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
     let (width, height) = scene.options.dimensions;
     let up = &scene.up;
@@ -138,7 +141,8 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene);
 
-        // This is okay to do
+        // This is okay to do assuming the pixel buffer is always the correct
+        // size. See the capture method for why this is necessary
         let pixel: Option<&mut Pixel> = unsafe { pixels.offset(offset).as_mut() };
 
         match pixel {
@@ -153,7 +157,8 @@ fn get_max_threads() -> u8 { num_cpus::get() as u8 }
 #[cfg(not(feature = "bin"))]
 fn get_max_threads() -> u8 { 1 }
 
-// Funky Pointer containers to allow sharing mutable pointers between threads
+// Funky Pointer containers to allow sharing pointers between threads
+// Need this for the capture function.
 struct Wrapper<T>(*const T);
 struct WrapperMut<T>(NonNull<T>);
 unsafe impl<T> std::marker::Send for Wrapper<T> {}
