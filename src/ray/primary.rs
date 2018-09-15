@@ -25,7 +25,7 @@ impl PrimaryRay {
         PrimaryRay { origin, d }
     }
 
-    pub fn cast(self, scene: &Scene) -> Color {
+    pub fn cast(&self, scene: &Scene) -> Color {
         let dim = scene.supersampling.dim as i32;
         let mut color = Color::zeros();
 
@@ -64,6 +64,4 @@ impl PrimaryRay {
 
         color * scene.supersampling.power
     }
-
-
 }
