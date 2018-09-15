@@ -5,8 +5,6 @@ extern crate rand;
 
 #[cfg(feature = "bin")]
 extern crate num_cpus;
-#[cfg(feature = "bin")]
-extern crate crossbeam_utils;
 
 #[macro_use]
 mod macros;
@@ -25,38 +23,54 @@ pub use space::{Point, Color, Vector};
 pub use scene::Scene;
 pub use img::{Film, Pixel, PixelBuffer};
 
-use ray::primary::PrimaryRay;
-
-#[cfg(feature = "bin")]
+use std::thread;
 use std::ptr::NonNull;
 
-#[cfg(feature = "bin")]
-use crossbeam_utils::thread;
+use ray::primary::PrimaryRay;
 
 /// Record an image of the scene on the given film
-#[cfg(feature = "bin")]
 pub fn capture(scene: &Scene, film: &mut Film) {
-    let pixel_ptr = film.data.raw_pixels_mut();
+
+    // Get number of threads to use. Uses one by default
     let barrel_count = if scene.options.threads == 0 {
-        num_cpus::get() as u8
+        get_max_threads()
     } else {
         scene.options.threads
     };
 
-    thread::scope(|scope| {
-        for i in 1..barrel_count {
-            // All of this funky unsafe code is to allow concurrent access to the
-            // constant scene pointer and pixel buffer without requiring mutex primitives
-            let sendable_pixel_ptr = Wrapper(unsafe { NonNull::new_unchecked(pixel_ptr) });
-            scope.spawn(move || {
-                capture_chunk(i, barrel_count, scene, sendable_pixel_ptr.0.as_ptr())
-            });
-        }
+    let pixel_ptr = film.data.raw_pixels_mut();
+    let mut threads: Vec<thread::JoinHandle<_>> = vec![];
 
-        // Ensure main thread does processing
-        let sendable_pixel_ptr = Wrapper(unsafe { NonNull::new_unchecked(pixel_ptr) });
-        capture_chunk(0, barrel_count, scene, sendable_pixel_ptr.0.as_ptr())
-    })
+    for i in 1..barrel_count {
+        // This weird unsafe pointer casting is to allow multiple instances of
+        // the constant scene reference and the mutable pixel buffer reference
+        // to be used by the tracing code.
+        //
+        // This allows the various capture_chunk calls to operate on the same
+        // block of memory concurrently without having to break it up, rearrange
+        // it, and put it back together at the end.
+        //
+        // It's very important that the threads join the main thread before
+        // this function call ends, otherwise very bad things will happen.
+        let sendable_scene_ptr = Wrapper(scene as *const Scene);
+        let sendable_pixel_ptr = WrapperMut(unsafe { NonNull::new_unchecked(pixel_ptr) });
+
+        let handle = thread::spawn(move || {
+            let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
+            let pixels: *mut Pixel = sendable_pixel_ptr.0.as_ptr();
+            capture_chunk(i, barrel_count, scene, pixels)
+        });
+
+        threads.push(handle)
+    }
+
+    // Ensure main thread does processing (see above about unsafe calls)
+    let sendable_pixel_ptr = WrapperMut(unsafe { NonNull::new_unchecked(pixel_ptr) });
+    capture_chunk(0, barrel_count, scene, sendable_pixel_ptr.0.as_ptr());
+
+    // IMPORTANT: Ensure the threads join before the function returns. Otherwise
+    // the Scene reference might disappear and everything will explode.
+    for thread in threads { thread.join().unwrap() }
 }
 
 /// Capture chunk k of n for the given scene
@@ -114,18 +128,32 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
 
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene);
-        let pixel: &mut Pixel = unsafe { pixels.offset(offset).as_mut().unwrap() };
 
-        img::set_pixel_color(pixel as &mut Pixel, &color)
+        // This is okay to do
+        let pixel: Option<&mut Pixel> = unsafe { pixels.offset(offset).as_mut() };
+
+        match pixel {
+            Some(pixel) => img::set_pixel_color(pixel as &mut Pixel, &color),
+            None => debug_assert!(0 == 1, "Invalid pixel location!")
+        }
     }
 }
 
+#[cfg(feature = "bin")]
+fn get_max_threads() -> u8 { num_cpus::get() as u8 }
+#[cfg(not(feature = "bin"))]
+fn get_max_threads() -> u8 { 1 }
+
 // Funky Pointer containers to allow sharing mutable pointers between threads
 #[cfg(feature = "bin")]
-struct Wrapper<T>(NonNull<T>);
+struct Wrapper<T>(*const T);
+
+#[cfg(feature = "bin")]
+struct WrapperMut<T>(NonNull<T>);
 
 #[cfg(feature = "bin")]
 unsafe impl<T> std::marker::Send for Wrapper<T> {}
+unsafe impl<T> std::marker::Send for WrapperMut<T> {}
 
 #[cfg(test)]
 mod tests {
