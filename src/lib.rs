@@ -28,6 +28,15 @@ use std::ptr::NonNull;
 
 use ray::primary::PrimaryRay;
 
+/// Render the given scene. Returns a Film instance, over you may iterate with
+/// the foreach method.
+pub fn render(scene: &Scene) -> Film {
+    let (width, height) = scene.options.dimensions;
+    let mut film = Film::new(width, height);
+    capture(scene, &mut film);
+    film
+}
+
 /// Record an image of the scene on the given film
 pub fn capture(scene: &Scene, film: &mut Film) {
 
@@ -145,13 +154,8 @@ fn get_max_threads() -> u8 { num_cpus::get() as u8 }
 fn get_max_threads() -> u8 { 1 }
 
 // Funky Pointer containers to allow sharing mutable pointers between threads
-#[cfg(feature = "bin")]
 struct Wrapper<T>(*const T);
-
-#[cfg(feature = "bin")]
 struct WrapperMut<T>(NonNull<T>);
-
-#[cfg(feature = "bin")]
 unsafe impl<T> std::marker::Send for Wrapper<T> {}
 unsafe impl<T> std::marker::Send for WrapperMut<T> {}
 
