@@ -7,21 +7,25 @@ Sormal vector representation.
 For situations where we want the vector to be treated as a normal
 e.g., when doing transformations to maintain normal behaviour
 */
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Normal3<S>(pub Vector3<S>);
 
 impl<S: BaseNum> Normal3<S> {
 
     /// Create a new normal from the given vector
+    #[inline]
     pub fn new(v: Vector3<S>) -> Normal3<S> { Normal3(v) }
 
     /// Get a reference to the underlying vector
+    #[inline]
     pub fn as_ref(&self) -> &Vector3<S> { &self.0 }
 
     /// Get the value of the underlying vector
+    #[inline]
     pub fn to_vec(&self) -> Vector3<S> { self.0 }
 
     /// Conver to the underlyinv vector
+    #[inline]
     pub fn into_vec(self) -> Vector3<S> { self.0 }
 }
 
