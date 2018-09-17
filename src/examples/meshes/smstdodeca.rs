@@ -1,7 +1,5 @@
-use lasgun::shape::mesh::Mesh;
-
-pub fn smstdodeca() -> Mesh {
-    let positions = [
+pub fn smstdodeca() -> (Vec<[f64; 3]>, Vec<[usize; 3]>) {
+    let vertices = vec![
         [-158.333350, 225.647350, -64.699450],
         [-207.117500, 241.498300, -64.699450],
         [-176.967250, 200.000000, -64.699450],
@@ -192,5 +190,5 @@ pub fn smstdodeca() -> Mesh {
         3*index + 2 as usize
     ]).collect();
 
-    Mesh::new(&positions, &faces[..])
+    (vertices, faces)
 }

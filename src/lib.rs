@@ -1,4 +1,3 @@
-// extern crate alga;
 extern crate num_traits as num;
 extern crate nalgebra as na;
 extern crate rand;
@@ -11,27 +10,30 @@ mod macros;
 mod space;
 mod math;
 mod ray;
-mod img;
 
-pub mod material;
-pub mod shape;
-pub mod primitive;
-pub mod light;
+mod material;
+mod shape;
+mod primitive;
+mod light;
+
+pub mod aggregate;
 pub mod scene;
+pub mod img;
 
-pub use space::{Point, Color, Vector};
-pub use scene::Scene;
-pub use img::{Film, Pixel, PixelBuffer};
+pub use aggregate::Aggregate;
+pub use scene::{Scene, Options};
+pub use img::Film;
 
 use std::thread;
 use std::ptr::NonNull;
 
 use ray::primary::PrimaryRay;
+use img::Pixel;
 
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
 pub fn render(scene: &Scene) -> Film {
-    let (width, height) = scene.options.dimensions;
+    let (width, height) = (scene.options.width, scene.options.height);
     let mut film = Film::new(width, height);
     capture(scene, &mut film);
     film
@@ -63,8 +65,8 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         //
         // It's very important that the threads join the main thread before
         // this function call ends, otherwise very bad things will happen.
-        let sendable_scene_ptr = Wrapper(scene as *const Scene);
-        let sendable_pixel_ptr = WrapperMut(unsafe { NonNull::new_unchecked(pixel_ptr) });
+        let sendable_scene_ptr = UnsafeThreadWrapper(scene as *const Scene);
+        let sendable_pixel_ptr = UnsafeThreadWrapperMut(NonNull::new(pixel_ptr).unwrap());
 
         let handle = thread::spawn(move || {
             let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
@@ -75,9 +77,8 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         threads.push(handle)
     }
 
-    // Ensure main thread does processing (see above about unsafe calls)
-    let sendable_pixel_ptr = WrapperMut(unsafe { NonNull::new_unchecked(pixel_ptr) });
-    capture_chunk(0, barrel_count, scene, sendable_pixel_ptr.0.as_ptr());
+    // Ensure main thread does processing
+    capture_chunk(0, barrel_count, scene, pixel_ptr);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
@@ -88,10 +89,10 @@ pub fn capture(scene: &Scene, film: &mut Film) {
 /// The pixels pointer is the start of the image buffer.
 /// The pointer must allow data access into (width * height) pixels.
 fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
-    let (width, height) = scene.options.dimensions;
-    let up = &scene.up;
-    let aux = &scene.aux;
-    let sample_distance = scene.sample_radius * 2.0;
+    let (width, height) = (scene.options.width, scene.options.height);
+    let up = scene.up;
+    let aux = scene.aux;
+    let sample_distance = scene.pixel_radius * 2.0;
 
     // Render Concurrency Overview
     //
@@ -126,7 +127,9 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
     // where n is the number of threads
     let capacity = width as isize * height as isize; // total image capacity
 
-    // Skip over irrelevant chunks
+    // Skip over chunks that other threads are processing/ Assuming
+    // capture_chunk is never called concurrently with the same k and n values,
+    // this will never cause contention/race conditions.
     for offset in ((k as isize)..capacity).step_by(n as usize) {
         let x = (offset % width as isize) as f64;
         let y = (offset / height as isize) as f64;
@@ -136,19 +139,15 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
         let voffset = ((height as f64 - 1.0) * 0.5 - y) * sample_distance;
 
         // The direction in which this ray travels
-        let d: Vector = scene.view + (voffset * up) + (hoffset * aux);
+        let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene);
 
         // This is okay to do assuming the pixel buffer is always the correct
         // size. See the capture method for why this is necessary
-        let pixel: Option<&mut Pixel> = unsafe { pixels.offset(offset).as_mut() };
-
-        match pixel {
-            Some(pixel) => img::set_pixel_color(pixel as &mut Pixel, &color),
-            None => debug_assert!(0 == 1, "Invalid pixel location!")
-        }
+        let pixel: &mut Pixel = unsafe { pixels.offset(offset).as_mut().unwrap() };
+        img::set_pixel_color(pixel as &mut Pixel, &color)
     }
 }
 
@@ -159,10 +158,10 @@ fn get_max_threads() -> u8 { 1 }
 
 // Funky Pointer containers to allow sharing pointers between threads
 // Need this for the capture function.
-struct Wrapper<T>(*const T);
-struct WrapperMut<T>(NonNull<T>);
-unsafe impl<T> std::marker::Send for Wrapper<T> {}
-unsafe impl<T> std::marker::Send for WrapperMut<T> {}
+struct UnsafeThreadWrapper<T>(*const T);
+struct UnsafeThreadWrapperMut<T>(NonNull<T>);
+unsafe impl<T> std::marker::Send for UnsafeThreadWrapper<T> {}
+unsafe impl<T> std::marker::Send for UnsafeThreadWrapperMut<T> {}
 
 #[cfg(test)]
 mod tests {

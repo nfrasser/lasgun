@@ -27,9 +27,7 @@ impl<'a> Triangle<'a> {
         Triangle { mesh, f }
     }
 
-    /**
-    Get a reference to the point at the given index
-    */
+    /// Get the point at the given index
     #[inline]
     fn p(&self, i: usize) -> &Point {
         debug_assert!(i < 3);
