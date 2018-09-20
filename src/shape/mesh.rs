@@ -8,36 +8,58 @@ is stored by all triangles available in the scene
 
 You can iterate over all of a mesh's triangles by calling the into_iter method
 */
+#[derive(Debug)]
 pub struct Mesh {
 
-    /**
-    The vertices that make up this mesh
-    */
-    pub vertices: Vec<Point>,
+    /// The vertices that make up this mesh.
+    /// Each group of 3 represents an vertex position.
+    vertices: Box<[f32]>,
 
-    /**
-    The triangular faces formed by the vertices.
-    Each element represents 3 indeces within the vertices vector
-    */
-    pub faces: Vec<[usize; 3]>,
+    /// Each element is an index * 3 into the vertices array.
+    /// Each group of 3 represents indeces to 3 verteces that make up a face.
+    faces: Box<[u32]>,
 
     /// Mesh bounding box
-    bounds: Bounds
+    pub bounds: Bounds
 }
 
 impl Mesh {
-    pub fn new(positions: &[[f64; 3]], faces: &[[usize; 3]]) -> Mesh {
-        let vertices: Vec<Point> = positions.iter()
-            .map(|p| Point::new(p[0], p[1], p[2]))
-            .collect();
+    pub fn new(vertices: Box<[f32]>, faces: Box<[u32]>) -> Mesh {
+        // Must have 3 floats per vertex
+        // Must also have 3 indeces into the vertex array per face
+        assert!(vertices.len() % 3 == 0);
+        assert!(faces.len() % 3 == 0);
 
-        let bounds = vertices.iter()
-            .fold(Bounds::none(), |bounds, vertex| bounds.point_union(vertex));
+        // Generate the bounds
+        let bounds = vertices.chunks(3)
+        .fold(Bounds::none(), |bounds, vertex| {
+            let point = Point::new(vertex[0].into(), vertex[1].into(), vertex[2].into());
+            bounds.point_union(&point)
+        });
 
-        Mesh {
-            vertices, faces: Vec::from(faces),
-            bounds
-        }
+        Mesh { vertices, faces, bounds }
+    }
+
+    #[inline]
+    pub fn vertices(&self) -> &[f32] {
+        &*self.vertices
+    }
+
+    #[inline]
+    pub fn faces(&self) -> &[u32] {
+        &*self.faces
+    }
+
+    /// The total number of vertices in this mesh
+    #[inline]
+    pub fn vcount(&self) -> u32 {
+        (self.vertices.len() / 3) as u32
+    }
+
+    /// The total number of faces in this mesh
+    #[inline]
+    pub fn fcount(&self) -> u32 {
+        (self.faces.len() / 3) as u32
     }
 }
 
@@ -65,13 +87,13 @@ impl<'a> IntoIterator for &'a Mesh {
 /// Each item in the iterator is a triangle that references the parent mesh
 pub struct MeshIterator<'a> {
     pub mesh: &'a Mesh,
-    fcount: usize, // total number of faces
-    findex: usize // current face index
+    fcount: u32, // total number of faces
+    findex: u32 // current face index
 }
 
 impl<'a> MeshIterator<'a> {
     fn new(mesh: &'a Mesh) -> MeshIterator<'a> {
-        MeshIterator { mesh, fcount: mesh.faces.len(), findex: 0 }
+        MeshIterator { mesh, fcount: mesh.fcount(), findex: 0 }
     }
 }
 
@@ -90,6 +112,6 @@ impl<'a> Iterator for MeshIterator<'a> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let remaining = self.fcount - self.findex;
-        (remaining, Some(remaining))
+        (remaining as usize, Some(remaining as usize))
     }
 }

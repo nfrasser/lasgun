@@ -82,6 +82,7 @@ pub struct Options {
 }
 
 /// Pre-computed supersampling settings for a pixel
+#[derive(Debug)]
 pub struct Sampling {
     /// The number of sections the pixel is divided into in one dimension
     pub dim: u8,

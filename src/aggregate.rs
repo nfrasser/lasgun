@@ -49,8 +49,8 @@ impl Aggregate {
         self.add_shape(Box::new(cube), material);
     }
 
-    pub fn add_mesh(&mut self, positions: &[[f64; 3]], faces: &[[usize; 3]], material: MaterialRef) {
-        let mesh = Mesh::new(positions, faces);
+    pub fn add_mesh(&mut self, vertices: Box<[f32]>, faces: Box<[u32]>, material: MaterialRef) {
+        let mesh = Mesh::new(vertices, faces);
         self.add_shape(Box::new(mesh), material);
     }
 

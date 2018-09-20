@@ -46,6 +46,6 @@ fn simple() -> Scene {
     scene.contents.add_cube([-200.0, -125.0, 0.0], 100.0, mat3);
 
     let (verts, faces) = smstdodeca::smstdodeca();
-    scene.contents.add_mesh(&verts[..], &faces[..], mat2);
+    scene.contents.add_mesh(verts, faces, mat2);
     scene
 }

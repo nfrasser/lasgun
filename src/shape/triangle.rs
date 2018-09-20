@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use space::*;
 use ray::Ray;
 
@@ -9,6 +7,7 @@ use super::mesh::Mesh;
 /// A triangle references its parent mesh and the index within the faces array. The triangle's
 /// lifetime depends on the mesh it references. This implementation ensures the smallest possible
 /// triangle implementation when storing large triangle meshes in memory.
+#[derive(Debug)]
 pub struct Triangle<'a> {
     /**
     Reference to the mesh that contains this triangle
@@ -18,48 +17,59 @@ pub struct Triangle<'a> {
     /**
     Index within `f` list of vertex indeces in the mesh vertex data
     */
-    f: usize
+    f: u32
 }
 
 impl<'a> Triangle<'a> {
-    pub fn new(mesh: &'a Mesh, f: usize) -> Triangle<'a> {
-        debug_assert!(f < mesh.faces.len());
+    pub fn new(mesh: &'a Mesh, f: u32) -> Triangle<'a> {
+        debug_assert!(f < mesh.fcount());
         Triangle { mesh, f }
     }
 
     /// Get the point at the given index
     #[inline]
-    fn p(&self, i: usize) -> &Point {
+    fn p(&self, i: usize) -> Point {
         debug_assert!(i < 3);
-        let face_indeces = &self.mesh.faces[self.f];
-        let vertex_index = face_indeces[i];
-        &self.mesh.vertices[vertex_index]
+        let vertices = self.mesh.vertices();
+        let faces = self.mesh.faces();
+        let vertex = faces[3 * self.f as usize + i] as usize;
+
+        let (vx, vy, vz) = (
+            vertices[vertex * 3 + 0],
+            vertices[vertex * 3 + 1],
+            vertices[vertex * 3 + 2],
+        );
+
+        Point::new(vx.into(), vy.into(), vz.into())
     }
 
     #[inline]
-    fn p0(&self) -> &Point {
+    fn p0(&self) -> Point {
         self.p(0)
     }
 
     #[inline]
-    fn p1(&self) -> &Point {
+    fn p1(&self) -> Point {
         self.p(1)
     }
 
     #[inline]
-    fn p2(&self) -> &Point {
+    fn p2(&self) -> Point {
         self.p(2)
     }
 }
 
+// TODO: Make it possible to return a &Point somehow
+/*
 impl<'a> Index<usize> for Triangle<'a> {
     type Output = Point;
     #[inline]
     fn index(&self, index: usize) -> &Point {
         debug_assert!(index < 3);
-        self.p(index)
+        &self.p(index)
     }
 }
+*/
 
 impl<'a> Shape for Triangle<'a> {
     fn intersect(&self, ray: &Ray) -> Intersection {

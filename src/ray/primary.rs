@@ -10,7 +10,7 @@ use super::Ray;
 The initial ray that gets cast from the camera to scene.
 The resulting colour form the `cast` function will be a pixel in the resulting image.
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct PrimaryRay {
     pub origin: Point,
     pub d: Vector // not normalized

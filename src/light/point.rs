@@ -6,6 +6,7 @@ use primitive::Primitive;
 
 /// A Point Light has no surface area an emits in all directions
 /// These don't exist in real life but are a good approximation
+#[derive(Debug)]
 pub struct PointLight {
     pub position: Point,
     pub intensity: Color,
