@@ -4,6 +4,7 @@ extern crate wasm_bindgen;
 
 mod utils;
 
+use std::mem;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -103,9 +104,23 @@ extern {
     fn alert(s: &str);
 }
 
+/// Alias for the scene constructor
 #[wasm_bindgen]
 pub fn scene(settings: &Settings) -> Scene {
     Scene::new(settings)
+}
+
+/// Generate a new film for the given scene
+/// Alias for the film constructor
+#[wasm_bindgen]
+pub fn film(scene: &Scene) -> Film {
+    Film::new(scene)
+}
+
+/// Capture the scene onto the given film
+#[wasm_bindgen]
+pub fn capture(scene: &Scene, film: &mut Film) {
+    lasgun::capture(scene.native(), film.native_mut())
 }
 
 #[wasm_bindgen]
@@ -170,7 +185,29 @@ impl Scene {
         let falloff = utils::to_vec3f(settings.falloff());
         self.data.add_point_light(position, intensity, falloff);
     }
+}
 
+impl Scene {
+    pub fn blank() -> Scene {
+        let options = lasgun::Options {
+            eye: [0.0, 0.0, 0.0],
+            view: [0.0, 0.0, 0.0],
+            up: [0.0, 0.0, 0.0],
+            ambient: [0.0, 0.0, 0.0],
+            width: 0,
+            height: 0,
+            fov: 0.0,
+            supersampling: 0,
+            threads: 0
+        };
+
+        Scene { data: lasgun::Scene::new(options) }
+    }
+
+    #[inline]
+    pub fn native(&self) -> &lasgun::Scene {
+        &self.data
+    }
 }
 
 #[wasm_bindgen]
@@ -210,7 +247,44 @@ impl Aggregate {
 }
 
 impl Aggregate {
+    #[inline]
     pub fn as_native_aggregate(self) -> lasgun::Aggregate {
         self.data
+    }
+}
+
+#[wasm_bindgen]
+pub struct Film(lasgun::Film);
+
+#[wasm_bindgen]
+impl Film {
+    pub fn new(scene: &Scene) -> Film {
+        let (width, height) = (
+            scene.native().options.width,
+            scene.native().options.height
+        );
+        Film(lasgun::Film::new(width, height))
+    }
+
+    /// Get a pointer to the first pixel in the data set
+    pub fn data(&self) -> *const u8 {
+        unsafe { mem::transmute(self.0.data.raw_pixels()) }
+    }
+
+    /// How many bytes there are in the data pointer
+    pub fn size(&self) -> usize {
+        4
+        * self.0.width as usize
+        * self.0.height as usize
+    }
+}
+
+impl Film {
+    pub fn native(&self) -> &lasgun::Film {
+        &self.0
+    }
+
+    pub fn native_mut(&mut self) -> &mut lasgun::Film {
+        &mut self.0
     }
 }

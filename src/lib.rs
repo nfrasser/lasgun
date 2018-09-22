@@ -22,13 +22,12 @@ pub mod img;
 
 pub use aggregate::Aggregate;
 pub use scene::{Scene, Options};
-pub use img::Film;
+pub use img::{Film, Pixel};
 
 use std::thread;
 use std::ptr::NonNull;
 
 use ray::primary::PrimaryRay;
-use img::Pixel;
 
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
