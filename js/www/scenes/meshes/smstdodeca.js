@@ -1,4 +1,4 @@
-export const vertices = [
+export const vertices = new Float32Array([
     -158.333350, 225.647350, -64.699450,
     -207.117500, 241.498300, -64.699450,
     -176.967250, 200.000000, -64.699450,
@@ -179,10 +179,8 @@ export const vertices = [
     -141.666650, 225.647350, -135.300550,
     -92.882500, 241.498300, -135.300550,
     -123.032750, 200.000000, -135.300550,
-]
+])
 
-export const faces = (() => {
-    let faces = []
-    for (let i = 0; i < 180; i++) faces.push(i)
-    return faces
-})();
+export const faces = new Uint32Array(function *() {
+    for (let i = 0; i < 180; i++) yield i
+}());
