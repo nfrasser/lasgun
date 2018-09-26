@@ -1,7 +1,7 @@
 use std::f64;
 
-use space::*;
-use ray::Ray;
+use crate::space::*;
+use crate::ray::Ray;
 use super::{Shape, Intersection};
 
 /**

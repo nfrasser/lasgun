@@ -1,8 +1,8 @@
 use std::f64;
 
-use space::*;
-use scene::Scene;
-use primitive::Primitive;
+use crate::space::*;
+use crate::scene::Scene;
+use crate::primitive::Primitive;
 
 use super::Ray;
 

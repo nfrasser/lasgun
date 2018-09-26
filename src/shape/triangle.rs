@@ -1,5 +1,7 @@
-use space::*;
-use ray::Ray;
+// use std::ops::Index;
+
+use crate::space::*;
+use crate::ray::Ray;
 
 use super::{Shape, Intersection};
 use super::mesh::Mesh;

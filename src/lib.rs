@@ -1,33 +1,29 @@
-extern crate num_traits as num;
-extern crate nalgebra as na;
-extern crate rand;
-
 #[cfg(feature = "bin")]
-extern crate num_cpus;
+use num_cpus;
 
 #[macro_use]
-mod macros;
-mod space;
-mod math;
-mod ray;
+pub(crate) mod macros;
+pub(crate) mod math;
+pub(crate) mod ray;
+pub(crate) mod img;
+pub(crate) mod space;
+pub(crate) mod aggregate;
 
-mod material;
-mod shape;
-mod primitive;
-mod light;
-
-pub mod aggregate;
+pub mod material;
+pub mod shape;
+pub mod primitive;
+pub mod light;
 pub mod scene;
-pub mod img;
-
-pub use aggregate::Aggregate;
-pub use scene::{Scene, Options};
-pub use img::{Film, Pixel};
+#[cfg(feature = "bin")]
+pub mod output;
 
 use std::thread;
 use std::ptr::NonNull;
 
-use ray::primary::PrimaryRay;
+pub use crate::space::{Point, Color, Vector};
+pub use crate::scene::Scene;
+pub use crate::img::{Film, Pixel, PixelBuffer};
+use crate::ray::primary::PrimaryRay;
 
 /// A 16×16 portion of pixels taken from a film, arranged in row-major order.
 /// Used for streaming render results. NOT a slice of `Film::data`.

@@ -1,5 +1,6 @@
-use space::{Point, Color};
-use scene::Scene;
+
+use super::space::{Point, Color};
+use super::scene::Scene;
 
 pub mod point;
 pub use self::point::PointLight;

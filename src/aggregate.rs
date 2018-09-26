@@ -1,10 +1,10 @@
-use space::*;
-use ray::Ray;
+use crate::space::*;
+use crate::ray::Ray;
 
-use material::{Material, background::Background};
-use primitive::{Primitive, geometry::Geometry};
-use shape::{Shape, Intersection, mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
-use scene::{Scene, MaterialRef};
+use crate::material::{Material, background::Background};
+use crate::primitive::{Primitive, geometry::Geometry};
+use crate::shape::{Shape, Intersection, mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
+use crate::scene::{Scene, MaterialRef};
 
 /// A primitive that contains many primitives, all of which may be intersected
 /// with. If no intersection occurs with the primitives in the content, we say

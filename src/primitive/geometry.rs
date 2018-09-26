@@ -1,8 +1,11 @@
-use ray::Ray;
-use scene::{Scene, MaterialRef};
-use shape::{Shape, Intersection};
-use material::Material;
-use primitive::Primitive;
+
+use crate::ray::Ray;
+use crate::scene::{Scene, MaterialRef};
+use crate::shape::{
+    Shape, Intersection,
+};
+use crate::material::Material;
+use super::Primitive;
 
 /// A primitive representing a geometric shape such as a sphere or cube.
 /// The intersection is computed mathematically.

@@ -1,4 +1,4 @@
-use na::{ Real, Scalar, Vector3 };
+use nalgebra::{ Real, Scalar, Vector3 };
 
 /**
 Normal vector representation.

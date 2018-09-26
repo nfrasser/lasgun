@@ -1,4 +1,4 @@
-use space::*;
+use crate::space::*;
 
 pub struct Ray {
     /**

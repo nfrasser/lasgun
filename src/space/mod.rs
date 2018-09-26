@@ -1,5 +1,5 @@
 // Contains shortcuts for commonly used linear-algebra types used in the ray-tracer
-use na;
+use nalgebra as na;
 mod normal;
 mod bounds;
 

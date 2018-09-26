@@ -1,12 +1,9 @@
-extern crate lasgun;
-extern crate image;
+#[cfg(feature = "bin")]
 
-use lasgun::{scene, Scene};
-
-mod common;
-use common::output;
+use ::lasgun::{Scene, scene, output};
 
 fn main() {
+    // TODO: Make this interface friendlier
     let options = scene::Options {
         width: 256,
         height: 256,

@@ -1,8 +1,8 @@
 use std::f64;
-use space::{ Point, Color };
-use ray::Ray;
-use scene::Scene;
-use primitive::Primitive;
+use crate::space::{ Point, Color };
+use crate::ray::Ray;
+use crate::scene::Scene;
+use crate::primitive::Primitive;
 
 /// A Point Light has no surface area an emits in all directions
 /// These don't exist in real life but are a good approximation

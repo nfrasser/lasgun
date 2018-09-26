@@ -1,9 +1,9 @@
 use std::f64;
 
-use space::*;
-use aggregate::Aggregate;
-use light::{Light, point::PointLight};
-use material::{Material, phong::Phong};
+use crate::space::*;
+use crate::aggregate::Aggregate;
+use crate::light::{Light, point::PointLight};
+use crate::material::{Material, phong::Phong};
 
 /// Opaque reference to a material within a scene. May be passed around and
 /// copied freely but is not relevant outside the noted scene.
@@ -14,8 +14,9 @@ pub struct MaterialRef(usize);
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MeshRef(usize);
 
-
-/// Description of the world to render
+/**
+    Description of the world to render
+*/
 pub struct Scene {
 
     /// Additional scene rendering options
@@ -151,7 +152,7 @@ impl Scene {
     }
 
     pub fn add_phong_material(&mut self, kd: [f64; 3], ks: [f64; 3], shininess: i32) -> MaterialRef {
-        let material = Phong::new(kd, ks, shininess);
+        let material: Phong = Phong::new(kd, ks, shininess);
         self.add_material(Box::new(material))
     }
 

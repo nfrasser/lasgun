@@ -1,4 +1,4 @@
-use space::Color;
+use crate::space::Color;
 use std::ops::{Index, IndexMut};
 
 /// RGBA pixel representation, with A being the Alpha channel
