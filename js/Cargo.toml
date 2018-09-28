@@ -13,7 +13,6 @@ crate-type = ["cdylib"]
 default-features = ["console_error_panic_hook", "wee_alloc"]
 
 [dependencies]
-js-sys = "*"
 cfg-if = "0.1.2"
 wasm-bindgen = "0.2"
 
@@ -32,3 +31,6 @@ wee_alloc = { version = "0.4.1", optional = true }
 path = ".."
 default-features = false
 features = ["lib"]
+
+[profile.release]
+lto = true
