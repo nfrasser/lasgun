@@ -65,6 +65,7 @@ function capture(sceneFunctionBody: string) {
         })
     }
 
+    hunk.free()
     let end = Date.now()
 
     // Deallocate everything
