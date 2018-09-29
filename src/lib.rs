@@ -29,6 +29,12 @@ use std::ptr::NonNull;
 
 use ray::primary::PrimaryRay;
 
+/// A 16×16 portion of pixels taken from a film, arranged in row-major order.
+/// Used for streaming render results. NOT a slice of `Film::data`.
+///
+/// 16 * 16 pixels = 256 pixels = 4 * 256 bytes = 1024 bytes
+pub type FilmDataHunk = [u8; 1024];
+
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
 pub fn render(scene: &Scene) -> Film {
@@ -58,7 +64,7 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         // the constant scene reference and the mutable pixel buffer reference
         // to be used by the tracing code.
         //
-        // This allows the various capture_chunk calls to operate on the same
+        // This allows the various capture_subset calls to operate on the same
         // block of memory concurrently without having to break it up, rearrange
         // it, and put it back together at the end.
         //
@@ -70,24 +76,58 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         let handle = thread::spawn(move || {
             let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
             let pixels: *mut Pixel = sendable_pixel_ptr.0.as_ptr();
-            capture_chunk(i, barrel_count, scene, pixels)
+            capture_subset(i, barrel_count, scene, pixels)
         });
 
         threads.push(handle)
     }
 
     // Ensure main thread does processing
-    capture_chunk(0, barrel_count, scene, pixel_ptr);
+    capture_subset(0, barrel_count, scene, pixel_ptr);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
     for thread in threads { thread.join().unwrap() }
 }
 
-/// Capture chunk k of n for the given scene.
-/// The pixels pointer is the start of the image buffer.
-/// The pointer must allow data access into (width * height) pixels.
-fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
+/// Get a 16×16 view into the film for the scene starting at coordinates
+/// startx/starty. Puts the result in the given film chunk.
+pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, hunk: &mut FilmDataHunk) {
+    let (width, height) = (scene.options.width, scene.options.height);
+    debug_assert!(startx < width && starty < height);
+
+    let up = scene.up;
+    let aux = scene.aux;
+    let sample_distance = scene.pixel_radius * 2.0;
+
+    for (i, pixel) in hunk.chunks_mut(4).enumerate() { // Iterates 256 times
+        let x = (startx as usize + i % 16) as u16;
+        let y = (starty as usize + i / 16) as u16;
+
+        // Don't bother rendering pixels outside the frame
+        if x >= width || x >= height { continue };
+
+        // Calculate offsets distances from the view vector
+        let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
+        let voffset = ((height as f64 - 1.0) * 0.5 - y as f64) * sample_distance;
+
+        // The direction in which this ray travels
+        let d = scene.view + (voffset * up) + (hoffset * aux);
+
+        let ray = PrimaryRay::new(scene.eye, d);
+        let color = ray.cast(scene);
+
+        //
+        let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
+        img::set_pixel_color(&mut pixel[0], &color)
+    }
+}
+
+/// Capture subset k of n for the given scene. That is, every kth pixel in the
+/// pixel buffer, arranged in row-major order. The pixel pointer is the start of
+/// the image buffer. The pointer must allow data access into
+/// (scene.width * scene.height) pixels.
+fn capture_subset(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
     let (width, height) = (scene.options.width, scene.options.height);
     let up = scene.up;
     let aux = scene.aux;
@@ -127,7 +167,7 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
     let capacity = width as isize * height as isize; // total image capacity
 
     // Skip over chunks that other threads are processing/ Assuming
-    // capture_chunk is never called concurrently with the same k and n values,
+    // capture_subset is never called concurrently with the same k and n values,
     // this will never cause contention/race conditions.
     for offset in ((k as isize)..capacity).step_by(n as usize) {
         let x = (offset % width as isize) as f64;
@@ -149,6 +189,7 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
         img::set_pixel_color(pixel as &mut Pixel, &color)
     }
 }
+
 
 #[cfg(feature = "bin")]
 fn get_max_threads() -> u8 { num_cpus::get() as u8 }
