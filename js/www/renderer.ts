@@ -46,14 +46,35 @@ function capture(sceneFunctionBody: string) {
     }
 
     let scene: lasgun.Scene = exports.scene
-    let film: lasgun.Film = lasgun.film(scene)
 
     let start = Date.now();
-    lasgun.capture(scene, film)
-    let end = Date.now()
-    console.log(`Render time: ${end - start}ms (${(end - start)/1000}) sec`)
 
-    return { scene, film, allocations }
+    let hunkCount = lasgun.hunk_count(scene)
+    let hunk = lasgun.Hunk.new()
+
+    // Stream bits of the scene over to main as we go
+    for (let i = 0; i < hunkCount; i++) {
+        lasgun.capture_hunk(i, scene, hunk)
+        self.postMessage({
+            type: 'hunk',
+            value: {
+                x: hunk.x,
+                y: hunk.y,
+                data: new Uint8ClampedArray(wasm.memory.buffer, hunk.as_ptr(), 1024)
+            }
+        })
+    }
+
+    let end = Date.now()
+
+    // Deallocate everything
+    for (let alloc of allocations) {
+        // Catch double-frees
+        try { alloc.free() } catch (e) {}
+    }
+
+    // Return the start/end timestamps
+    return { start, end }
 }
 
 
@@ -87,20 +108,9 @@ self.addEventListener('message', (event) => {
         let result = capture(event.data.value)
         if (result.error) {
             self.postMessage({ type: 'error', value: result.error })
-            break
+        } else {
+            self.postMessage({ type: 'done', value: result })
         }
-
-        let { film, allocations } = result
-        self.postMessage({
-            type: 'image',
-            value: new Uint8ClampedArray(wasm.memory.buffer, film.data(), film.size()),
-        })
-
-        for (let alloc of allocations) {
-            // Catch double-frees
-            try { alloc.free() } catch (e) {}
-        }
-
         break
     }
 })

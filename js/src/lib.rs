@@ -117,10 +117,29 @@ pub fn film(scene: &Scene) -> Film {
     Film::new(scene)
 }
 
-/// Capture the scene onto the given film
+/// Capture the whole scene onto the given film
 #[wasm_bindgen]
 pub fn capture(scene: &Scene, film: &mut Film) {
     lasgun::capture(scene.native(), film.native_mut())
+}
+
+/// Capture just one of the 16×16 portions of the scene onto the given hunk of
+/// film. Used to progressively stream scene data back to the client. In
+/// addition to writing data, writes the target start and end x/y coordinates
+/// into the hunk.
+#[wasm_bindgen]
+pub fn capture_hunk(i: u32, scene: &Scene, hunk: &mut Hunk) {
+    let (hhunks, _) = scene.hunk_dims();
+    hunk.x = (i % hhunks as u32 * 16) as u16;
+    hunk.y = (i / hhunks as u32 * 16) as u16;
+    lasgun::capture_hunk(hunk.x, hunk.y, scene.native(), hunk.data_mut())
+}
+
+/// The number of 16x16 hunks that make up this scene
+#[wasm_bindgen]
+pub fn hunk_count(scene: &Scene) -> u32 {
+    let (hcount, vcount) = scene.hunk_dims();
+    (hcount as u32) * (vcount as u32)
 }
 
 #[wasm_bindgen]
@@ -136,6 +155,38 @@ impl MaterialRef {
     #[inline]
     pub fn as_native(self) -> lasgun::scene::MaterialRef {
         self.0
+    }
+}
+
+/// A 16×16 view into some scene, starting at the given x/y coordinates
+/// (from the top-left)
+#[wasm_bindgen]
+pub struct Hunk {
+    /// Staring x coordinate
+    pub x: u16,
+    /// Staring y coordinate
+    pub y: u16,
+
+    data: lasgun::FilmDataHunk
+}
+
+#[wasm_bindgen]
+impl Hunk {
+    /// Create a new empty hunk for the given scene with the given index
+    pub fn new() -> Hunk {
+        Hunk { x: 0, y: 0, data: unsafe { mem::uninitialized() } }
+    }
+
+    /// Get a pointer to the pixel data in the hunk for use in JavaScript
+    pub fn as_ptr(&self) -> *const u8 {
+        &self.data as *const u8
+    }
+}
+
+impl Hunk {
+    #[inline]
+    pub fn data_mut(&mut self) -> &mut lasgun::FilmDataHunk {
+        &mut self.data
     }
 }
 
@@ -168,6 +219,14 @@ impl Scene {
         Scene { data: lasgun::Scene::new(options) }
     }
 
+    pub fn width(&self) -> u16 {
+        self.data.options.width
+    }
+
+    pub fn height(&self) -> u16 {
+        self.data.options.height
+    }
+
     pub fn set_contents(&mut self, content: Aggregate) {
         self.data.set_contents(content.as_native_aggregate())
     }
@@ -191,8 +250,8 @@ impl Scene {
     pub fn blank() -> Scene {
         let options = lasgun::Options {
             eye: [0.0, 0.0, 0.0],
-            view: [0.0, 0.0, 0.0],
-            up: [0.0, 0.0, 0.0],
+            view: [0.0, 0.0, 1.0],
+            up: [0.0, 1.0, 0.0],
             ambient: [0.0, 0.0, 0.0],
             width: 0,
             height: 0,
@@ -207,6 +266,17 @@ impl Scene {
     #[inline]
     pub fn native(&self) -> &lasgun::Scene {
         &self.data
+    }
+
+    /// Returns the number of width-wise and height-wise number of hunks for
+    /// this scene
+    #[inline]
+    pub fn hunk_dims(&self) -> (u16, u16) {
+        let (width, height) = (self.width(), self.height());
+        (
+            width / 16 + (if width % 16 == 0 { 0 } else { 1 }),
+            height / 16 + (if height % 16 == 0 { 0 } else { 1 })
+        )
     }
 }
 

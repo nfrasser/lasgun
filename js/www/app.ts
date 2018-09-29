@@ -9,17 +9,21 @@ async function main() {
 
     let worker = new Worker('./worker.js')
     worker.addEventListener('message', function (event) {
-        let imageData
+        let imageData: ImageData
 
         switch (event.data.type) {
         case 'status':
             if (event.data.value !== 'ready') break
             renderButton.removeAttribute('disabled')
             break
-        case 'image':
-            imageData = new ImageData(event.data.value, 512, 512)
-            ctx.putImageData(imageData, 0, 0)
+        case 'hunk':
+            let {x, y, data} = event.data.value
+            imageData = new ImageData(data, 16, 16)
+            requestAnimationFrame(() => ctx.putImageData(imageData, x, y))
             break
+        case 'done':
+            let { start, end } = event.data.value
+            console.log(`Render time: ${end - start}ms (${(end - start)/1000}) sec`)
         }
     })
 
