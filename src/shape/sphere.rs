@@ -6,6 +6,7 @@ use shape::{Shape, Intersection};
 /**
     A sphere of any size positioned somewhere in 3D space
 */
+#[derive(Debug)]
 pub struct Sphere {
     pub center: Point,
     pub radius: f64,

@@ -26,9 +26,9 @@ impl super::Material for Phong {
     ) -> Color {
         let n = normal.as_ref().normalize();
         let v = (eye - q).normalize();
-        let mut output = scene.options.ambient.component_mul(&self.kd); // start with ambient lighting
+        let mut output = scene.ambient.component_mul(&self.kd); // start with ambient lighting
 
-        for scene_light in scene.options.lights.iter() {
+        for scene_light in scene.lights.iter() {
 
             // Sample point lights
             output += scene_light.sample(q, scene, &|light| {

@@ -13,5 +13,4 @@ pub trait Primitive {
     fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive);
 }
 
-pub mod aggregate;
 pub mod geometry;

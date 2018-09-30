@@ -7,6 +7,7 @@ use super::{Shape, Intersection};
 /**
 aka "Box", aka "Rectangular prism"
 */
+#[derive(Debug)]
 pub struct Cuboid {
     pub bounds: Bounds
 }

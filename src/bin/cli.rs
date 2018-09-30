@@ -1,24 +1,19 @@
-extern crate image;
 extern crate lasgun;
+extern crate image;
 
-use lasgun::{
-    scene, Scene, Color, Point, Vector,
-    primitive::aggregate::Aggregate
-};
+use lasgun::{scene, Scene};
 
 mod common;
 use common::output;
 
 fn main() {
     let options = scene::Options {
-        dimensions: (256, 256),
-        content: Box::new(Aggregate::new(vec![], Color::zeros())),
-        lights: vec![],
-        materials: vec![],
-        ambient: Color::zeros(),
-        eye: Point::new(0.0, 0.0, 0.0),
-        view: Vector::zeros(),
-        up: Vector::zeros(),
+        width: 256,
+        height: 256,
+        ambient: [0.2; 3],
+        eye: [0.0; 3],
+        view: [0.0; 3],
+        up: [0.0; 3],
         fov: 50.0,
         supersampling: 1,
         threads: 1

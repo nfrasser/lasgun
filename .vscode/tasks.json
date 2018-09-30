@@ -16,10 +16,6 @@
             "problemMatcher": [
                 "$rustc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
         },
         {
             "type": "cargo",
@@ -42,6 +38,22 @@
                 "simple",
                 "--features='bin'"
             ],
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "wasm-pack build",
+            "command": "wasm-pack",
+            "args": [
+                "build",
+                "js"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "problemMatcher": [
                 "$rustc"
             ]

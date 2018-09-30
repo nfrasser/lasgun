@@ -1,8 +1,8 @@
 use std::f64;
-// use rand::{ prelude::*, distributions::StandardNormal };
 
 use space::*;
 use scene::Scene;
+use primitive::Primitive;
 
 use super::Ray;
 
@@ -10,7 +10,7 @@ use super::Ray;
 The initial ray that gets cast from the camera to scene.
 The resulting colour form the `cast` function will be a pixel in the resulting image.
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct PrimaryRay {
     pub origin: Point,
     pub d: Vector // not normalized
@@ -44,7 +44,7 @@ impl PrimaryRay {
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
             let ray = Ray::new(self.origin, d);
 
-            let (intersection, primitive) = scene.intersect(&ray);
+            let (intersection, primitive) = scene.contents.intersect(&ray);
 
             // Get the material the interecting primitive is made of
             let material = primitive.material(scene);

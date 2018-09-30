@@ -2,9 +2,11 @@ use std::f64;
 use space::{ Point, Color };
 use ray::Ray;
 use scene::Scene;
+use primitive::Primitive;
 
 /// A Point Light has no surface area an emits in all directions
 /// These don't exist in real life but are a good approximation
+#[derive(Debug)]
 pub struct PointLight {
     pub position: Point,
     pub intensity: Color,
@@ -38,7 +40,7 @@ impl super::Light for PointLight {
         let ray = Ray::new(p, d);
 
         // See if there's anything that intersects
-        let (intersection, _) = scene.intersect(&ray);
+        let (intersection, _) = scene.contents.intersect(&ray);
 
         if intersection.exists() && intersection.t < t {
             // Intersection before the light, makes no contribution

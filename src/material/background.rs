@@ -1,6 +1,7 @@
 use space::*;
 use scene::Scene;
 
+#[derive(Debug)]
 pub struct Background {
     color: Color
 }

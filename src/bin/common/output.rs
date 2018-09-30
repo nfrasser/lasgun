@@ -3,10 +3,10 @@ extern crate lasgun;
 
 use std::{mem, ops::{Index, IndexMut}};
 use image::RgbaImage;
-use lasgun::{Scene, Film, Pixel, PixelBuffer};
+use lasgun::{Scene, Film, img::{Pixel, PixelBuffer}};
 
 pub fn render(scene: &Scene, filename: &str) {
-    let (width, height) = scene.options.dimensions;
+    let (width, height) = (scene.options.width, scene.options.height);
 
     // Pre-allocate traced image data
     let rgba = RgbaImage::new(width as u32, height as u32);
@@ -57,4 +57,6 @@ impl PixelBuffer for Image {
         let pixels: &mut [Pixel] = unsafe { mem::transmute(&mut *self.0) };
         pixels.as_mut_ptr()
     }
+
+    fn as_slice(&self) -> &[u8] { &*self.0 }
 }

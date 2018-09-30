@@ -1,4 +1,3 @@
-// extern crate alga;
 extern crate num_traits as num;
 extern crate nalgebra as na;
 extern crate rand;
@@ -11,27 +10,35 @@ mod macros;
 mod space;
 mod math;
 mod ray;
-mod img;
 
-pub mod material;
-pub mod shape;
-pub mod primitive;
-pub mod light;
+mod material;
+mod shape;
+mod primitive;
+mod light;
+
+pub mod aggregate;
 pub mod scene;
+pub mod img;
 
-pub use space::{Point, Color, Vector};
-pub use scene::Scene;
-pub use img::{Film, Pixel, PixelBuffer};
+pub use aggregate::Aggregate;
+pub use scene::{Scene, Options};
+pub use img::{Film, Pixel};
 
 use std::thread;
 use std::ptr::NonNull;
 
 use ray::primary::PrimaryRay;
 
+/// A 16×16 portion of pixels taken from a film, arranged in row-major order.
+/// Used for streaming render results. NOT a slice of `Film::data`.
+///
+/// 16 * 16 pixels = 256 pixels = 4 * 256 bytes = 1024 bytes
+pub type FilmDataHunk = [u8; 1024];
+
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
 pub fn render(scene: &Scene) -> Film {
-    let (width, height) = scene.options.dimensions;
+    let (width, height) = (scene.options.width, scene.options.height);
     let mut film = Film::new(width, height);
     capture(scene, &mut film);
     film
@@ -57,41 +64,74 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         // the constant scene reference and the mutable pixel buffer reference
         // to be used by the tracing code.
         //
-        // This allows the various capture_chunk calls to operate on the same
+        // This allows the various capture_subset calls to operate on the same
         // block of memory concurrently without having to break it up, rearrange
         // it, and put it back together at the end.
         //
         // It's very important that the threads join the main thread before
         // this function call ends, otherwise very bad things will happen.
-        let sendable_scene_ptr = Wrapper(scene as *const Scene);
-        let sendable_pixel_ptr = WrapperMut(unsafe { NonNull::new_unchecked(pixel_ptr) });
+        let sendable_scene_ptr = UnsafeThreadWrapper(scene as *const Scene);
+        let sendable_pixel_ptr = UnsafeThreadWrapperMut(NonNull::new(pixel_ptr).unwrap());
 
         let handle = thread::spawn(move || {
             let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
             let pixels: *mut Pixel = sendable_pixel_ptr.0.as_ptr();
-            capture_chunk(i, barrel_count, scene, pixels)
+            capture_subset(i, barrel_count, scene, pixels)
         });
 
         threads.push(handle)
     }
 
-    // Ensure main thread does processing (see above about unsafe calls)
-    let sendable_pixel_ptr = WrapperMut(unsafe { NonNull::new_unchecked(pixel_ptr) });
-    capture_chunk(0, barrel_count, scene, sendable_pixel_ptr.0.as_ptr());
+    // Ensure main thread does processing
+    capture_subset(0, barrel_count, scene, pixel_ptr);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
     for thread in threads { thread.join().unwrap() }
 }
 
-/// Capture chunk k of n for the given scene.
-/// The pixels pointer is the start of the image buffer.
-/// The pointer must allow data access into (width * height) pixels.
-fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
-    let (width, height) = scene.options.dimensions;
-    let up = &scene.up;
-    let aux = &scene.aux;
-    let sample_distance = scene.sample_radius * 2.0;
+/// Get a 16×16 view into the film for the scene starting at coordinates
+/// startx/starty. Puts the result in the given film chunk.
+pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, hunk: &mut FilmDataHunk) {
+    let (width, height) = (scene.options.width, scene.options.height);
+    debug_assert!(startx < width && starty < height);
+
+    let up = scene.up;
+    let aux = scene.aux;
+    let sample_distance = scene.pixel_radius * 2.0;
+
+    for (i, pixel) in hunk.chunks_mut(4).enumerate() { // Iterates 256 times
+        let x = (startx as usize + i % 16) as u16;
+        let y = (starty as usize + i / 16) as u16;
+
+        // Don't bother rendering pixels outside the frame
+        if x >= width || x >= height { continue };
+
+        // Calculate offsets distances from the view vector
+        let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
+        let voffset = ((height as f64 - 1.0) * 0.5 - y as f64) * sample_distance;
+
+        // The direction in which this ray travels
+        let d = scene.view + (voffset * up) + (hoffset * aux);
+
+        let ray = PrimaryRay::new(scene.eye, d);
+        let color = ray.cast(scene);
+
+        //
+        let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
+        img::set_pixel_color(&mut pixel[0], &color)
+    }
+}
+
+/// Capture subset k of n for the given scene. That is, every kth pixel in the
+/// pixel buffer, arranged in row-major order. The pixel pointer is the start of
+/// the image buffer. The pointer must allow data access into
+/// (scene.width * scene.height) pixels.
+fn capture_subset(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
+    let (width, height) = (scene.options.width, scene.options.height);
+    let up = scene.up;
+    let aux = scene.aux;
+    let sample_distance = scene.pixel_radius * 2.0;
 
     // Render Concurrency Overview
     //
@@ -126,7 +166,9 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
     // where n is the number of threads
     let capacity = width as isize * height as isize; // total image capacity
 
-    // Skip over irrelevant chunks
+    // Skip over chunks that other threads are processing/ Assuming
+    // capture_subset is never called concurrently with the same k and n values,
+    // this will never cause contention/race conditions.
     for offset in ((k as isize)..capacity).step_by(n as usize) {
         let x = (offset % width as isize) as f64;
         let y = (offset / height as isize) as f64;
@@ -136,21 +178,18 @@ fn capture_chunk(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
         let voffset = ((height as f64 - 1.0) * 0.5 - y) * sample_distance;
 
         // The direction in which this ray travels
-        let d: Vector = scene.view + (voffset * up) + (hoffset * aux);
+        let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene);
 
         // This is okay to do assuming the pixel buffer is always the correct
         // size. See the capture method for why this is necessary
-        let pixel: Option<&mut Pixel> = unsafe { pixels.offset(offset).as_mut() };
-
-        match pixel {
-            Some(pixel) => img::set_pixel_color(pixel as &mut Pixel, &color),
-            None => debug_assert!(0 == 1, "Invalid pixel location!")
-        }
+        let pixel: &mut Pixel = unsafe { pixels.offset(offset).as_mut().unwrap() };
+        img::set_pixel_color(pixel as &mut Pixel, &color)
     }
 }
+
 
 #[cfg(feature = "bin")]
 fn get_max_threads() -> u8 { num_cpus::get() as u8 }
@@ -159,10 +198,10 @@ fn get_max_threads() -> u8 { 1 }
 
 // Funky Pointer containers to allow sharing pointers between threads
 // Need this for the capture function.
-struct Wrapper<T>(*const T);
-struct WrapperMut<T>(NonNull<T>);
-unsafe impl<T> std::marker::Send for Wrapper<T> {}
-unsafe impl<T> std::marker::Send for WrapperMut<T> {}
+struct UnsafeThreadWrapper<T>(*const T);
+struct UnsafeThreadWrapperMut<T>(NonNull<T>);
+unsafe impl<T> std::marker::Send for UnsafeThreadWrapper<T> {}
+unsafe impl<T> std::marker::Send for UnsafeThreadWrapperMut<T> {}
 
 #[cfg(test)]
 mod tests {
