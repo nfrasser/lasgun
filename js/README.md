@@ -1,2 +1,4 @@
-# wasm-pack-template
-a template for starting a rust-wasm project to be used with wasm-pack
+lasgun-js
+===
+
+Rust library that compiles to WebAssembly for use in the browser.
