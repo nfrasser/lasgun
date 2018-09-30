@@ -99,7 +99,7 @@ impl<'a> Shape for Triangle<'a> {
         );
 
         // Permute components of triangle vertices and ray direction
-        let kz = iamax!(ray.d); // component with max absolute value (0 to 2)
+        let kz = max_dimension(&abs(&ray.d)); // component with max absolute value (0 to 2)
         let kx = (kz + 1) % 3; // choose x/y arbitrarly based on x
         let ky = (kx + 1) % 3;
         let d: Vector = permute!(Vector, ray.d, kx, ky, kz);
