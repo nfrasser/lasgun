@@ -1,6 +1,6 @@
 use std::f64;
-use space::*;
-use ray::Ray;
+use crate::space::*;
+use crate::ray::Ray;
 
 /**
     A gemetric shape that lives in 3D space.

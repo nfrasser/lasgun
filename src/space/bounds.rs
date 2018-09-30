@@ -1,6 +1,6 @@
 use std::{ ops::Index};
-use num::bounds::Bounded;
-use na::{ Real, Scalar, Point3 };
+use num_traits::bounds::Bounded;
+use nalgebra::{ Real, Scalar, Point3 };
 
 macro_rules! zip_points {
     ($t:ty, $p0:expr, $p1:expr, $cb:expr) => {

@@ -1,10 +1,7 @@
-extern crate lasgun;
-extern crate cfg_if;
-extern crate wasm_bindgen;
-
 mod utils;
 
 use std::mem;
+use lasgun;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -192,7 +189,7 @@ impl Hunk {
 
 #[wasm_bindgen]
 pub struct Scene {
-    data: lasgun::Scene
+    data: lasgun::scene::Scene
 }
 
 #[wasm_bindgen]
@@ -204,7 +201,7 @@ impl Scene {
             [0.0; 3]
         };
 
-        let options = lasgun::Options {
+        let options = lasgun::scene::Options {
             eye: utils::to_vec3f(settings.eye()),
             view: utils::to_vec3f(settings.view()),
             up: utils::to_vec3f(settings.up()),
@@ -248,7 +245,7 @@ impl Scene {
 
 impl Scene {
     pub fn blank() -> Scene {
-        let options = lasgun::Options {
+        let options = lasgun::scene::Options {
             eye: [0.0, 0.0, 0.0],
             view: [0.0, 0.0, 1.0],
             up: [0.0, 1.0, 0.0],
@@ -264,7 +261,7 @@ impl Scene {
     }
 
     #[inline]
-    pub fn native(&self) -> &lasgun::Scene {
+    pub fn native(&self) -> &lasgun::scene::Scene {
         &self.data
     }
 
@@ -282,13 +279,13 @@ impl Scene {
 
 #[wasm_bindgen]
 pub struct Aggregate {
-    data: lasgun::Aggregate
+    data: lasgun::aggregate::Aggregate
 }
 
 #[wasm_bindgen]
 impl Aggregate {
     pub fn new() -> Aggregate {
-        Aggregate { data: lasgun::Aggregate::new() }
+        Aggregate { data: lasgun::aggregate::Aggregate::new() }
     }
 
     pub fn add_sphere(&mut self, sphere: &Sphere, material: &MaterialRef) {
@@ -318,7 +315,7 @@ impl Aggregate {
 
 impl Aggregate {
     #[inline]
-    pub fn as_native_aggregate(self) -> lasgun::Aggregate {
+    pub fn as_native_aggregate(self) -> lasgun::aggregate::Aggregate {
         self.data
     }
 }

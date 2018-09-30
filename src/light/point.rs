@@ -1,12 +1,14 @@
 use std::f64;
-use space::{ Point, Color };
-use ray::Ray;
-use scene::Scene;
-use primitive::Primitive;
+use crate::space::{ Point, Color };
+use crate::ray::Ray;
+use crate::scene::Scene;
+use crate::primitive::Primitive;
+
+use super::{Light, LightSampleIterator};
 
 /// A Point Light has no surface area an emits in all directions
 /// These don't exist in real life but are a good approximation
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct PointLight {
     pub position: Point,
     pub intensity: Color,
@@ -23,14 +25,14 @@ impl PointLight {
     }
 }
 
-impl super::Light for PointLight {
+impl Light for PointLight {
 
     /// Returns the intersity of the light received at the given point.
     /// Equivalent to `I / f_att`, where `I` is intensity and `f_att` is
     /// attentuation based on distance (squared).
     ///
     /// f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d
-    fn sample(&self, p: &Point, scene: &Scene, cb: &Fn(&PointLight) -> Color) -> Color {
+    fn sample(&self, scene: &Scene, p: &Point) -> Option<PointLight> {
         let d = self.position - p; // direction from p to light
         let t = d.norm(); // distance to light in world coordinates
 
@@ -41,13 +43,16 @@ impl super::Light for PointLight {
 
         // See if there's anything that intersects
         let (intersection, _) = scene.contents.intersect(&ray);
-
         if intersection.exists() && intersection.t < t {
-            // Intersection before the light, makes no contribution
-            Color::zeros()
+            None
         } else {
-            // Callback calculates the colour contribution to the surface by this light
-            cb(&self)
+            Some(*self)
         }
+    }
+
+    fn iter_samples<'l, 's>(&'l self, scene: &'s Scene, p: Point)
+    -> LightSampleIterator<'l, 's> {
+        // Point lights only require one sample
+        LightSampleIterator::new(self, scene, p, 1)
     }
 }

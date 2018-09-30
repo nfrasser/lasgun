@@ -1,5 +1,5 @@
-use space::*;
-use scene::Scene;
+use crate::space::*;
+use crate::scene::Scene;
 
 #[derive(Debug)]
 pub struct Background {

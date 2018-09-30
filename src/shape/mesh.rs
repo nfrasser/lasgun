@@ -1,5 +1,5 @@
-use space::*;
-use shape::*;
+use crate::space::*;
+use crate::shape::*;
 use super::triangle::Triangle;
 
 /**

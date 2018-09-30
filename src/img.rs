@@ -1,4 +1,4 @@
-use space::Color;
+use crate::space::Color;
 use std::ops::{Index, IndexMut};
 
 /// RGBA pixel representation, with A being the Alpha channel
@@ -31,7 +31,7 @@ impl PixelBuffer for [Pixel] {
 pub struct Film {
     pub width: u16,
     pub height: u16,
-    pub data: Box<PixelBuffer<Output = Pixel>>
+    pub data: Box<dyn PixelBuffer<Output = Pixel>>
 }
 
 impl Film {
@@ -49,7 +49,7 @@ impl Film {
     ///
     /// Assumes that that data has room for width * height * 4 bytes worth of
     /// pixels.
-    pub fn new_with_data(width: u16, height: u16, data: Box<PixelBuffer<Output = Pixel>>) -> Film {
+    pub fn new_with_data(width: u16, height: u16, data: Box<dyn PixelBuffer<Output = Pixel>>) -> Film {
         Film { width, height, data }
     }
 

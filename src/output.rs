@@ -1,9 +1,6 @@
-extern crate image;
-extern crate lasgun;
-
 use std::{mem, ops::{Index, IndexMut}};
-use image::RgbaImage;
-use lasgun::{Scene, Film, img::{Pixel, PixelBuffer}};
+use ::image::RgbaImage;
+use crate::{Scene, Film, Pixel, PixelBuffer};
 
 pub fn render(scene: &Scene, filename: &str) {
     let (width, height) = (scene.options.width, scene.options.height);
@@ -14,7 +11,7 @@ pub fn render(scene: &Scene, filename: &str) {
     let mut film = Film::new_with_data(width, height, image);
 
     // Capture the image
-    lasgun::capture(&scene, &mut film);
+    crate::capture(&scene, &mut film);
     film.data.save(filename)
 }
 

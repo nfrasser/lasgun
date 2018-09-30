@@ -5,6 +5,7 @@ authors = ["Nick Frasser <nfrasser@gmail.com>"]
 description = "A ray tracing library in Rust that works in the browser"
 repository = "https://github.com/nfrasser/lasgun.git"
 license = "MIT"
+edition = "2018"
 
 [lib]
 crate-type = ["cdylib"]

@@ -20,6 +20,7 @@ async function main() {
             let { width, height } = event.data.value
             canvas.width = width
             canvas.height = height
+            break
         case 'hunk':
             let {x, y, data} = event.data.value
             imageData = new ImageData(data, 16, 16)

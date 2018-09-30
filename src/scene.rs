@@ -1,9 +1,9 @@
 use std::f64;
 
-use space::*;
-use aggregate::Aggregate;
-use light::{Light, point::PointLight};
-use material::{Material, phong::Phong};
+use crate::space::*;
+use crate::aggregate::Aggregate;
+use crate::light::{Light, point::PointLight};
+use crate::material::{Material, phong::Phong};
 
 /// Opaque reference to a material within a scene. May be passed around and
 /// copied freely but is not relevant outside the noted scene.
@@ -14,8 +14,9 @@ pub struct MaterialRef(usize);
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MeshRef(usize);
 
-
-/// Description of the world to render
+/**
+    Description of the world to render
+*/
 pub struct Scene {
 
     /// Additional scene rendering options
@@ -24,8 +25,8 @@ pub struct Scene {
     /// The primitives to use in the scene
     pub contents: Aggregate,
 
-    pub materials: Vec<Box<Material>>, // available materials for primitives in the scene
-    pub lights: Vec<Box<Light>>, // point-light sources in the scene
+    pub materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
+    pub lights: Vec<Box<dyn Light>>, // point-light sources in the scene
 
     pub ambient: Color, // ambient lighting
 
@@ -151,7 +152,7 @@ impl Scene {
     }
 
     pub fn add_phong_material(&mut self, kd: [f64; 3], ks: [f64; 3], shininess: i32) -> MaterialRef {
-        let material = Phong::new(kd, ks, shininess);
+        let material: Phong = Phong::new(kd, ks, shininess);
         self.add_material(Box::new(material))
     }
 
@@ -164,12 +165,12 @@ impl Scene {
         self.contents = contents
     }
 
-    pub fn material(&self, material: MaterialRef) -> &Material {
+    pub fn material(&self, material: MaterialRef) -> &dyn Material {
         debug_assert!(material.0 < self.materials.len());
         &*self.materials[material.0]
     }
 
-    fn add_material(&mut self, material: Box<Material>) -> MaterialRef {
+    fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
         let reference = MaterialRef(self.materials.len());
         self.materials.push(material);
         reference

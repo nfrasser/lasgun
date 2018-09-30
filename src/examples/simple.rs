@@ -1,18 +1,12 @@
-extern crate image;
-extern crate lasgun;
+use ::lasgun::{ scene::{Scene, Options}, output };
 
-mod common;
 mod meshes;
-
-use lasgun::{Scene, scene};
-
-use common::output;
-use meshes::smstdodeca;
+use self::meshes::smstdodeca;
 
 fn main() { output::render(&simple(), "simple.png"); }
 
 fn simple() -> Scene {
-    let options = scene::Options {
+    let options = Options {
         eye: [0.0, 0.0, 800.0],
         view: [0.0, 0.0, -800.0],
         up: [0.0, 1.0, 0.0],
