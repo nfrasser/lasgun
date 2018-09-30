@@ -1,10 +1,7 @@
-extern crate lasgun;
-extern crate cfg_if;
-extern crate wasm_bindgen;
-
 mod utils;
 
 use std::mem;
+use lasgun;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]

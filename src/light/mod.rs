@@ -1,4 +1,3 @@
-
 use super::space::Point;
 use super::scene::Scene;
 
