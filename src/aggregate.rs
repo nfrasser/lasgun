@@ -3,7 +3,7 @@ use crate::ray::Ray;
 
 use crate::material::{Material, background::Background};
 use crate::primitive::{Primitive, geometry::Geometry};
-use crate::shape::{Shape, Intersection, mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
+use crate::shape::{Intersection, mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
 use crate::scene::{Scene, MaterialRef};
 
 /// A primitive that contains many primitives, all of which may be intersected
@@ -35,28 +35,23 @@ impl Aggregate {
     }
 
     pub fn add_sphere(&mut self, center: [f64; 3], radius: f64, material: MaterialRef) {
-        let sphere = Sphere::new(center, radius);
-        self.add_shape(Box::new(sphere), material);
+        let shape = Sphere::new(center, radius);
+        self.contents.push(Box::new(Geometry { shape, material }))
     }
 
     pub fn add_cube(&mut self, origin: [f64; 3], dim: f64, material: MaterialRef) {
-        let cube = Cuboid::cube(origin, dim);
-        self.add_shape(Box::new(cube), material);
+        let shape = Cuboid::cube(origin, dim);
+        self.contents.push(Box::new(Geometry { shape, material }))
     }
 
     pub fn add_box(&mut self, minbound: [f64; 3], maxbound: [f64; 3], material: MaterialRef) {
-        let cube = Cuboid::new(minbound, maxbound);
-        self.add_shape(Box::new(cube), material);
+        let shape = Cuboid::new(minbound, maxbound);
+        self.contents.push(Box::new(Geometry { shape, material }))
     }
 
     pub fn add_mesh(&mut self, vertices: Box<[f32]>, faces: Box<[u32]>, material: MaterialRef) {
-        let mesh = Mesh::new(vertices, faces);
-        self.add_shape(Box::new(mesh), material);
-    }
-
-    fn add_shape(&mut self, shape: Box<dyn Shape>, material: MaterialRef) {
-        let primitive = Geometry { shape, material };
-        self.contents.push(Box::new(primitive))
+        let shape = Mesh::new(vertices, faces);
+        self.contents.push(Box::new(Geometry { shape, material }))
     }
 }
 

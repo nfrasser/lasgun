@@ -7,13 +7,13 @@ pub(crate) mod math;
 pub(crate) mod ray;
 pub(crate) mod img;
 pub(crate) mod space;
-pub(crate) mod aggregate;
 
 pub mod material;
 pub mod shape;
 pub mod primitive;
 pub mod light;
 pub mod scene;
+pub mod aggregate;
 #[cfg(feature = "bin")]
 pub mod output;
 
