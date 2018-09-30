@@ -30,12 +30,15 @@ impl super::Material for Phong {
             scene.options.ambient[1],
             scene.options.ambient[2]
         );
-        let mut output = ambient.component_mul(&self.kd); // start with ambient lighting
 
-        for scene_light in scene.lights.iter() {
+        // start with ambient lighting
+        let output = ambient.component_mul(&self.kd);
 
-            // Sample point lights
-            output += scene_light.sample(q, scene, &|light| {
+        // For each scene light, sample point lights from it
+        scene.lights.iter().fold(output, |output, scene_light| {
+            // For each sampled point light, add its contribution to the the
+            // final colour output
+            scene_light.iter_samples(scene, *q).fold(output, |output, light| {
                 // vector to light and its length (distance to the light from q)
                 let l = light.position - q;
                 let d = l.norm(); // length
@@ -53,10 +56,9 @@ impl super::Material for Phong {
                 // Use material properties to determine color at given pixel
                 // as if this is the only light in the scene
                 self.kd.component_mul(&e)*n_dot_l.max(0.0) +
-                self.ks.component_mul(&e)*r_dot_v.max(0.0).powi(self.shininess)
+                output + self.ks.component_mul(&e)*r_dot_v.max(0.0).powi(self.shininess)
             })
-        }
+        })
 
-        output
     }
 }
