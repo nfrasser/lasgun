@@ -21,7 +21,7 @@ impl Cuboid {
 
     pub fn cube(origin: [f64; 3], dim: f64) -> Cuboid {
         let origin = Point::new(origin[0], origin[1], origin[2]);
-        Cuboid { bounds: Bounds::new(origin, origin + Vector::repeat(dim)) }
+        Cuboid { bounds: Bounds::new(origin, origin + Vector::from_value(dim)) }
     }
 }
 
@@ -36,7 +36,7 @@ impl Shape for Bounds {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
 
-        let mut normal = Vector::zeros();
+        let mut normal = Vector::zero();
 
         // i ranges from X to Z
         for i in 0..3 {

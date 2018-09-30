@@ -27,7 +27,7 @@ impl PrimaryRay {
 
     pub fn cast(&self, scene: &Scene) -> Color {
         let dim = scene.supersampling.dim as i32;
-        let mut color = Color::zeros();
+        let mut color = Color::zero();
 
         for i in 0..scene.supersampling.count as i32 {
             // Calculate offset from the origin as factors of the supersampling radius

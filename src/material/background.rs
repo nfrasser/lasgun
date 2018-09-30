@@ -12,7 +12,7 @@ impl Background {
     }
 
     pub fn black() -> Background {
-        let black = Color::zeros();
+        let black = Color::zero();
         Background { color: black }
     }
 }

@@ -110,12 +110,12 @@ impl Scene {
         let view = Vector::new(options.view[0], options.view[1], options.view[2]);
         let up = Vector::new(options.up[0], options.up[1], options.up[2]);
 
-        let aux = view.cross(&up);
-        let up = aux.cross(&view).normalize();
+        let aux = view.cross(up);
+        let up = aux.cross(view).normalize();
         let aux = aux.normalize();
 
         // First point of the target plane will be at from the eye
-        let distance = view.norm();
+        let distance = view.magnitude();
 
         // Half the height of the point grid in model coordinates
         let ymax = distance * f64::tan((1.0/360.0) * options.fov * f64::consts::PI);
