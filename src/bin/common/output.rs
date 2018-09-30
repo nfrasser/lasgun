@@ -57,4 +57,6 @@ impl PixelBuffer for Image {
         let pixels: &mut [Pixel] = unsafe { mem::transmute(&mut *self.0) };
         pixels.as_mut_ptr()
     }
+
+    fn as_slice(&self) -> &[u8] { &*self.0 }
 }

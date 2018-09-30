@@ -10,17 +10,20 @@ pub type Pixel = [u8; 4];
 pub trait PixelBuffer: Index<usize> + IndexMut<usize> {
     fn raw_pixels(&self) -> *const Pixel;
     fn raw_pixels_mut(&mut self) -> *mut Pixel;
+    fn as_slice(&self) -> &[u8];
     fn save(&self, _filename: &str) { unimplemented!() }
 }
 
 impl PixelBuffer for Vec<Pixel> {
     fn raw_pixels(&self) -> *const Pixel { self[..].as_ptr() }
     fn raw_pixels_mut(&mut self) -> *mut Pixel { self[..].as_mut_ptr() }
+    fn as_slice(&self) -> &[u8] { unsafe { std::mem::transmute(self.as_slice()) } }
 }
 
 impl PixelBuffer for [Pixel] {
     fn raw_pixels(&self) -> *const Pixel { self.as_ptr() }
     fn raw_pixels_mut(&mut self) -> *mut Pixel { self.as_mut_ptr() }
+    fn as_slice(&self) -> &[u8] { unsafe { std::mem::transmute(self) } }
 }
 
 /// Queriable store of pixels.

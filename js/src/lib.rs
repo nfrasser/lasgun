@@ -336,6 +336,12 @@ impl Film {
         Film(lasgun::Film::new(width, height))
     }
 
+    /// Get a Uint8Array of pixels for display in a browser environment
+    /// Each set of 4 bytes represents an RGBA pixel
+    pub fn pixels(&self) -> Box<[u8]> {
+        self.0.data.as_slice().to_vec().into_boxed_slice()
+    }
+
     /// Get a pointer to the first pixel in the data set
     pub fn data(&self) -> *const u8 {
         unsafe { mem::transmute(self.0.data.raw_pixels()) }
