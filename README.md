@@ -101,6 +101,13 @@ imageData.data.set(pixels)
 ctx.putImageData(data)
 ```
 
+## Resources
+
+* [Rust and WebAssembly Book](https://rustwasm.github.io/book/)
+* [`wasm-bindgen` API Reference](https://rustwasm.github.io/wasm-bindgen/)
+* [WebAssembly](https://developer.mozilla.org/en-US/docs/WebAssembly)
+* [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+
 ## License
 
 MIT
