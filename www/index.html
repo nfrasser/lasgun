@@ -2,11 +2,10 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>lasgun web renderer</title>
+    <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
     <canvas id="output" width="512" height="512"></canvas>
     <button id="render-button" disabled>Render</button>
-    <script src="app.js"></script>
   </body>
 </html>

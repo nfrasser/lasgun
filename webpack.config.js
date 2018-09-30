@@ -1,3 +1,4 @@
+const HtmlWebpackPlugin = require("html-webpack-plugin")
 const CopyWebpackPlugin = require("copy-webpack-plugin")
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const path = require('path')
@@ -13,7 +14,7 @@ const tsRule = {
 }
 
 const browserConfig = {
-  entry: './app.ts',
+  entry: './www/app.ts',
   devtool: 'inline-source-map',
   resolve, module: {
     rules: [
@@ -37,7 +38,13 @@ const browserConfig = {
   },
   mode: "development",
   plugins: [
-    new CopyWebpackPlugin(['index.html', './scenes/*.txt']),
+    new CopyWebpackPlugin([
+      { from: './www/scenes/*.txt', to: './scenes', flatten: true }
+    ], {}),
+    new HtmlWebpackPlugin({
+      template: './www/index.html',
+      title: 'lasgun web renderer'
+    }),
     new MiniCssExtractPlugin({
       // Options similar to the same options in webpackOptions.output
       // both options are optional
@@ -48,7 +55,7 @@ const browserConfig = {
 }
 
 const workerConfig = {
-  entry: "./worker.ts",
+  entry: "./www/worker.ts",
   devtool: 'inline-source-map',
   resolve, module: { rules: [tsRule] },
   target: 'webworker',

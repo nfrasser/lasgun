@@ -4,3 +4,6 @@
 Cargo.lock
 
 *.png
+
+node_modules
+dist
