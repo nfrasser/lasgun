@@ -16,6 +16,10 @@ async function main() {
             if (event.data.value !== 'ready') break
             renderButton.removeAttribute('disabled')
             break
+        case 'scene':
+            let { width, height } = event.data.value
+            canvas.width = width
+            canvas.height = height
         case 'hunk':
             let {x, y, data} = event.data.value
             imageData = new ImageData(data, 16, 16)

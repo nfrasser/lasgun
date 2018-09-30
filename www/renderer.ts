@@ -47,6 +47,15 @@ function capture(sceneFunctionBody: string) {
 
     let scene: lasgun.Scene = exports.scene
 
+    // Prepare the browser for rendering the scene
+    self.postMessage({
+        type: 'scene',
+        value: {
+            width: scene.width(),
+            height: scene.height()
+        }
+    })
+
     let start = Date.now();
 
     let hunkCount = lasgun.hunk_count(scene)
