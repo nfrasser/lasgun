@@ -28,7 +28,7 @@ impl Intersection {
     pub fn none() -> Intersection {
         Intersection {
             t: f64::INFINITY,
-            normal: Normal::new(Vector::zeros())
+            normal: Normal::new(Vector::zero())
         }
     }
 

@@ -1,5 +1,5 @@
 use std::f64;
-use crate::space::{ Point, Color };
+use crate::space::*;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::primitive::Primitive;
@@ -34,7 +34,7 @@ impl Light for PointLight {
     /// f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d
     fn sample(&self, scene: &Scene, p: &Point) -> Option<PointLight> {
         let d = self.position - p; // direction from p to light
-        let t = d.norm(); // distance to light in world coordinates
+        let t = d.magnitude(); // distance to light in world coordinates
 
         // Move point slighly outside the surface of the intersecting primitive
         // accounts for floating point erros

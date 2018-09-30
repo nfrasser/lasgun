@@ -22,8 +22,13 @@ path = "src/examples/simple.rs"
 required-features = ["bin"]
 
 [dependencies]
-rand = "0.5"
-nalgebra = "0.16.0"
-num-traits = "0.2"
+rand = "0.4"
+cgmath = "0.16.0"
 num_cpus = { version = "1.0", optional = true }
-image = { version = "*", optional = true }
+
+[dependencies.image]
+version = "*"
+optional = true
+default-features = false
+features = ["png_codec"]
+

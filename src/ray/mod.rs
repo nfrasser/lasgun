@@ -23,7 +23,7 @@ impl Ray {
     pub fn new(origin: Point, d: Vector) -> Ray {
         assert!(d.x != 0.0 || d.y != 0.0 || d.z != 0.0);
         let d = d.normalize();
-        let dinv = Vector::repeat(1.0).component_div(&d);
+        let dinv = 1.0 / d;
         Ray { origin, d, dinv }
     }
 }

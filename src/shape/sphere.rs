@@ -42,9 +42,9 @@ impl Shape for Sphere {
         let l: Vector = ray.origin - cen;
 
         // A, B, and C expand to the following:
-        let a = d.dot(d);
-        let b = 2.0 * d.dot(&l);
-        let c = l.dot(&l) - rad*rad;
+        let a = d.dot(*d);
+        let b = 2.0 * d.dot(l);
+        let c = l.dot(l) - rad*rad;
 
         // Calculate the roots
         let (roots, numroots) = math::quad_roots(a, b, c);

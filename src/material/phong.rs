@@ -32,7 +32,7 @@ impl super::Material for Phong {
         );
 
         // start with ambient lighting
-        let output = ambient.component_mul(&self.kd);
+        let output = self.kd.mul_element_wise(ambient);
 
         // For each scene light, sample point lights from it
         scene.lights.iter().fold(output, |output, scene_light| {
@@ -41,13 +41,13 @@ impl super::Material for Phong {
             scene_light.iter_samples(scene, *q).fold(output, |output, light| {
                 // vector to light and its length (distance to the light from q)
                 let l = light.position - q;
-                let d = l.norm(); // length
+                let d = l.magnitude();
                 let l = l.normalize();
-                let n_dot_l = n.dot(&l);
+                let n_dot_l = n.dot(l);
 
                 // Vector at the angle of reflection
                 let r: Vector = 2.0*n_dot_l*n - l;
-                let r_dot_v = r.dot(&v);
+                let r_dot_v = r.dot(v);
 
                 // Light attenuation over distance used to compute energy received at q
                 let f_att = light.falloff[0] + light.falloff[1]*d + light.falloff[2]*d*d;
@@ -55,8 +55,8 @@ impl super::Material for Phong {
 
                 // Use material properties to determine color at given pixel
                 // as if this is the only light in the scene
-                self.kd.component_mul(&e)*n_dot_l.max(0.0) +
-                output + self.ks.component_mul(&e)*r_dot_v.max(0.0).powi(self.shininess)
+                self.kd.mul_element_wise(e)*n_dot_l.max(0.0) +
+                output + self.ks.mul_element_wise(e)*r_dot_v.max(0.0).powi(self.shininess)
             })
         })
 
