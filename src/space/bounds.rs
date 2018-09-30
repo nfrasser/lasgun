@@ -2,20 +2,6 @@ use std::{ ops::Index };
 use cgmath::prelude::*;
 use cgmath::{ Vector3, Point3, BaseNum, Bounded };
 
-macro_rules! zip_points {
-    ($p0:expr, $p1:expr, $cb:expr) => {
-        Point3::new($cb($p0.x, $p1.x), $cb($p0.y, $p1.y), $cb($p0.z, $p1.z))
-    }
-}
-
-macro_rules! all_coords {
-    ($p0:expr, $p1:expr, $chk:expr) => {
-        $chk($p0.x, $p1.x) &&
-        $chk($p0.y, $p1.y) &&
-        $chk($p0.z, $p1.z)
-    };
-}
-
 /// Bounding box
 #[derive(Debug, Copy, Clone)]
 pub struct Bounds3<S: BaseNum> {
@@ -85,22 +71,22 @@ impl<S: BaseNum> Bounds3<S> {
     /// True if this instance overlaps with the given
     #[inline]
     pub fn overlaps(&self, other: &Self) -> bool {
-        all_coords!(self.min, other.max, |min, max| min >= max) &&
-        all_coords!(self.max, other.min, |max, min| max <= min)
+        all_coords_match!(self.min, other.max, |min, max| min >= max) &&
+        all_coords_match!(self.max, other.min, |max, min| max <= min)
     }
 
     /// Return true if the point is within the given bounds
     #[inline]
     pub fn contains(&self, p: Point3<S>) -> bool {
-        all_coords!(p, self.min, |coord, min| coord >= min) &&
-        all_coords!(p, self.max, |coord, max| coord >= max)
+        all_coords_match!(p, self.min, |coord, min| coord >= min) &&
+        all_coords_match!(p, self.max, |coord, max| coord >= max)
     }
 
     /// Return true if the point is within the bounds but not at the max edges
     #[inline]
     pub fn contains_exclusive(&self, p: Point3<S>) -> bool {
-        all_coords!(p, self.min, |coord, min| coord >= min) &&
-        all_coords!(p, self.max, |coord, max| coord < max)
+        all_coords_match!(p, self.min, |coord, min| coord >= min) &&
+        all_coords_match!(p, self.max, |coord, max| coord < max)
     }
 
 }
