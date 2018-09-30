@@ -11,7 +11,7 @@ use crate::scene::{Scene, MaterialRef};
 /// the intersection happens with Aggregate at t = INFINITY and the Background
 /// material is used.
 pub struct Aggregate {
-    contents: Vec<Box<Primitive>>,
+    contents: Vec<Box<dyn Primitive>>,
     background: Background,
 
     // Transformation matrix
@@ -54,7 +54,7 @@ impl Aggregate {
         self.add_shape(Box::new(mesh), material);
     }
 
-    fn add_shape(&mut self, shape: Box<Shape>, material: MaterialRef) {
+    fn add_shape(&mut self, shape: Box<dyn Shape>, material: MaterialRef) {
         let primitive = Geometry { shape, material };
         self.contents.push(Box::new(primitive))
     }
@@ -62,12 +62,12 @@ impl Aggregate {
 
 impl Primitive for Aggregate {
     #[inline]
-    fn material(&self, _scene: &Scene) -> &Material {
+    fn material(&self, _scene: &Scene) -> &dyn Material {
         &self.background
     }
 
-    fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive) {
-        let init: (Intersection, &Primitive) = (Intersection::none(), self);
+    fn intersect(&self, ray: &Ray) -> (Intersection, &dyn Primitive) {
+        let init: (Intersection, &dyn Primitive) = (Intersection::none(), self);
 
         // Find the closest child with which this node intersects
         self.contents.iter().fold(init, |closest, node| {

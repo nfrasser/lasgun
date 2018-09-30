@@ -12,17 +12,17 @@ use super::Primitive;
 ///
 /// A geometry holds the index of a material in a given scene.
 pub struct Geometry {
-    pub shape: Box<Shape>,
+    pub shape: Box<dyn Shape>,
     pub material: MaterialRef
 }
 
 impl Primitive for Geometry {
     #[inline]
-    fn material<'a>(&self, scene: &'a Scene) -> &'a Material {
+    fn material<'a>(&self, scene: &'a Scene) -> &'a dyn Material {
         scene.material(self.material)
     }
 
-    fn intersect(&self, ray: &Ray) -> (Intersection, &Primitive) {
+    fn intersect(&self, ray: &Ray) -> (Intersection, &dyn Primitive) {
         (self.shape.intersect(ray), self)
     }
 }

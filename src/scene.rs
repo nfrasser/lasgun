@@ -25,8 +25,8 @@ pub struct Scene {
     /// The primitives to use in the scene
     pub contents: Aggregate,
 
-    pub materials: Vec<Box<Material>>, // available materials for primitives in the scene
-    pub lights: Vec<Box<Light>>, // point-light sources in the scene
+    pub materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
+    pub lights: Vec<Box<dyn Light>>, // point-light sources in the scene
 
     pub ambient: Color, // ambient lighting
 
@@ -165,12 +165,12 @@ impl Scene {
         self.contents = contents
     }
 
-    pub fn material(&self, material: MaterialRef) -> &Material {
+    pub fn material(&self, material: MaterialRef) -> &dyn Material {
         debug_assert!(material.0 < self.materials.len());
         &*self.materials[material.0]
     }
 
-    fn add_material(&mut self, material: Box<Material>) -> MaterialRef {
+    fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
         let reference = MaterialRef(self.materials.len());
         self.materials.push(material);
         reference
