@@ -151,6 +151,21 @@ impl Scene {
         }
     }
 
+    /// Create a trivial scene for testing
+    pub fn trivial() -> Scene {
+        Scene::new(Options {
+            eye: [0.0, 0.0, -1.0],
+            view: [0.0, 0.0, 1.0],
+            up: [0.0, 1.0, 0.0],
+            fov: 45.0,
+            ambient: [0.0, 0.0, 0.0],
+            width: 1,
+            height: 1,
+            supersampling: 0,
+            threads: 0
+        })
+    }
+
     pub fn add_phong_material(&mut self, kd: [f64; 3], ks: [f64; 3], shininess: i32) -> MaterialRef {
         let material: Phong = Phong::new(kd, ks, shininess);
         self.add_material(Box::new(material))
