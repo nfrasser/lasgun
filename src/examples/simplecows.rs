@@ -1,8 +1,10 @@
-use ::lasgun::{ aggregate::Aggregate, scene::{Scene, Options}, output};
+use ::lasgun::{
+    aggregate::Aggregate,
+    scene::{Scene, Options},
+    output
+};
 
 mod meshes;
-
-fn main() { output::render(&simplecows(), "simplecows.png"); }
 
 fn simplecows() -> Scene {
     let mut scene = Scene::new(Options {
@@ -13,7 +15,7 @@ fn simplecows() -> Scene {
         ambient: [0.4, 0.4, 0.4],
         width: 512,
         height: 512,
-        supersampling: 2,
+        supersampling: 0,
         threads: 0
     });
 
@@ -92,3 +94,5 @@ fn simplecows() -> Scene {
     scene.contents.rotate_x(23.0);
     scene
 }
+
+fn main() { output::render(&simplecows(), "simplecows.png"); }
