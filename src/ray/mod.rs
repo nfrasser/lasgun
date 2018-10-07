@@ -29,11 +29,7 @@ impl<N: BaseFloat> Ray3<N> {
     pub fn new(origin: Point3<N>, d: Vector3<N>) -> Ray3<N> {
         let (zero, one) = (N::zero(), N::one());
         debug_assert!(d.x != zero || d.y != zero || d.z != zero);
-        let d = d.normalize();
-        let dinv = Vector3::new(
-            if d.x == zero { zero } else { one/d.x },
-            if d.y == zero { zero } else { one/d.y },
-            if d.z == zero { zero } else { one/d.z });
+        let dinv = Vector3::new(one/d.x, one/d.y, one/d.z);
         Ray3 { origin, d, dinv }
     }
 }

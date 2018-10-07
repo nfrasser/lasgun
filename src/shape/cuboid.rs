@@ -55,7 +55,7 @@ impl Shape for Bounds {
             tfar = tfar.min(tmax);
         }
 
-        if tnear >= tfar {
+        if tnear > tfar {
             // No intersection
             Intersection::none()
         } else {

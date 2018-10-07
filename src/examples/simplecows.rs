@@ -81,7 +81,7 @@ fn simplecows() -> Scene {
             ([0.7, -0.7, -0.7], 0.3),      // lfleg
             ([-0.7, -0.7, -0.7], 0.3),     // lrleg
             ([0.7, -0.7, 0.7], 0.3),       // rfleg
-            ([-0.7, -0.7, 0.7], 0.0),      // rrleg
+            ([-0.7, -0.7, 0.7], 0.3),      // rrleg
         ].iter() {
             cow.add_sphere(*center, *radius, hide);
         }
@@ -89,6 +89,6 @@ fn simplecows() -> Scene {
         scene.contents.add_aggregate(cow)
     }
 
-    scene.contents.rotate_x(-23.0);
+    scene.contents.rotate_x(23.0);
     scene
 }

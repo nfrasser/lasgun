@@ -12,7 +12,7 @@ pub type Vector = Vector3<f64>;
 pub type Color = Vector3<f64>;
 pub type Normal = normal::Normal3<f64>;
 pub type Bounds = bounds::Bounds3<f64>;
-pub type Transform = transform::Transform3<f64>;
+pub type Transformation = transform::Transform3<f64>;
 
 #[inline]
 pub fn abs(v: &Vector) -> Vector {

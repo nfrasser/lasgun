@@ -12,7 +12,7 @@ use crate::ray::Ray3;
 pub trait Trans<N: BaseFloat>: Transform<Point3<N>> {
     fn transform_normal(&self, normal: Normal3<N>) -> Normal3<N>;
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N>;
-    fn transform_ray_to_model(&self, ray: Ray3<N>) -> Ray3<N>;
+    // fn transform_ray_to_model(&self, ray: Ray3<N>) -> Ray3<N>;
     // fn transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N>;
 }
 
@@ -145,8 +145,8 @@ impl<N: BaseFloat> Transform<Point3<N>> for Transform3<N> {
     #[inline]
     fn concat(&self, other: &Self) -> Self {
         Transform3 {
-            m: self.m * other.m,
-            minv: other.minv * self.minv
+            m: other.m.concat(&self.m),
+            minv: self.minv.concat(&other.minv)
         }
     }
 
@@ -162,8 +162,8 @@ impl<N: BaseFloat> Transform<Point3<N>> for Transform3<N> {
 
     #[inline]
     fn concat_self(&mut self, other: &Self) {
-        let m = self.m.concat(&other.m);
-        let minv = other.minv.concat(&self.minv);
+        let m = other.m.concat(&self.m);
+        let minv = self.minv.concat(&other.minv);
         self.m = m;
         self.minv = minv;
     }
@@ -188,6 +188,7 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
         Ray3::new(origin, d)
     }
 
+    /*
     /// Transform a ray from its world coordinates to model coordinates for a
     /// model that has been transformed by the given transformation.
     fn transform_ray_to_model(&self, ray: Ray3<N>) -> Ray3<N> {
@@ -195,5 +196,6 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
         let d = self.minv.transform_vector(ray.d);
         Ray3::new(origin, d)
     }
+    */
 }
 

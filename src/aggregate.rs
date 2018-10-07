@@ -1,8 +1,8 @@
-use cgmath::{Deg, Transform as CgTransform };
-
+use cgmath::{prelude::*, Deg};
 use crate::space::*;
-use crate::ray::Ray;
 
+
+use crate::ray::Ray;
 use crate::material::{Material, background::Background};
 use crate::primitive::{Primitive, geometry::Geometry};
 use crate::shape::{Intersection, mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
@@ -15,7 +15,7 @@ use crate::scene::{Scene, MaterialRef};
 pub struct Aggregate {
     contents: Vec<Box<dyn Primitive>>,
     background: Background,
-    transform: Transform
+    transform: Transformation
 }
 
 impl Aggregate {
@@ -23,7 +23,7 @@ impl Aggregate {
         Aggregate {
             contents: vec![],
             background: Background::black(),
-            transform: Transform::identity()
+            transform: Transformation::identity()
         }
     }
 
@@ -32,7 +32,7 @@ impl Aggregate {
         Aggregate {
             contents: vec![],
             background: Background::new(color),
-            transform: Transform::identity()
+            transform: Transformation::identity()
         }
     }
 
@@ -63,32 +63,32 @@ impl Aggregate {
     #[inline]
     pub fn translate(&mut self, delta: [f64; 3]) -> &mut Self {
         let delta = Vector::new(delta[0], delta[1], delta[2]);
-        self.transform.concat_self(&Transform::translate(delta)); self
+        self.transform.concat_self(&Transformation::translate(delta)); self
     }
 
     #[inline]
     pub fn scale(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
-        self.transform.concat_self(&Transform::scale(x, y, z)); self
+        self.transform.concat_self(&Transformation::scale(x, y, z)); self
     }
 
     #[inline]
     pub fn rotate_x(&mut self, theta: f64) -> &mut Self {
-        self.transform.concat_self(&Transform::rotate_x(Deg(theta))); self
+        self.transform.concat_self(&Transformation::rotate_x(Deg(theta))); self
     }
 
     #[inline]
     pub fn rotate_y(&mut self, theta: f64) -> &mut Self {
-        self.transform.concat_self(&Transform::rotate_y(Deg(theta))); self
+        self.transform.concat_self(&Transformation::rotate_y(Deg(theta))); self
     }
 
     #[inline]
     pub fn rotate_z(&mut self, theta: f64) -> &mut Self {
-        self.transform.concat_self(&Transform::rotate_z(Deg(theta))); self
+        self.transform.concat_self(&Transformation::rotate_z(Deg(theta))); self
     }
 
     #[inline]
     pub fn rotate(&mut self, theta: f64, axis: Vector) -> &mut Self {
-        self.transform.concat_self(&Transform::rotate(Deg(theta), axis)); self
+        self.transform.concat_self(&Transformation::rotate(Deg(theta), axis)); self
     }
 }
 
@@ -99,7 +99,7 @@ impl Primitive for Aggregate {
     }
 
     fn intersect(&self, ray: &Ray) -> (Intersection, &dyn Primitive) {
-        let ray = self.transform.transform_ray_to_model(*ray);
+        let ray = Transformation::inverse(&self.transform).transform_ray(*ray);
         let init: (Intersection, &dyn Primitive) = (Intersection::none(), self);
 
         // Find the closest child with which this node intersects
@@ -108,7 +108,7 @@ impl Primitive for Aggregate {
             if next.0.t < closest.0.t { next } else { closest }
         });
 
-        // Transform normal before sending it back
+        // Transformation normal before sending it back
         let normal = self.transform.transform_normal(intersection.normal);
         (Intersection { t: intersection.t, normal }, primitive)
     }
