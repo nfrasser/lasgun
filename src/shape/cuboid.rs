@@ -46,8 +46,7 @@ impl Shape for Bounds {
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);
 
-            if tmin > tnear && tmin > 0.0 {
-                // Intersects with the front plane, make normal to it
+            if tmin > tnear {
                 normal = Vector::new(CUBE_NORMALS[i][0], CUBE_NORMALS[i][1], CUBE_NORMALS[i][2]);
             }
 
@@ -55,14 +54,14 @@ impl Shape for Bounds {
             tfar = tfar.min(tmax);
         }
 
-        if tnear > tfar {
+        if tnear > tfar || tfar < 0.0 {
             // No intersection
-            Intersection::none()
-        } else {
-            // Intersection, check if it happens behind the ray
-            let t = if tnear < 0.0 { tfar } else { tnear };
-            Intersection { t, normal: normal::Normal3(normal).face_forward(ray.d) }
+            return Intersection::none()
         }
+
+        // Intersection, check if it happens behind the ray
+        let t = if tnear < 0.0 { tfar } else { tnear };
+        Intersection { t, normal: normal::Normal3(normal).face_forward(ray.d) }
     }
 }
 
@@ -70,5 +69,51 @@ impl Shape for Bounds {
 const CUBE_NORMALS: [[f64; 3]; 3] = [
     [1.0, 0.0, 0.0],
     [0.0, 1.0, 0.0],
-    [0.0, 1.0, 1.0]
+    [0.0, 0.0, 1.0]
 ];
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    // use cgmath::prelude::*;
+
+    #[test]
+    fn straight_on_intersection() {
+        let cube = Cuboid::new([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
+        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(0.0, 0.0, 1.0));
+        let intersection = cube.intersect(&ray);
+
+        assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal, Normal::new(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn edge_intersection() {
+        let cube = Cuboid::new([-1.1, -1.1, -1.0], [1.1, 1.1, 1.0]);
+        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 0.0, 1.0));
+        let intersection = cube.intersect(&ray);
+
+        assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal, Normal::new(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn corner_intersection() {
+        let cube = Cuboid::new([-1.1, -1.1, -1.0], [1.1, 1.1, 1.0]);
+        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 1.0, 1.0));
+        let intersection = cube.intersect(&ray);
+
+        assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal, Normal::new(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn inside_intersection() {
+        let cube = Cuboid::new([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
+        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::unit_z());
+        let intersection = cube.intersect(&ray);
+
+        assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal, Normal::new(0.0, 0.0, -1.0));
+    }
+}

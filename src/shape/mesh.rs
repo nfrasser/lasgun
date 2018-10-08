@@ -116,6 +116,7 @@ impl<'a> Iterator for MeshIterator<'a> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

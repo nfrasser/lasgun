@@ -89,5 +89,17 @@ mod test {
 
         assert!(intersection.exists());
         assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal, Normal::new(0.0, 0.0, 1.0));
+    }
+
+    #[test]
+    fn inside_intersection() {
+        let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
+        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
+        let intersection = sphere.intersect(&ray);
+
+        assert!(intersection.exists());
+        assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal, Normal::new(0.0, 0.0, -1.0));
     }
 }
