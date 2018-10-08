@@ -87,7 +87,8 @@ impl Aggregate {
     }
 
     #[inline]
-    pub fn rotate(&mut self, theta: f64, axis: Vector) -> &mut Self {
+    pub fn rotate(&mut self, theta: f64, axis: [f64; 3]) -> &mut Self {
+        let axis = Vector { x: axis[0], y: axis[1], z: axis[2] };
         self.transform.concat_self(&Transformation::rotate(Deg(theta), axis)); self
     }
 }

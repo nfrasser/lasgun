@@ -288,6 +288,10 @@ impl Aggregate {
         Aggregate { data: lasgun::aggregate::Aggregate::new() }
     }
 
+    pub fn add_node(&mut self, node: Aggregate) {
+        self.data.add_aggregate(node.data)
+    }
+
     pub fn add_sphere(&mut self, sphere: &Sphere, material: &MaterialRef) {
         let origin = utils::to_vec3f(sphere.origin());
         let radius = sphere.radius();
@@ -310,6 +314,32 @@ impl Aggregate {
         let vertices = mesh.vertices();
         let faces = mesh.faces();
         self.data.add_mesh(vertices, faces, material.native())
+    }
+
+    /// Translate by the given delta values, x y and z
+    pub fn translate(&mut self, dx: f64, dy: f64, dz: f64) {
+        self.data.translate([dx, dy, dz]);
+    }
+
+    /// Scale in the given directions
+    pub fn scale(&mut self, x: f64, y: f64, z: f64) {
+        self.data.scale(x, y, z);
+    }
+
+    pub fn rotate_x(&mut self, theta: f64) {
+        self.data.rotate_x(theta);
+    }
+
+    pub fn rotate_y(&mut self, theta: f64) {
+        self.data.rotate_y(theta);
+    }
+
+    pub fn rotate_z(&mut self, theta: f64) {
+        self.data.rotate_z(theta);
+    }
+
+    pub fn rotate(&mut self, theta: f64, axis: Box<[JsValue]>) {
+        self.data.rotate(theta, utils::to_vec3f(axis));
     }
 }
 
