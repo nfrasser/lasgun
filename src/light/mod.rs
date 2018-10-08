@@ -19,8 +19,8 @@ pub trait Light {
 }
 
 /// An iteratator for conveniently looping through samples taken from a given
-/// light that are visible from the given point. The number of iteratations
-/// depends on
+/// light that are visible from the given point. The number of iterations
+/// depends on the type of light and the sampling settings on the scene
 pub struct LightSampleIterator<'l, 's> {
     light: &'l dyn Light,
     scene: &'s Scene,

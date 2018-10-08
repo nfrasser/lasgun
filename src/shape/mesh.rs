@@ -115,3 +115,29 @@ impl<'a> Iterator for MeshIterator<'a> {
         (remaining as usize, Some(remaining as usize))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn plane_intersection() {
+        let plane = Mesh::new(
+            Box::new([
+                -1.0, 0.0, -1.0,
+                1.0, 0.0, -1.0,
+                1.0, 0.0, 1.0,
+                -1.0, 0.0, 1.0,
+            ]),
+            Box::new([
+                0, 2, 1,
+                0, 3, 2,
+            ]));
+
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
+        let intersection = plane.intersect(&ray);
+
+        assert_eq!(intersection.t, 1.0);
+        assert_eq!(intersection.normal.0.normalize(), Vector::unit_y());
+    }
+}

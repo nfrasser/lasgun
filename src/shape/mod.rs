@@ -21,14 +21,14 @@ pub struct Intersection {
 }
 
 impl Intersection {
-    pub fn new(t: f64, normal: Vector) -> Intersection {
-        Intersection { t, normal: Normal::new(normal) }
+    pub fn new(t: f64, normal: Normal) -> Intersection {
+        Intersection { t, normal }
     }
 
     pub fn none() -> Intersection {
         Intersection {
             t: f64::INFINITY,
-            normal: Normal::new(Vector::zero())
+            normal: normal::Normal3(Vector::zero())
         }
     }
 

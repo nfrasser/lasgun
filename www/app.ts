@@ -32,7 +32,7 @@ async function main() {
         }
     })
 
-    let response = await fetch('./scenes/simple.js.txt')
+    let response = await fetch('./scenes/simplecows.js.txt')
     let scene = await response.text()
 
     let code = CodeMirror(document.body, {

@@ -29,15 +29,20 @@ impl Light for PointLight {
 
     /// Returns the intersity of the light received at the given point.
     /// Equivalent to `I / f_att`, where `I` is intensity and `f_att` is
-    /// attentuation based on distance (squared).
+    /// attentuation based on distance (squared). e.g.,
     ///
-    /// f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d
+    ///     // Calculate attenuation
+    ///     let d = 42.0; // distance
+    ///     let falloff = [1.0, 0.0, 0.0];
+    ///     let f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d;
+    ///     println!("{}", f_att);
+    ///
     fn sample(&self, scene: &Scene, p: &Point) -> Option<PointLight> {
         let d = self.position - p; // direction from p to light
         let t = d.magnitude(); // distance to light in world coordinates
 
         // Move point slighly outside the surface of the intersecting primitive
-        // accounts for floating point erros
+        // accounts for floating point errors
         let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
         let ray = Ray::new(p, d);
 

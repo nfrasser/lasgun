@@ -56,7 +56,7 @@ impl PrimaryRay {
 
             // Add a small fraction of the normal to avoid speckling due to floating point errors
             // (the calculated point ends up inside the geometric primitive).
-            let qpoint = ray.origin + direction + (f64::EPSILON * 32.0) * normal.as_ref();
+            let qpoint = ray.origin + direction + (f64::EPSILON * 32.0) * normal.as_vec();
 
             // Query the material for the color at the given point
             color += material.color(&qpoint, &ray.origin, normal, scene)

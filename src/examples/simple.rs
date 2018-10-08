@@ -1,7 +1,6 @@
 use ::lasgun::{ scene::{Scene, Options}, output };
 
 mod meshes;
-use self::meshes::smstdodeca;
 
 fn main() { output::render(&simple(), "simple.png"); }
 
@@ -39,7 +38,7 @@ fn simple() -> Scene {
     scene.contents.add_sphere([0.0, 100.0, -250.0], 25.0, mat0);
     scene.contents.add_cube([-200.0, -125.0, 0.0], 100.0, mat3);
 
-    let (verts, faces) = smstdodeca::smstdodeca();
+    let (verts, faces) = meshes::smstdodeca();
     scene.contents.add_mesh(verts, faces, mat2);
     scene
 }

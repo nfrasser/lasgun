@@ -7,6 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Playground Example",
+            "program": "${workspaceFolder}/target/debug/examples/playground",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "sourceLanguages": ["rust"]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Simple Example",
             "program": "${workspaceFolder}/target/debug/examples/simple",
             "args": [],
@@ -16,16 +25,20 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug tests in lasgun",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib"
-                ]
-            },
+            "name": "Simple Cows Example",
+            "program": "${workspaceFolder}/target/debug/examples/simplecows",
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "sourceLanguages": ["rust"]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug tests in lasgun",
+            "program": "${workspaceFolder}/target/debug/deps/${workspaceRootFolderName}-d86b5523fec336d7",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "sourceLanguages": ["rust"]
         },
         {
             "type": "lldb",
@@ -34,20 +47,6 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=cli"
-                ]
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug tests in cli",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
                     "--bin=cli"
                 ]
             },

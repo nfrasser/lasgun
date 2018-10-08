@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn smstdodeca() -> (Box<[f32]>, Box<[u32]>) {
     let vertices = Box::new([
         -158.333350, 225.647350, -64.699450,
