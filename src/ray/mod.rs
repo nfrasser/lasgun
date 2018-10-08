@@ -1,4 +1,3 @@
-use cgmath::prelude::*;
 use cgmath::{ BaseFloat, Point3, Vector3 };
 
 /// The default ray is 3D uses double-precision units

@@ -28,8 +28,7 @@ impl super::Material for Phong {
         let ambient = Color::new(
             scene.options.ambient[0],
             scene.options.ambient[1],
-            scene.options.ambient[2]
-        );
+            scene.options.ambient[2]);
 
         // start with ambient lighting
         let output = self.kd.mul_element_wise(ambient);
