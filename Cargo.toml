@@ -17,6 +17,11 @@ name = "cli"
 required-features = ["bin"]
 
 [[example]]
+name = "playground"
+path = "src/examples/playground.rs"
+required-features = ["bin"]
+
+[[example]]
 name = "simple"
 path = "src/examples/simple.rs"
 required-features = ["bin"]

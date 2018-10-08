@@ -13,10 +13,10 @@ fn simplecows() -> Scene {
         up: [0.0, 1.0, 0.0],
         fov: 50.0,
         ambient: [0.4, 0.4, 0.4],
-        width: 512,
-        height: 512,
+        width: 256,
+        height: 256,
         supersampling: 0,
-        threads: 0
+        threads: 1
     });
 
     scene.add_point_light([200.0, 202.0, 430.0], [0.8, 0.8, 0.8], [1.0, 0.0, 0.0]);
