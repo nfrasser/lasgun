@@ -61,7 +61,7 @@ impl Shape for Bounds {
         } else {
             // Intersection, check if it happens behind the ray
             let t = if tnear < 0.0 { tfar } else { tnear };
-            Intersection::new(t, normal)
+            Intersection { t, normal: normal::Normal3(normal).face_forward(ray.d) }
         }
     }
 }

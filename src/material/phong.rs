@@ -23,7 +23,7 @@ impl super::Material for Phong {
         q: &Point, eye: &Point, normal: &Normal,
         scene: &Scene
     ) -> Color {
-        let n = normal.as_ref().normalize();
+        let n = normal.as_vec().normalize();
         let v: Vector = (eye - q).normalize();
         let ambient = Color::new(
             scene.options.ambient[0],

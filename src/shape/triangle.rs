@@ -175,10 +175,6 @@ impl<'a> Shape for Triangle<'a> {
         // 7. fill in Intersection from triangle hit
         // There is for sure an intersection at this point, compute the normal from original points
         let normal = (p2 - p1).cross(p1 - p0);
-        if normal.dot(ray.d) > 0.0 {
-            Intersection::new(t, -normal)
-        } else {
-            Intersection::new(t, normal)
-        }
+        Intersection::new(t, normal::Normal3(normal).face_forward(ray.d))
     }
 }

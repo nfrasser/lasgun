@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn buckyball() -> (Box<[f32]>, Box<[u32]>) {
     let vertices = Box::new([
         2.118034, -1.000000, 0.809017,

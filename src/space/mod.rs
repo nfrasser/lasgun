@@ -1,9 +1,9 @@
 // Contains shortcuts for commonly used linear-algebra types used in the ray-tracer
 pub use cgmath::prelude::*;
 use cgmath::{ Point3, Vector3 };
-mod normal;
-mod bounds;
-mod transform;
+pub mod normal;
+pub mod bounds;
+pub mod transform;
 
 pub use self::transform::Trans;
 

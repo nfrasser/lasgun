@@ -60,16 +60,16 @@ impl Shape for Sphere {
                 Intersection::none()
             } else if t0 < 0.0 {
                 // Intersects in front and behind, eye is inside the sphere!
-                let normal = Normal::new(cen - (ray.origin + t1*d));
+                let normal = normal::Normal3(cen - (ray.origin + t1*d));
                 Intersection { t: t1, normal }
             } else {
                 // Eye is outside the sphere, use closest root
-                let normal = Normal::new(ray.origin + t0*d - cen);
+                let normal = normal::Normal3(ray.origin + t0*d - cen);
                 Intersection { t: t0, normal }
             }
         } else if numroots == 1 && roots[0] > 0.0 {
-            let normal = Normal::new(ray.origin + roots[0]*d - cen);
-            Intersection { t: roots[0], normal }
+            let normal = normal::Normal3(ray.origin + roots[0]*d - cen);
+            Intersection { t: roots[0], normal: normal.face_forward(ray.d) }
         } else {
             Intersection::none()
         }

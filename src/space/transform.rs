@@ -12,11 +12,13 @@ use crate::ray::Ray3;
 pub trait Trans<N: BaseFloat>: Transform<Point3<N>> {
     fn transform_normal(&self, normal: Normal3<N>) -> Normal3<N>;
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N>;
-    // fn transform_ray_to_model(&self, ray: Ray3<N>) -> Ray3<N>;
+    fn inverse_transform_normal(&self, normal: Normal3<N>) -> Normal3<N>;
+    fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N>;
     // fn transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N>;
 }
 
 /// A transformation for three-space constructs
+#[derive(Debug)]
 pub struct Transform3<N: BaseFloat> {
     m: Matrix4<N>,
     minv: Matrix4<N>
@@ -171,31 +173,39 @@ impl<N: BaseFloat> Transform<Point3<N>> for Transform3<N> {
 }
 
 impl<N: BaseFloat> Trans<N> for Transform3<N> {
+    #[inline]
     fn transform_normal(&self, normal: Normal3<N>) -> Normal3<N> {
-        let vec = normal.as_ref();
-        let (x, y, z) = (vec.x, vec.y, vec.z);
+        let (x, y, z) = (normal.0.x, normal.0.y, normal.0.z);
         let minv = &self.minv;
-        let vec = Vector3::new(
+        Normal3::new(
             minv[0][0]*x + minv[0][1]*y + minv[0][2]*z,
             minv[1][0]*x + minv[1][1]*y + minv[1][2]*z,
-            minv[2][0]*x + minv[2][1]*y + minv[2][2]*z);
-        Normal3(vec)
+            minv[2][0]*x + minv[2][1]*y + minv[2][2]*z)
     }
 
+    #[inline]
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
-        let origin = self.transform_point(ray.origin);
-        let d = self.transform_vector(ray.d);
+        let origin = self.m.transform_point(ray.origin);
+        let d = self.m.transform_vector(ray.d);
         Ray3::new(origin, d)
     }
 
-    /*
-    /// Transform a ray from its world coordinates to model coordinates for a
-    /// model that has been transformed by the given transformation.
-    fn transform_ray_to_model(&self, ray: Ray3<N>) -> Ray3<N> {
+    #[inline]
+    fn inverse_transform_normal(&self, normal: Normal3<N>) -> Normal3<N> {
+        let (x, y, z) = (normal.0.x, normal.0.y, normal.0.z);
+        let m = &self.m;
+        Normal3::new(
+            m[0][0]*x + m[0][1]*y + m[0][2]*z,
+            m[1][0]*x + m[1][1]*y + m[1][2]*z,
+            m[2][0]*x + m[2][1]*y + m[2][2]*z)
+    }
+
+    /// Transform a ray from its world coordinates to model coordinates
+    #[inline]
+    fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
         let origin = self.minv.transform_point(ray.origin);
         let d = self.minv.transform_vector(ray.d);
         Ray3::new(origin, d)
     }
-    */
 }
 

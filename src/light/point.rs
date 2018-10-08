@@ -37,7 +37,7 @@ impl Light for PointLight {
         let t = d.magnitude(); // distance to light in world coordinates
 
         // Move point slighly outside the surface of the intersecting primitive
-        // accounts for floating point erros
+        // accounts for floating point errors
         let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
         let ray = Ray::new(p, d);
 

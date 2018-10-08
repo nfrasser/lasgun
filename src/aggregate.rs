@@ -98,8 +98,8 @@ impl Primitive for Aggregate {
         &self.background
     }
 
-    fn intersect(&self, ray: &Ray) -> (Intersection, &dyn Primitive) {
-        let ray = Transformation::inverse(&self.transform).transform_ray(*ray);
+    fn intersect(&self, r: &Ray) -> (Intersection, &dyn Primitive) {
+        let ray = self.transform.inverse_transform_ray(*r);
         let init: (Intersection, &dyn Primitive) = (Intersection::none(), self);
 
         // Find the closest child with which this node intersects
@@ -135,6 +135,6 @@ mod test {
 
         assert!(intersection.exists());
         assert_eq!(intersection.t, 1.0);
-        assert_eq!(intersection.normal, Normal::new(Vector::new(0.0, 0.0, -1.0)))
+        assert_eq!(intersection.normal, normal::Normal3(Vector::new(0.0, 0.0, -1.0)))
     }
 }

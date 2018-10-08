@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn plane() -> (Box<[f32]>, Box<[u32]>) {
     let vertices = Box::new([
         -1.0, 0.0, -1.0,

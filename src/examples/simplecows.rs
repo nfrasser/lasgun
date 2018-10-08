@@ -44,11 +44,11 @@ fn simplecows() -> Scene {
 
         let mut p1 = Aggregate::new();
         p1.add_cube([0.0, 0.0, 0.0], 1.0, stone);
-        p1.translate([-2.4, 0.0, -0.4]).scale(0.8, 4.0, 0.8);
+        p1.scale(0.8, 4.0, 0.8).translate([-2.4, 0.0, -0.4]);
 
         let mut p2 = Aggregate::new();
         p2.add_cube([0.0, 0.0, 0.0], 1.0, stone);
-        p2.translate([1.6, 0.0, -0.4]).scale(0.8, 4.0, 0.8);
+        p2.scale(0.8, 4.0, 0.8).translate([1.6, 0.0, -0.4]);
 
         let mut s = Aggregate::new();
         s.add_sphere([0.0, 0.0, 0.0], 1.0, stone);
