@@ -1,63 +1,96 @@
 // use std::ops::Index;
+use std::f64;
+use obj;
 
 use crate::space::*;
 use crate::ray::Ray;
 
 use super::{Shape, Intersection};
-use super::mesh::Mesh;
+
+// TODO: Is this okay?
+pub type Obj = obj::Obj<'static, TriangleIndex>;
+
+#[derive(Debug, Copy, Clone)]
+pub struct TriangleIndex(pub u32, pub u32, pub u32);
 
 /// A triangle references its parent mesh and the index within the faces array. The triangle's
 /// lifetime depends on the mesh it references. This implementation ensures the smallest possible
 /// triangle implementation when storing large triangle meshes in memory.
-#[derive(Debug)]
+#[derive(Copy, Clone)]
 pub struct Triangle<'a> {
-    /**
-    Reference to the mesh that contains this triangle
-    */
-    mesh: &'a Mesh,
 
-    /**
-    Index within `f` list of vertex indeces in the mesh vertex data
-    */
-    f: u32
+    /// Object index within .obj mesh
+    object: u16,
+
+    /// Group index within the object
+    group: u16,
+
+    /// Polygon index into the group. Contains face data as TriangleIndex
+    poly: u32,
+
+    /// Reference to the parsed .obj file mesh that contains this triangle
+    /// Used to extract information like vertex positions
+    obj: &'a Obj,
+}
+
+
+impl obj::GenPolygon for TriangleIndex {
+    fn new(data: obj::SimplePolygon) -> Self {
+        match data.len() {
+            3 => TriangleIndex(data[0].0 as u32, data[1].0 as u32, data[2].0 as u32),
+            _ => panic!("Not a triangle mesh!")
+        }
+    }
 }
 
 impl<'a> Triangle<'a> {
-    pub fn new(mesh: &'a Mesh, f: u32) -> Triangle<'a> {
-        debug_assert!(f < mesh.fcount());
-        Triangle { mesh, f }
+    pub fn new(obj: &'a Obj, object: u16, group: u16, poly: u32) -> Triangle<'a> {
+        Triangle { object, group, poly, obj }
+    }
+
+    #[inline]
+    pub fn p0(&self) -> Point {
+        let v = self.obj.position[self.poly().0 as usize];
+        Point::new(v[0].into(), v[1].into(), v[2].into())
+    }
+
+    #[inline]
+    pub fn p1(&self) -> Point {
+        let v = self.obj.position[self.poly().1 as usize];
+        Point::new(v[0].into(), v[1].into(), v[2].into())
+    }
+
+    #[inline]
+    pub fn p2(&self) -> Point {
+        let v = self.obj.position[self.poly().2 as usize];
+        Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     /// Get the point at the given index
     #[inline]
-    fn p(&self, i: usize) -> Point {
+    pub fn p(&self, i: usize) -> Point {
         debug_assert!(i < 3);
-        let vertices = self.mesh.vertices();
-        let faces = self.mesh.faces();
-        let vertex = faces[3 * self.f as usize + i] as usize;
-
-        let (vx, vy, vz) = (
-            vertices[vertex * 3 + 0],
-            vertices[vertex * 3 + 1],
-            vertices[vertex * 3 + 2],
-        );
-
-        Point::new(vx.into(), vy.into(), vz.into())
+        match i {
+            0 => self.p0(),
+            1 => self.p1(),
+            2 => self.p2(),
+            _ => Point::from_value(f64::NAN)
+        }
     }
 
     #[inline]
-    fn p0(&self) -> Point {
-        self.p(0)
+    fn object(&self) -> &obj::Object<'a, TriangleIndex> {
+        &self.obj.objects[self.object as usize]
     }
 
     #[inline]
-    fn p1(&self) -> Point {
-        self.p(1)
+    fn group(&self) -> &obj::Group<'a, TriangleIndex> {
+        &self.object().groups[self.group as usize]
     }
 
     #[inline]
-    fn p2(&self) -> Point {
-        self.p(2)
+    fn poly(&self) -> &TriangleIndex {
+        &self.group().polys[self.poly as usize]
     }
 }
 

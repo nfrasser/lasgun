@@ -35,7 +35,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug tests in lasgun",
-            "program": "${workspaceFolder}/target/debug/deps/${workspaceRootFolderName}-d86b5523fec336d7",
+            "program": "${workspaceFolder}/target/debug/deps/${workspaceRootFolderName}-55c75722ef79820f",
             "args": [],
             "cwd": "${workspaceFolder}",
             "sourceLanguages": ["rust"]
