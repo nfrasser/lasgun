@@ -28,13 +28,13 @@ fn simplecows() -> Scene {
     // The Floor
     let mut plane = Aggregate::new();
     plane.scale(30.0, 30.0, 30.0);
-    plane.add_mesh(meshes::path("plane").as_path(), grass);
+    plane.add_mesh_at(meshes::path("plane").as_path(), grass);
     scene.contents.add_aggregate(plane);
 
     // Central altar
     let mut buckyball = Aggregate::new();
     buckyball.scale(1.5, 1.5, 1.5);;
-    buckyball.add_mesh(meshes::path("buckyball").as_path(), stone);
+    buckyball.add_mesh_at(meshes::path("buckyball").as_path(), stone);
     scene.contents.add_aggregate(buckyball);
 
     // Ring of arches
