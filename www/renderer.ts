@@ -4,9 +4,13 @@ declare const self: DedicatedWorkerGlobalScope
 import * as wasm from 'lasgun-js/lasgun_js_bg'
 import * as lasgun from 'lasgun-js'
 
-function capture(sceneFunctionBody: string) {
-    const sceneFunction = new Function(
-        'lasgun', 'exports',
+async function capture(sceneFunctionBody: string) {
+
+    // Can't call directly because webpack rewrites this :(
+    const AsyncFunction = (new Function("return Object.getPrototypeOf(async function () {}).constructor"))();
+
+    const sceneFunction = new AsyncFunction(
+        'lasgun', 'resolve', 'reject',
         `"use strict";var ${unsafeGlobals.join(',')};\n${sceneFunctionBody}`
     );
 
@@ -16,22 +20,32 @@ function capture(sceneFunctionBody: string) {
     // Expose a new lasgun with just the bare essentials for use
     // in the user-scene code
     const lasgunLite = Object.freeze({
-        scene(options: any) {
+        scene(options: any): lasgun.Scene {
             let scene = lasgun.scene(options)
             allocations.push(scene)
             return scene
         },
-        contents() {
+        contents(): lasgun.Aggregate {
             let contents = lasgun.Aggregate.new()
             allocations.push(contents)
             return contents
+        },
+        async mesh(url: string): Promise<string> {
+            let response = await fetch(url)
+            return await response.text()
         }
     })
 
-    const exports: { scene?: lasgun.Scene } = { scene: null }
+    const exports: { scene?: lasgun.Scene } = { scene: null };
 
     try {
-        sceneFunction(lasgunLite, exports)
+        exports.scene = await new Promise<lasgun.Scene>(async (resolve, reject) => {
+            try {
+                await sceneFunction(lasgunLite, resolve, reject)
+            } catch (e) {
+                reject(e)
+            }
+        })
     } catch (e) {
         // TODO: Use this regexp to get line/column location of error
         // /<anonymous>:[0-9]+:[0-9]+/.exec(e.stack)
@@ -104,6 +118,7 @@ const unsafeGlobals = [
     'self',
     'DedicatedWorkerGlobalScope',
     'Function',
+    'AsyncFunction',
     'console',
     // Just to be safe
     'wasm',
@@ -112,10 +127,10 @@ const unsafeGlobals = [
     'sceneFunction'
 ]
 
-self.addEventListener('message', (event) => {
+self.addEventListener('message', async (event) => {
     switch (event.data.type) {
     case 'scene':
-        let result = capture(event.data.value)
+        let result = await capture(event.data.value)
         if (result.error) {
             self.postMessage({ type: 'error', value: result.error })
         } else {
