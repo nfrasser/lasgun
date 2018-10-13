@@ -39,7 +39,8 @@ const browserConfig = {
   mode: "development",
   plugins: [
     new CopyWebpackPlugin([
-      { from: './www/scenes/*.txt', to: './scenes', flatten: true }
+      { from: './www/scenes/*.js', to: './scenes', flatten: true },
+      { from: './meshes/*.obj', to: './meshes', flatten: true }
     ], {}),
     new HtmlWebpackPlugin({
       template: './www/index.html',

@@ -1,65 +1,45 @@
+use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
+
 use crate::space::*;
-use crate::shape::*;
-use super::triangle::Triangle;
 
-/**
-Container representing a triangle mesh. A reference to it
-is stored by all triangles available in the scene
+use super::*;
+use super::triangle::*;
 
-You can iterate over all of a mesh's triangles by calling the into_iter method
-*/
-#[derive(Debug)]
+/// A triangle mesh loaded from a .obj file
 pub struct Mesh {
-
-    /// The vertices that make up this mesh.
-    /// Each group of 3 represents an vertex position.
-    vertices: Box<[f32]>,
-
-    /// Each element is an index * 3 into the vertices array.
-    /// Each group of 3 represents indeces to 3 verteces that make up a face.
-    faces: Box<[u32]>,
-
-    /// Mesh bounding box
+    pub obj: Obj,
     pub bounds: Bounds
 }
 
+
+/// Container representing a triangle mesh.
+/// You can iterate over all of a mesh's triangles by calling the into_iter method
+
 impl Mesh {
-    pub fn new(vertices: Box<[f32]>, faces: Box<[u32]>) -> Mesh {
-        // Must have 3 floats per vertex
-        // Must also have 3 indeces into the vertex array per face
-        assert!(vertices.len() % 3 == 0);
-        assert!(faces.len() % 3 == 0);
-
-        // Generate the bounds
-        let bounds = vertices.chunks(3)
-        .fold(Bounds::none(), |bounds, vertex| {
-            let point = Point::new(vertex[0].into(), vertex[1].into(), vertex[2].into());
-            bounds.point_union(&point)
+    pub fn new(obj: Obj) -> Mesh {
+        let bounds = obj.position.iter().fold(Bounds::none(), |bounds, pos| {
+            bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
         });
-
-        Mesh { vertices, faces, bounds }
+        Mesh { obj, bounds }
     }
 
-    #[inline]
-    pub fn vertices(&self) -> &[f32] {
-        &*self.vertices
+    /// Load from an object file at the given path
+    pub fn load(path: &Path) -> io::Result<Mesh> {
+        let f = File::open(path)?;
+        let mut obj = Obj::load_buf(&mut BufReader::new(f))?;
+        // unwrap is safe as we've read this file before
+        obj.path = path.parent().unwrap().to_owned();
+        Ok(Mesh::new(obj))
     }
 
-    #[inline]
-    pub fn faces(&self) -> &[u32] {
-        &*self.faces
+    pub fn load_buf<B>(input: &mut B) -> io::Result<Self> where B: BufRead {
+        let obj = Obj::load_buf(input)?;
+        Ok(Mesh::new(obj))
     }
 
-    /// The total number of vertices in this mesh
-    #[inline]
-    pub fn vcount(&self) -> u32 {
-        (self.vertices.len() / 3) as u32
-    }
-
-    /// The total number of faces in this mesh
-    #[inline]
-    pub fn fcount(&self) -> u32 {
-        (self.faces.len() / 3) as u32
+    pub fn from(slice: &str) -> io::Result<Self> {
+        let mut buf = io::Cursor::new(slice);
+        Mesh::load_buf(&mut buf)
     }
 }
 
@@ -76,6 +56,7 @@ impl Shape for Mesh {
     }
 }
 
+
 impl<'a> IntoIterator for &'a Mesh {
     type Item = Triangle<'a>;
     type IntoIter = MeshIterator<'a>;
@@ -86,14 +67,29 @@ impl<'a> IntoIterator for &'a Mesh {
 /// Structure that allows using a mesh as an iterator
 /// Each item in the iterator is a triangle that references the parent mesh
 pub struct MeshIterator<'a> {
-    pub mesh: &'a Mesh,
-    fcount: u32, // total number of faces
-    findex: u32 // current face index
+    obj: &'a Obj,
+    // Current iteration indeces
+    size_hint: usize,
+    object_index: usize,
+    group_index: usize,
+    poly_index: usize
 }
 
 impl<'a> MeshIterator<'a> {
     fn new(mesh: &'a Mesh) -> MeshIterator<'a> {
-        MeshIterator { mesh, fcount: mesh.fcount(), findex: 0 }
+        let size_hint = mesh.obj.objects.iter().fold(0, |size, object| {
+            object.groups.iter().fold(size, |size, group| {
+                size + group.polys.len()
+            })
+        });
+
+        MeshIterator {
+            obj: &mesh.obj,
+            size_hint,
+            object_index: 0,
+            group_index: 0,
+            poly_index: 0,
+        }
     }
 }
 
@@ -101,18 +97,36 @@ impl<'a> Iterator for MeshIterator<'a> {
     type Item = Triangle<'a>;
 
     fn next(&mut self) -> Option<Triangle<'a>> {
-        if self.findex < self.fcount {
-            let f = self.findex;
-            self.findex += 1;
-            Some(Triangle::new(self.mesh, f))
-        } else {
-            None
+        if self.size_hint == 0 { return None };
+        let triangle = Triangle::new(
+            &self.obj,
+            self.object_index as u16,
+            self.group_index as u16,
+            self.poly_index as u32);
+
+        self.poly_index += 1;
+
+        if self.poly_index == self.obj.objects[self.object_index].groups[self.group_index].polys.len() {
+            self.poly_index = 0;
+            self.group_index += 1;
         }
+
+        if self.group_index == self.obj.objects[self.object_index].groups.len() {
+            self.group_index = 0;
+            self.object_index += 1;
+        }
+
+        if self.object_index == self.obj.objects.len() {
+            self.size_hint = 0;
+        } else {
+            self.size_hint -= 1;
+        }
+
+        return Some(triangle)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining = self.fcount - self.findex;
-        (remaining as usize, Some(remaining as usize))
+        (self.size_hint as usize, Some(self.size_hint as usize))
     }
 }
 
@@ -122,17 +136,16 @@ mod test {
 
     #[test]
     fn plane_intersection() {
-        let plane = Mesh::new(
-            Box::new([
-                -1.0, 0.0, -1.0,
-                1.0, 0.0, -1.0,
-                1.0, 0.0, 1.0,
-                -1.0, 0.0, 1.0,
-            ]),
-            Box::new([
-                0, 2, 1,
-                0, 3, 2,
-            ]));
+        let plane = Mesh::from(r#"o plane
+v -1 0 -1
+v 1 0 -1
+v 1 0 1
+v -1 0 1
+
+f 1 3 2
+f 1 4 3
+"#
+        ).unwrap();
 
         let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
         let intersection = plane.intersect(&ray);

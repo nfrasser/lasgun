@@ -90,14 +90,6 @@ extern {
     #[wasm_bindgen(method, getter, structural)]
     pub fn end(this: &Cuboid) -> Box<[JsValue]>; // Vector
 
-    /// Ducktype for Triangle Mesh settings
-    pub type Mesh;
-    #[wasm_bindgen(method, getter, structural)]
-    pub fn vertices(this: &Mesh) -> Box<[f32]>;
-    #[wasm_bindgen(method, getter, structural)]
-    pub fn faces(this: &Mesh) -> Box<[u32]>;
-
-
     fn alert(s: &str);
 }
 
@@ -310,10 +302,8 @@ impl Aggregate {
         self.data.add_box(start, end, material.native())
     }
 
-    pub fn add_mesh(&mut self, mesh: &Mesh, material: &MaterialRef) {
-        let vertices = mesh.vertices();
-        let faces = mesh.faces();
-        self.data.add_mesh(vertices, faces, material.native())
+    pub fn add_mesh(&mut self, obj: &str, material: &MaterialRef) {
+        self.data.add_mesh_from(obj, material.native())
     }
 
     /// Translate by the given delta values, x y and z

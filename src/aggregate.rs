@@ -1,3 +1,4 @@
+use std::path::Path;
 use cgmath::{prelude::*, Deg};
 use crate::space::*;
 
@@ -55,8 +56,19 @@ impl Aggregate {
         self.contents.push(Box::new(Geometry { shape, material }))
     }
 
-    pub fn add_mesh(&mut self, vertices: Box<[f32]>, faces: Box<[u32]>, material: MaterialRef) {
-        let shape = Mesh::new(vertices, faces);
+    pub fn add_mesh(&mut self, shape: Mesh, material: MaterialRef) {
+        self.contents.push(Box::new(Geometry { shape, material }))
+    }
+
+    /// Add a mesh from a obj file loaded as a string
+    pub fn add_mesh_from(&mut self, obj: &str, material: MaterialRef) {
+        let shape = Mesh::from(obj).unwrap();
+        self.contents.push(Box::new(Geometry { shape, material }))
+    }
+
+    // Add the .obj file mesh at the given file-system path
+    pub fn add_mesh_at(&mut self, obj_path: &Path, material: MaterialRef) {
+        let shape = Mesh::load(obj_path).unwrap();
         self.contents.push(Box::new(Geometry { shape, material }))
     }
 

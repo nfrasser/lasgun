@@ -1,7 +1,10 @@
-mod plane;
-mod buckyball;
-mod smstdodeca;
+use std::path::PathBuf;
 
-pub use self::plane::plane;
-pub use self::buckyball::buckyball;
-pub use self::smstdodeca::smstdodeca;
+pub fn path(name: &str) -> PathBuf {
+    let mut path = PathBuf::new();
+    path.push(".");
+    path.push("meshes");
+    path.push(name.clone());
+    path.set_extension("obj");
+    path
+}
