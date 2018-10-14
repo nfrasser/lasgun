@@ -7,6 +7,7 @@ pub(crate) mod math;
 pub(crate) mod ray;
 pub(crate) mod img;
 pub(crate) mod space;
+pub(crate) mod interaction;
 
 pub mod material;
 pub mod shape;

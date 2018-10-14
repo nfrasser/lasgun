@@ -1,8 +1,12 @@
 use std::f64;
 
-use crate::space::*;
-use crate::scene::Scene;
-use crate::primitive::Primitive;
+use crate::{
+    space::*,
+    primitive::Primitive,
+    material::Material,
+    interaction::SurfaceInteraction,
+    scene::Scene,
+};
 
 use super::Ray;
 
@@ -44,22 +48,30 @@ impl PrimaryRay {
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
             let ray = Ray::new(self.origin, d);
 
-            let (intersection, primitive) = scene.contents.intersect(&ray);
+            let mut interaction = SurfaceInteraction::none();
+            scene.contents.intersect(&ray, &mut interaction);
+            if !interaction.exists() { continue };
 
-            // Get the material the interecting primitive is made of
-            let material = primitive.material(scene);
+            // Try getting the material
+            let material: &dyn Material;
+            if let Some(mref) = interaction.material {
+                if let Some(m) = scene.material(mref) { material = m }
+                else { continue }
+            } else { continue }
 
             // The vector spanning from the eye to the point of intersection
             // eye + direction = point of intersection
-            let direction: Vector = intersection.t * ray.d;
-            let normal: &Normal = &intersection.normal;
+            let normal = &interaction.n;
 
-            // Add a small fraction of the normal to avoid speckling due to floating point errors
-            // (the calculated point ends up inside the geometric primitive).
-            let qpoint = ray.origin + direction + (f64::EPSILON * 32.0) * normal.as_vec();
+            // Add a small fraction of the normal to avoid speckling due to
+            // floating point errors (the calculated point ends up inside the
+            // geometric primitive).
+            interaction.p = ray.origin
+                + interaction.t * ray.d
+                + (f64::EPSILON * 32.0) * normal.as_vec();
 
             // Query the material for the color at the given point
-            color += material.color(&qpoint, &ray.origin, normal, scene)
+            color += material.color(&interaction.p, &ray.origin, normal, scene)
         }
 
         color * scene.supersampling.power

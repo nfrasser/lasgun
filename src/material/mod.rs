@@ -16,5 +16,4 @@ pub trait Material {
     ) -> Color;
 }
 
-pub mod background;
 pub mod phong;

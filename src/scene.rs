@@ -180,9 +180,13 @@ impl Scene {
         self.contents = contents
     }
 
-    pub fn material(&self, material: MaterialRef) -> &dyn Material {
+    pub fn material(&self, material: MaterialRef) -> Option<&dyn Material> {
         debug_assert!(material.0 < self.materials.len());
-        &*self.materials[material.0]
+        if let Some(material) = self.materials.get(material.0) {
+            Some(&**material)
+        } else {
+            None
+        }
     }
 
     fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {

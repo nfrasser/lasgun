@@ -1,10 +1,10 @@
-
-use crate::ray::Ray;
-use crate::scene::{Scene, MaterialRef};
-use crate::shape::{
-    Shape, Intersection,
+use crate::{
+    ray::Ray,
+    shape::Shape,
+    interaction::SurfaceInteraction,
+    scene::MaterialRef,
 };
-use crate::material::Material;
+
 use super::Primitive;
 
 /// A primitive representing a geometric shape such as a sphere or cube.
@@ -18,12 +18,12 @@ pub struct Geometry<S: Shape> {
 
 impl<S: Shape> Primitive for Geometry<S> {
     #[inline]
-    fn material<'a>(&self, scene: &'a Scene) -> &'a dyn Material {
-        scene.material(self.material)
-    }
-
-    #[inline]
-    fn intersect(&self, ray: &Ray) -> (Intersection, &dyn Primitive) {
-        (self.shape.intersect(ray), self)
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+        if self.shape.intersect(ray, interaction) {
+            interaction.material = Some(self.material);
+            true
+        } else {
+            false
+        }
     }
 }

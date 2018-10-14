@@ -2,12 +2,11 @@ use std::path::Path;
 use cgmath::{prelude::*, Deg};
 use crate::space::*;
 
-
 use crate::ray::Ray;
-use crate::material::{Material, background::Background};
 use crate::primitive::{Primitive, geometry::Geometry};
-use crate::shape::{Intersection, mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
-use crate::scene::{Scene, MaterialRef};
+use crate::shape::{mesh::Mesh, sphere::Sphere, cuboid::Cuboid};
+use crate::scene::{MaterialRef};
+use crate::interaction::SurfaceInteraction;
 
 /// A primitive that contains many primitives, all of which may be intersected
 /// with. If no intersection occurs with the primitives in the content, we say
@@ -15,7 +14,6 @@ use crate::scene::{Scene, MaterialRef};
 /// material is used.
 pub struct Aggregate {
     contents: Vec<Box<dyn Primitive>>,
-    background: Background,
     transform: Transformation
 }
 
@@ -23,16 +21,6 @@ impl Aggregate {
     pub fn new() -> Aggregate {
         Aggregate {
             contents: vec![],
-            background: Background::black(),
-            transform: Transformation::identity()
-        }
-    }
-
-    pub fn new_with_background(color: [f64; 3]) -> Aggregate {
-        let color = Color::new(color[0], color[1], color[2]);
-        Aggregate {
-            contents: vec![],
-            background: Background::new(color),
             transform: Transformation::identity()
         }
     }
@@ -106,30 +94,32 @@ impl Aggregate {
 }
 
 impl Primitive for Aggregate {
-    #[inline]
-    fn material(&self, _scene: &Scene) -> &dyn Material {
-        &self.background
-    }
-
-    fn intersect(&self, r: &Ray) -> (Intersection, &dyn Primitive) {
+    fn intersect(&self, r: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         let ray = self.transform.inverse_transform_ray(*r);
-        let init: (Intersection, &dyn Primitive) = (Intersection::none(), self);
+        let mut i = self.transform.inverse_transform_surface_interaction(interaction);
+        let mut exists = false;
 
         // Find the closest child with which this node intersects
-        let (intersection, primitive) = self.contents.iter().fold(init, |closest, node| {
-            let next = node.intersect(&ray);
-            if next.0.t < closest.0.t { next } else { closest }
-        });
+        for node in self.contents.iter() {
+            exists = node.intersect(&ray, &mut i) || exists
+        }
 
-        // Transformation normal before sending it back
-        let normal = self.transform.transform_normal(intersection.normal);
-        (Intersection { t: intersection.t, normal }, primitive)
+        // Transform normal before sending it back
+        if exists {
+            interaction.t = i.t;
+            interaction.n = self.transform.transform_normal(i.n);
+            interaction.p = self.transform.transform_point(i.p);
+            interaction.material = i.material;
+        }
+
+        exists
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::scene::Scene;
 
     fn make_simple_scene() -> Scene {
         let mut scene = Scene::trivial();
@@ -144,10 +134,10 @@ mod test {
         let scene = make_simple_scene();
 
         let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
-        let (intersection, _) = scene.contents.intersect(&ray);
+        let mut interaction = SurfaceInteraction::none();
 
-        assert!(intersection.exists());
-        assert_eq!(intersection.t, 1.0);
-        assert_eq!(intersection.normal, normal::Normal3(Vector::new(0.0, 0.0, -1.0)))
+        assert!(scene.contents.intersect(&ray, &mut interaction););
+        assert_eq!(interaction.t, 1.0);
+        assert_eq!(interaction.n, normal::Normal3(Vector::new(0.0, 0.0, -1.0)))
     }
 }

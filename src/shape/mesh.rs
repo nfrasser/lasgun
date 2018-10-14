@@ -1,6 +1,6 @@
 use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
 
-use crate::space::*;
+use crate::{space::*, interaction::SurfaceInteraction};
 
 use super::*;
 use super::triangle::*;
@@ -44,14 +44,16 @@ impl Mesh {
 }
 
 impl Shape for Mesh {
-    fn intersect(&self, ray: &Ray) -> Intersection {
-        // Check if intersects with bounding box before doing triangle intersection
-        if !self.bounds.intersect(ray).exists() { return Intersection::none() }
+    fn object_bound(&self) -> Bounds {
+        self.bounds
+    }
 
-        let init = Intersection::none();
-        self.into_iter().fold(init, |closest, triangle| {
-            let next = triangle.intersect(ray);
-            if next.t < closest.t { next } else { closest }
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+        // Check if intersects with bounding box before doing triangle intersection
+        if !self.bounds.intersects(ray) { return false }
+
+        self.into_iter().fold(false, |exists, triangle| {
+            triangle.intersect(ray, interaction) || exists
         })
     }
 }
@@ -148,9 +150,10 @@ f 1 4 3
         ).unwrap();
 
         let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
-        let intersection = plane.intersect(&ray);
+        let mut interaction = SurfaceInteraction::none();
 
-        assert_eq!(intersection.t, 1.0);
-        assert_eq!(intersection.normal.0.normalize(), Vector::unit_y());
+        assert!(plane.intersect(&ray, &mut interaction));
+        assert_eq!(interaction.t, 1.0);
+        assert_eq!(interaction.n.0.normalize(), Vector::unit_y());
     }
 }

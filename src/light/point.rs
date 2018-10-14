@@ -3,6 +3,7 @@ use crate::space::*;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::primitive::Primitive;
+use crate::interaction::SurfaceInteraction;
 
 use super::{Light, LightSampleIterator};
 
@@ -47,8 +48,9 @@ impl Light for PointLight {
         let ray = Ray::new(p, d);
 
         // See if there's anything that intersects
-        let (intersection, _) = scene.contents.intersect(&ray);
-        if intersection.exists() && intersection.t < t {
+        let mut interaction = SurfaceInteraction::none();
+        scene.contents.intersect(&ray, &mut interaction);
+        if interaction.exists() && interaction.t < t {
             None
         } else {
             Some(*self)
