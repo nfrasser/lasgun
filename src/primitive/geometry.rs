@@ -1,4 +1,5 @@
 use crate::{
+    space::*,
     ray::Ray,
     shape::Shape,
     interaction::SurfaceInteraction,
@@ -17,7 +18,11 @@ pub struct Geometry<S: Shape> {
 }
 
 impl<S: Shape> Primitive for Geometry<S> {
-    #[inline]
+    fn object_bound(&self) -> Bounds { self.shape.object_bound() }
+    fn world_bound(&self, transform: &Transformation) -> Bounds {
+        self.shape.world_bound(transform)
+    }
+
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         if self.shape.intersect(ray, interaction) {
             interaction.material = Some(self.material);
@@ -25,5 +30,9 @@ impl<S: Shape> Primitive for Geometry<S> {
         } else {
             false
         }
+    }
+
+    fn intersects(&self, ray: &Ray) -> bool {
+        self.shape.intersects(ray)
     }
 }

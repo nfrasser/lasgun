@@ -3,7 +3,7 @@ use std::f64;
 use crate::space::*;
 use crate::ray::Ray;
 use crate::interaction::SurfaceInteraction;
-use super::Shape;
+use super::{Primitive, Shape};
 
 /**
 aka "Box", aka "Rectangular prism"
@@ -26,7 +26,7 @@ impl Cuboid {
     }
 }
 
-impl Shape for Cuboid {
+impl Primitive for Cuboid {
     fn object_bound(&self) -> Bounds {
         self.bounds.object_bound()
     }
@@ -39,7 +39,9 @@ impl Shape for Cuboid {
     }
 }
 
-impl Shape for Bounds {
+impl Shape for Cuboid {}
+
+impl Primitive for Bounds {
     fn object_bound(&self) -> Bounds { *self }
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
@@ -96,8 +98,9 @@ impl Shape for Bounds {
 
         tnear <= tfar && tfar > 0.0
     }
-
 }
+
+impl Shape for Bounds {}
 
 // Vectors representing the cube normals
 const CUBE_NORMALS: [[f64; 3]; 3] = [

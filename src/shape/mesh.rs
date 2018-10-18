@@ -41,9 +41,18 @@ impl Mesh {
         let mut buf = io::Cursor::new(slice);
         Mesh::load_buf(&mut buf)
     }
+
+    /// Number of faces on this mesh
+    pub fn fcount(&self) -> usize {
+        self.obj.objects.iter().fold(0, |size, object| {
+            object.groups.iter().fold(size, |size, group| {
+                size + group.polys.len()
+            })
+        })
+    }
 }
 
-impl Shape for Mesh {
+impl Primitive for Mesh {
     fn object_bound(&self) -> Bounds {
         self.bounds
     }
@@ -57,7 +66,6 @@ impl Shape for Mesh {
         })
     }
 }
-
 
 impl<'a> IntoIterator for &'a Mesh {
     type Item = Triangle<'a>;
@@ -79,15 +87,9 @@ pub struct MeshIterator<'a> {
 
 impl<'a> MeshIterator<'a> {
     fn new(mesh: &'a Mesh) -> MeshIterator<'a> {
-        let size_hint = mesh.obj.objects.iter().fold(0, |size, object| {
-            object.groups.iter().fold(size, |size, group| {
-                size + group.polys.len()
-            })
-        });
-
         MeshIterator {
             obj: &mesh.obj,
-            size_hint,
+            size_hint: mesh.fcount(),
             object_index: 0,
             group_index: 0,
             poly_index: 0,
@@ -128,7 +130,7 @@ impl<'a> Iterator for MeshIterator<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.size_hint as usize, Some(self.size_hint as usize))
+        (self.size_hint, Some(self.size_hint))
     }
 }
 

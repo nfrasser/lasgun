@@ -1,18 +1,18 @@
-use std::f64;
+use std::{io, path::Path, f64};
 
 use crate::space::*;
-use crate::aggregate::Aggregate;
 use crate::light::{Light, point::PointLight};
 use crate::material::{Material, phong::Phong};
+use crate::shape::mesh::Mesh;
 
 /// Opaque reference to a material within a scene. May be passed around and
 /// copied freely but is not relevant outside the noted scene.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MaterialRef(usize);
 
-/// Opaque reference to a mesh in a scene
+/// Opaque reference to a .object file mesh in a scene
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct MeshRef(usize);
+pub struct ObjRef(usize);
 
 /**
     Description of the world to render
@@ -23,10 +23,11 @@ pub struct Scene {
     pub options: Options,
 
     /// The primitives to use in the scene
-    pub contents: Aggregate,
+    pub root: description::Aggregate,
 
     pub materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
     pub lights: Vec<Box<dyn Light>>, // point-light sources in the scene
+    pub meshes: Vec<Mesh>,
 
     pub ambient: Color, // ambient lighting
 
@@ -137,9 +138,9 @@ impl Scene {
         let supersample_power = 1.0/(supersample_count as f64);
 
         Scene {
-            lights: vec![], materials: vec![],
+            lights: vec![], materials: vec![], meshes: vec![],
             ambient: Color::new(options.ambient[0], options.ambient[1], options.ambient[2]),
-            contents: Aggregate::new(),
+            root: description::SceneNode::Group(description::Aggregate::new()),
             eye, view, up, aux, pixel_radius,
             supersampling: Sampling {
                 dim: supersample_dim,
@@ -176,11 +177,32 @@ impl Scene {
         self.lights.push(Box::new(light))
     }
 
-    pub fn set_contents(&mut self, contents: Aggregate) {
-        self.contents = contents
+
+    pub fn add_mesh(&mut self, mesh: Mesh, material: MaterialRef) -> ObjRef {
+        let reference = ObjRef(self.meshes.len());
+        self.meshes.push(mesh);
+        reference
     }
 
-    pub fn material(&self, material: MaterialRef) -> Option<&dyn Material> {
+    /// Add a mesh from a obj file loaded as a string
+    pub fn add_mesh_from(&mut self, obj: &str, material: MaterialRef) -> io::Result<ObjRef> {
+        let reference = ObjRef(self.meshes.len());
+        self.meshes.push(Mesh::from(obj)?);
+        Ok(reference)
+    }
+
+    // Add the .obj file mesh at the given file-system path
+    pub fn add_mesh_at(&mut self, obj_path: &Path, material: MaterialRef) -> io::Result<ObjRef> {
+        let reference = ObjRef(self.meshes.len());
+        self.meshes.push(Mesh::load(obj_path)?);
+        Ok(reference)
+    }
+
+    pub fn set_root(&mut self, node: description::SceneNode) {
+        self.root = node
+    }
+
+    pub fn material(&self, material: &MaterialRef) -> Option<&dyn Material> {
         debug_assert!(material.0 < self.materials.len());
         if let Some(material) = self.materials.get(material.0) {
             Some(&**material)
@@ -189,9 +211,15 @@ impl Scene {
         }
     }
 
+    pub fn mesh<'a>(&'a self, mesh: &ObjRef) -> Option<&'a Mesh> {
+        self.meshes.get(mesh.0)
+    }
+
     fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
         let reference = MaterialRef(self.materials.len());
         self.materials.push(material);
         reference
     }
 }
+
+pub mod description;

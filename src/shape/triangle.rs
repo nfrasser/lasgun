@@ -8,7 +8,7 @@ use crate::{
     interaction::SurfaceInteraction
 };
 
-use super::Shape;
+use super::{Primitive, Shape};
 
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
@@ -109,7 +109,7 @@ impl<'a> Index<usize> for Triangle<'a> {
 }
 */
 
-impl<'a> Shape for Triangle<'a> {
+impl<'a> Primitive for Triangle<'a> {
     fn object_bound(&self) -> Bounds {
         Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
     }
@@ -228,3 +228,5 @@ impl<'a> Shape for Triangle<'a> {
         true
     }
 }
+
+impl<'a> Shape for Triangle<'a> {}

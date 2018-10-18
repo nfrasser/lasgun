@@ -35,6 +35,8 @@ required-features = ["bin"]
 rand = "^0.4"
 cgmath = "^0.16"
 obj = "^0.9"
+typed-arena = "^1.4"
+partition = "^0.1"
 num_cpus = { version = "^1.0", optional = true }
 
 [dependencies.image]

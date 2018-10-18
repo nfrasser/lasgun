@@ -94,6 +94,11 @@ impl Aggregate {
 }
 
 impl Primitive for Aggregate {
+    fn object_bound(&self) -> Bounds {
+        self.contents.iter()
+        .fold(Bounds::none(), |bounds, prim| bounds.union(&prim.object_bound()))
+    }
+
     fn intersect(&self, r: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         let ray = self.transform.inverse_transform_ray(*r);
         let mut i = self.transform.inverse_transform_surface_interaction(interaction);

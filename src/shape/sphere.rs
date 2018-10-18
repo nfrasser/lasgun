@@ -2,7 +2,7 @@ use std::f64;
 use crate::math;
 use crate::space::*;
 use crate::ray::Ray;
-use crate::shape::Shape;
+use crate::shape::{Primitive, Shape};
 use crate::interaction::SurfaceInteraction;
 
 /**
@@ -15,7 +15,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(origin: [f64; 3], radius: f64) -> Sphere{
+    pub fn new(origin: [f64; 3], radius: f64) -> Sphere {
         Sphere {
             origin: Point::new(origin[0], origin[1], origin[2]),
             radius
@@ -23,7 +23,7 @@ impl Sphere {
     }
 }
 
-impl Shape for Sphere {
+impl Primitive for Sphere {
     fn object_bound(&self) -> Bounds {
         Bounds::new(
             self.origin - Vector::from_value(self.radius),
@@ -93,6 +93,8 @@ impl Shape for Sphere {
         }
     }
 }
+
+impl Shape for Sphere {}
 
 #[cfg(test)]
 mod test {

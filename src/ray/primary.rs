@@ -29,7 +29,7 @@ impl PrimaryRay {
         PrimaryRay { origin, d }
     }
 
-    pub fn cast(&self, scene: &Scene) -> Color {
+    pub fn cast(&self, scene: &Scene, root: &impl Primitive) -> Color {
         let dim = scene.supersampling.dim as i32;
         let mut color = Color::zero();
 
@@ -49,7 +49,7 @@ impl PrimaryRay {
             let ray = Ray::new(self.origin, d);
 
             let mut interaction = SurfaceInteraction::none();
-            scene.contents.intersect(&ray, &mut interaction);
+            root.intersect(&ray, &mut interaction);
             if !interaction.exists() { continue };
 
             // Try getting the material

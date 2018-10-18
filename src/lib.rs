@@ -8,20 +8,21 @@ pub(crate) mod ray;
 pub(crate) mod img;
 pub(crate) mod space;
 pub(crate) mod interaction;
+pub(crate) mod material;
+pub(crate) mod shape;
+pub(crate) mod primitive;
+pub(crate) mod light;
+// pub(crate) mod aggregate;
+pub(crate) mod accelerators;
 
-pub mod material;
-pub mod shape;
-pub mod primitive;
-pub mod light;
 pub mod scene;
-pub mod aggregate;
+
 #[cfg(feature = "bin")]
 pub mod output;
 
 use std::thread;
 use std::ptr::NonNull;
 
-pub use crate::space::{Point, Color, Vector};
 pub use crate::scene::Scene;
 pub use crate::img::{Film, Pixel, PixelBuffer};
 use crate::ray::primary::PrimaryRay;
