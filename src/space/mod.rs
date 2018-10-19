@@ -25,11 +25,6 @@ pub fn lerp<N: BaseFloat>(t: N, p0: N, p1: N) -> N {
 }
 
 #[inline]
-pub fn point_lerp<N: BaseFloat>(t: N, p0: &Point3<N>, p1: &Point3<N>) -> Point3<N> {
-    p0 * (N::one() - t) + p1.to_vec() * t
-}
-
-#[inline]
 pub fn max_dimension(v: &Vector) -> usize {
     if v.x > v.y { if v.x > v.z { 0 } else { 2 } }
     else { if v.y > v.z { 1 } else { 2 } }

@@ -41,6 +41,29 @@ impl Aggregate {
         self.contents.push(node)
     }
 
+    pub fn add_group(&mut self, aggregate: Aggregate) {
+        self.contents.push(SceneNode::Group(aggregate))
+    }
+
+    pub fn add_sphere(&mut self, center: [f64; 3], radius: f64, material: MaterialRef) {
+        let shape = Shape::Sphere(center, radius);
+        self.contents.push(SceneNode::Geometry(shape, material))
+    }
+
+    pub fn add_cube(&mut self, origin: [f64; 3], dim: f64, material: MaterialRef) {
+        let shape = Shape::Cube(origin, dim);
+        self.contents.push(SceneNode::Geometry(shape, material))
+    }
+
+    pub fn add_box(&mut self, minbound: [f64; 3], maxbound: [f64; 3], material: MaterialRef) {
+        let shape = Shape::Cuboid(minbound, maxbound);
+        self.contents.push(SceneNode::Geometry(shape, material))
+    }
+
+    pub fn add_mesh(&mut self, mesh: ObjRef, material: MaterialRef) {
+        self.contents.push(SceneNode::Mesh(mesh, material))
+    }
+
     #[inline]
     pub fn translate(&mut self, delta: [f64; 3]) -> &mut Self {
         let delta = Vector::new(delta[0], delta[1], delta[2]);

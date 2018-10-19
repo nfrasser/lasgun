@@ -1,7 +1,6 @@
 use std::f64;
 use crate::space::*;
 use crate::ray::Ray;
-use crate::scene::Scene;
 use crate::primitive::Primitive;
 use crate::interaction::SurfaceInteraction;
 
@@ -38,7 +37,7 @@ impl Light for PointLight {
     ///     let f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d;
     ///     println!("{}", f_att);
     ///
-    fn sample(&self, scene: &Scene, p: &Point) -> Option<PointLight> {
+    fn sample(&self, root: &dyn Primitive, p: &Point) -> Option<PointLight> {
         let d = self.position - p; // direction from p to light
         let t = d.magnitude(); // distance to light in world coordinates
 
@@ -49,7 +48,7 @@ impl Light for PointLight {
 
         // See if there's anything that intersects
         let mut interaction = SurfaceInteraction::none();
-        scene.root.intersect(&ray, &mut interaction);
+        root.intersect(&ray, &mut interaction);
         if interaction.exists() && interaction.t < t {
             None
         } else {
@@ -57,9 +56,9 @@ impl Light for PointLight {
         }
     }
 
-    fn iter_samples<'l, 's>(&'l self, scene: &'s Scene, p: Point)
+    fn iter_samples<'l, 's>(&'l self, root: &'s dyn Primitive, p: Point)
     -> LightSampleIterator<'l, 's> {
         // Point lights only require one sample
-        LightSampleIterator::new(self, scene, p, 1)
+        LightSampleIterator::new(self, root, p, 1)
     }
 }

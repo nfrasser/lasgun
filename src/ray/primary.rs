@@ -55,7 +55,7 @@ impl PrimaryRay {
             // Try getting the material
             let material: &dyn Material;
             if let Some(mref) = interaction.material {
-                if let Some(m) = scene.material(mref) { material = m }
+                if let Some(m) = scene.material(&mref) { material = m }
                 else { continue }
             } else { continue }
 
@@ -71,7 +71,7 @@ impl PrimaryRay {
                 + (f64::EPSILON * 32.0) * normal.as_vec();
 
             // Query the material for the color at the given point
-            color += material.color(&interaction.p, &ray.origin, normal, scene)
+            color += material.color(&interaction.p, &ray.origin, normal, scene, root)
         }
 
         color * scene.supersampling.power

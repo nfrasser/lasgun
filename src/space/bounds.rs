@@ -55,7 +55,7 @@ impl<S: BaseNum> Bounds3<S> {
     pub fn union(&self, with: &Self) -> Self {
         Bounds3 {
             min: zip_points!(self.min, with.min, min),
-            max: zip_points!(self.max, with.max, min)
+            max: zip_points!(self.max, with.max, max)
         }
     }
 

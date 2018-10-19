@@ -1,5 +1,5 @@
 use crate::space::*;
-use crate::scene::Scene;
+use crate::{scene::Scene, primitive::Primitive};
 
 // Phong-lighted material
 pub struct Phong {
@@ -21,7 +21,7 @@ impl Phong {
 impl super::Material for Phong {
     fn color(&self,
         q: &Point, eye: &Point, normal: &Normal,
-        scene: &Scene
+        scene: &Scene, root: &dyn Primitive
     ) -> Color {
         let n = normal.as_vec().normalize();
         let v: Vector = (eye - q).normalize();
@@ -37,7 +37,7 @@ impl super::Material for Phong {
         scene.lights.iter().fold(output, |output, scene_light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
-            scene_light.iter_samples(scene, *q).fold(output, |output, light| {
+            scene_light.iter_samples(root, *q).fold(output, |output, light| {
                 // vector to light and its length (distance to the light from q)
                 let l = light.position - q;
                 let d = l.magnitude();

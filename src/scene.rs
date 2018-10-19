@@ -140,7 +140,7 @@ impl Scene {
         Scene {
             lights: vec![], materials: vec![], meshes: vec![],
             ambient: Color::new(options.ambient[0], options.ambient[1], options.ambient[2]),
-            root: description::SceneNode::Group(description::Aggregate::new()),
+            root: description::Aggregate::new(),
             eye, view, up, aux, pixel_radius,
             supersampling: Sampling {
                 dim: supersample_dim,
@@ -178,27 +178,27 @@ impl Scene {
     }
 
 
-    pub fn add_mesh(&mut self, mesh: Mesh, material: MaterialRef) -> ObjRef {
+    pub fn add_mesh(&mut self, mesh: Mesh) -> ObjRef {
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(mesh);
         reference
     }
 
     /// Add a mesh from a obj file loaded as a string
-    pub fn add_mesh_from(&mut self, obj: &str, material: MaterialRef) -> io::Result<ObjRef> {
+    pub fn add_mesh_from(&mut self, obj: &str) -> io::Result<ObjRef> {
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(Mesh::from(obj)?);
         Ok(reference)
     }
 
     // Add the .obj file mesh at the given file-system path
-    pub fn add_mesh_at(&mut self, obj_path: &Path, material: MaterialRef) -> io::Result<ObjRef> {
+    pub fn add_mesh_at(&mut self, obj_path: &Path) -> io::Result<ObjRef> {
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(Mesh::load(obj_path)?);
         Ok(reference)
     }
 
-    pub fn set_root(&mut self, node: description::SceneNode) {
+    pub fn set_root(&mut self, node: description::Aggregate) {
         self.root = node
     }
 

@@ -1,11 +1,22 @@
 use cgmath::{
     Matrix, Transform,
-    Vector3, Point3, Matrix4,
+    Vector3, Point3, Matrix4, Vector4,
     BaseFloat, Deg,
     InnerSpace
 };
 use super::{normal::Normal3, bounds::Bounds3};
 use crate::{ray::Ray3, interaction::surface::SurfaceInteraction};
+
+/// Identity transformation
+pub const ID: Transform3<f64> = Transform3 { m: ID_MATRIX, minv: ID_MATRIX };
+
+/// Identity matrix
+const ID_MATRIX: Matrix4<f64> = Matrix4 {
+    x: Vector4 { x: 1.0, y: 0.0, z: 0.0, w: 0.0 },
+    y: Vector4 { x: 0.0, y: 1.0, z: 0.0, w: 0.0 },
+    z: Vector4 { x: 0.0, y: 0.0, z: 1.0, w: 0.0 },
+    w: Vector4 { x: 0.0, y: 0.0, z: 0.0, w: 1.0 },
+};
 
 /// Generic lasgun-wise transformation
 pub trait Trans<N: BaseFloat>: Transform<Point3<N>> {
