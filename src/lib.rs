@@ -12,7 +12,6 @@ pub(crate) mod material;
 pub(crate) mod shape;
 pub(crate) mod primitive;
 pub(crate) mod light;
-// pub(crate) mod aggregate;
 pub(crate) mod accelerators;
 
 pub mod scene;
