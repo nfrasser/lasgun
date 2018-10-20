@@ -185,7 +185,7 @@ impl<'s> BVHAccel<'s> {
             }
         ; total_nodes];
 
-        BVHAccel::flatten_bvh_tree(node, &mut accel.nodes[..], &mut 0);
+        accel.flatten_bvh_tree(node, &mut 0);
         accel
     }
 
@@ -417,23 +417,23 @@ impl<'s> BVHAccel<'s> {
     // a is the lifetime of the arena as usual
     // v is the lifetime of the parent LinearBVHNode vec
     fn flatten_bvh_tree<'a, 'v>(
+        &mut self,
         node: &'a BVHBuildNode<'a>,
-        linear_nodes: &'v mut [LinearBVHNode],
         offset: &mut usize
     ) -> usize {
         let my_offset = *offset; *offset += 1;
-        linear_nodes[my_offset].bounds = node.bounds;
+        self.nodes[my_offset].bounds = node.bounds;
         match node.content {
             BVHNodeType::Leaf(prim_offset, nprims) => {
-                linear_nodes[my_offset].content =
+                self.nodes[my_offset].content =
                     LinearBVHNodeType::Leaf(prim_offset as u32, nprims as u16);
             }
             BVHNodeType::Interior(axis, c0, c1) => {
                 let (_, second_offset) = (
-                    BVHAccel::flatten_bvh_tree(c0, linear_nodes, offset),
-                    BVHAccel::flatten_bvh_tree(c1, linear_nodes, offset)
+                    self.flatten_bvh_tree(c0, offset),
+                    self.flatten_bvh_tree(c1, offset)
                 );
-                linear_nodes[my_offset].content
+                self.nodes[my_offset].content
                     = LinearBVHNodeType::Interior(axis as u8, second_offset as u32)
             }
         }
@@ -588,8 +588,6 @@ fn left_shift_3(x: u32) -> u32 {
 }
 
 fn radix_sort(v: &mut Vec<MortonPrimitive>) {
-    // Unsafely create a bunch of morton prims filled with gibberish.
-    // This is okay because they're never logically read from
     let mut temp: Vec<MortonPrimitive> = vec![
         MortonPrimitive { index: 0, code: 0}; v.len()
     ];

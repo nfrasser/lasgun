@@ -140,7 +140,7 @@ impl Scene {
         Scene {
             lights: vec![], materials: vec![], meshes: vec![],
             ambient: Color::new(options.ambient[0], options.ambient[1], options.ambient[2]),
-            root: description::Aggregate::new(),
+            root: Aggregate::new(),
             eye, view, up, aux, pixel_radius,
             supersampling: Sampling {
                 dim: supersample_dim,
@@ -198,7 +198,7 @@ impl Scene {
         Ok(reference)
     }
 
-    pub fn set_root(&mut self, node: description::Aggregate) {
+    pub fn set_root(&mut self, node: Aggregate) {
         self.root = node
     }
 
