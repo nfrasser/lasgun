@@ -35,9 +35,13 @@ const RADIX_NBUCKETS: usize = 1 << RADIX_BITS_PER_PASS as usize;
 const RADIX_BITMASK: u32 = (1 << RADIX_BITS_PER_PASS) - 1;
 
 
-/// Bounding Volume Hierarchy Acceleration structure
-/// Its lifetime depends on the scene whose content it holds
-/// Uses Linear Bounding Volume hierarchy strategy
+/// Bounding Volume Hierarchy Acceleration structure. Its lifetime depends on
+/// the scene whose content it holds.
+///
+/// Uses Linear Bounding Volume hierarchy strategy, as described in the
+/// Physically Based Rendering book.
+///
+/// http://www.pbr-book.org/3ed-2018/Primitives_and_Intersection_Acceleration/Bounding_Volume_Hierarchies.html
 pub struct BVHAccel<'s> {
     primitives: Vec<PrimBox<'s>>,
 
