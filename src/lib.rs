@@ -26,13 +26,16 @@ pub use crate::scene::Scene;
 pub use crate::img::{Film, Pixel, PixelBuffer};
 use crate::ray::primary::PrimaryRay;
 use crate::primitive::Primitive;
-use crate::accelerators::bvh::BVHAccel;
 
 /// A 16×16 portion of pixels taken from a film, arranged in row-major order.
 /// Used for streaming render results. NOT a slice of `Film::data`.
 ///
 /// 16 * 16 pixels = 256 pixels = 4 * 256 bytes = 1024 bytes
 pub type FilmDataHunk = [u8; 1024];
+
+/// An acceleration structure tied to a give scene
+/// Internally implemented as a Bounding-Volume Hierarchy
+pub type Accel<'s> = self::accelerators::bvh::BVHAccel<'s>;
 
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
@@ -57,7 +60,7 @@ pub fn capture(scene: &Scene, film: &mut Film) {
 
     let pixel_ptr = film.data.raw_pixels_mut();
 
-    let root = BVHAccel::from(scene);
+    let root = Accel::from(scene);
     let mut threads: Vec<thread::JoinHandle<_>> = vec![];
 
     for i in 1..barrel_count {
@@ -79,12 +82,12 @@ pub fn capture(scene: &Scene, film: &mut Film) {
             // I am so, so, so sorry, I need this to get sendable_root_ptr
             // across the thread boundary. I promise I super-quadruple-checked
             // that this is safe.
-            std::mem::transmute::<&BVHAccel<'_>, &BVHAccel<'static>>(&root)
-        } as *const BVHAccel);
+            std::mem::transmute::<&Accel<'_>, &Accel<'static>>(&root)
+        } as *const Accel);
         let sendable_pixel_ptr = UnsafeThreadWrapperMut(NonNull::new(pixel_ptr).unwrap());
         let handle = thread::spawn(move || {
             let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
-            let root: &BVHAccel = unsafe { &*sendable_root_ptr.0 };
+            let root: &Accel = unsafe { &*sendable_root_ptr.0 };
             let pixels: *mut Pixel = sendable_pixel_ptr.0.as_ptr();
             capture_subset(i, barrel_count, scene, root, pixels)
         });

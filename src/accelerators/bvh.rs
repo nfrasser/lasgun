@@ -56,7 +56,7 @@ pub struct BVHAccel<'s> {
     // each nodes member referes to an index into this vec.
     order: Vec<BVHPrimNumber>,
 
-    // Limit to how many primitives there may be per node
+    // Limit to how many primitives there may be per node tree
     max_prims_per_node: u8
 }
 
