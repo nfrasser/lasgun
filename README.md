@@ -73,12 +73,12 @@ let mat = scene.add_phong_material({
     shininess: 25
 })
 
-let contents = lasgun.contents()
-contents.add_sphere({
+let node = lasgun.group()
+node.add_sphere({
     origin: [0, 0, 100],
     radius: 50
 },  mat)
-scene.set_contents(contents)
+scene.set_root(node)
 
 let film = lasgun.film(scene)
 lasgun.capture(scene, film)
