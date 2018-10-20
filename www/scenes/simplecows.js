@@ -11,7 +11,7 @@ const scene = lasgun.scene({
     fov: 50.0,
     sampling: 0
 })
-let contents = lasgun.contents();
+let contents = lasgun.group();
 
 scene.add_point_light({
     position: [200.0, 202.0, 430.0],
@@ -23,33 +23,36 @@ let stone = scene.add_phong_material({ kd: [0.8, 0.7, 0.7], ks: [0.0, 0.0, 0.0],
 let grass = scene.add_phong_material({ kd: [0.1, 0.7, 0.1], ks: [0.0, 0.0, 0.0], shininess: 0 })
 let hide = scene.add_phong_material({ kd: [0.84, 0.6, 0.53], ks: [0.3, 0.3, 0.3], shininess: 20 })
 
+let planemesh = scene.add_obj(await lasgun.mesh('./meshes/plane.obj'))
+let buckyballmesh = scene.add_obj(await lasgun.mesh('./meshes/buckyball.obj'))
+
 // Ring of arches
 for (let i = 0; i < 6; i++) {
 
-    let p1 = lasgun.contents()
+    let p1 = lasgun.group()
     p1.add_cube({ origin: [0.0, 0.0, 0.0], dim: 1.0 }, stone)
     p1.scale(0.8, 4.0, 0.8)
     p1.translate(-2.4, 0.0, -0.4)
 
-    let p2 = lasgun.contents()
+    let p2 = lasgun.group()
     p2.add_cube({ origin: [0.0, 0.0, 0.0], dim: 1.0 }, stone)
     p2.scale(0.8, 4.0, 0.8)
     p2.translate(1.6, 0.0, -0.4)
 
-    let s = lasgun.contents()
+    let s = lasgun.group()
     s.add_sphere({ origin: [0.0, 0.0, 0.0], radius: 1.0 }, stone)
     s.scale(4.0, 0.6, 0.6)
     s.translate(0.0, 4.0, 0.0)
 
-    let arc = lasgun.contents()
-    arc.add_node(p1)
-    arc.add_node(p2)
-    arc.add_node(s)
+    let arc = lasgun.group()
+    arc.add_group(p1)
+    arc.add_group(p2)
+    arc.add_group(s)
 
     arc.translate(0.0, 0.0, -10.0)
     arc.rotate_y(((i-1) * 60))
 
-    contents.add_node(arc)
+    contents.add_group(arc)
 }
 
 // Create some simple cows, transforming each one
@@ -58,7 +61,7 @@ for (let [translation, rotation] of [
     [[5.0, 1.3, -11.0], 180.0],
     [[-5.5, 1.3, -3.0], -60.0],
 ]) {
-    let cow = lasgun.contents()
+    let cow = lasgun.group()
     cow.scale(1.4, 1.4, 1.4)
     cow.rotate_y(rotation)
     cow.translate(...translation)
@@ -75,21 +78,21 @@ for (let [translation, rotation] of [
         cow.add_sphere({ origin, radius }, hide)
     }
 
-    contents.add_node(cow)
+    contents.add_group(cow)
 }
 
 // The Floor
-let plane = lasgun.contents()
+let plane = lasgun.group()
 plane.scale(30.0, 30.0, 30.0)
-plane.add_mesh(await lasgun.mesh('./meshes/plane.obj'), grass)
-contents.add_node(plane)
+plane.add_mesh(planemesh, grass)
+contents.add_group(plane)
 
 // Central altar
-let buckyball = lasgun.contents()
+let buckyball = lasgun.group()
 buckyball.scale(1.5, 1.5, 1.5)
-buckyball.add_mesh(await lasgun.mesh('./meshes/buckyball.obj'), stone)
-contents.add_node(buckyball)
+buckyball.add_mesh(buckyballmesh, stone)
+contents.add_group(buckyball)
 
 contents.rotate_x(23.0)
-scene.set_contents(contents)
+scene.set_root(contents)
 resolve(scene)

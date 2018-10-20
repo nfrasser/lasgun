@@ -8,7 +8,6 @@ async function capture(sceneFunctionBody: string) {
 
     // Can't call directly because webpack rewrites this :(
     const AsyncFunction = (new Function("return Object.getPrototypeOf(async function () {}).constructor"))();
-
     const sceneFunction = new AsyncFunction(
         'lasgun', 'resolve', 'reject',
         `"use strict";var ${unsafeGlobals.join(',')};\n${sceneFunctionBody}`
@@ -25,7 +24,7 @@ async function capture(sceneFunctionBody: string) {
             allocations.push(scene)
             return scene
         },
-        contents(): lasgun.Aggregate {
+        group(): lasgun.Aggregate {
             let contents = lasgun.Aggregate.new()
             allocations.push(contents)
             return contents
@@ -74,16 +73,20 @@ async function capture(sceneFunctionBody: string) {
 
     let hunkCount = lasgun.hunk_count(scene)
     let hunk = lasgun.Hunk.new()
+    let root = lasgun.Accel.from(scene)
+    let mem: ArrayBuffer = wasm.memory.buffer
 
     // Stream bits of the scene over to main as we go
     for (let i = 0; i < hunkCount; i++) {
-        lasgun.capture_hunk(i, scene, hunk)
+        lasgun.capture_hunk(i, scene, root, hunk)
+        let start = hunk.as_ptr();
+        let end = start + 1024;
         self.postMessage({
             type: 'hunk',
             value: {
                 x: hunk.x,
                 y: hunk.y,
-                data: new Uint8ClampedArray(wasm.memory.buffer, hunk.as_ptr(), 1024)
+                data: new Uint8ClampedArray(mem.slice(start, end))
             }
         })
     }
