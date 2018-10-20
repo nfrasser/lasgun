@@ -2,10 +2,13 @@
 use std::f64;
 use obj;
 
-use crate::space::*;
-use crate::ray::Ray;
+use crate::{
+    space::*,
+    ray::Ray,
+    interaction::SurfaceInteraction
+};
 
-use super::{Shape, Intersection};
+use super::{Primitive, Shape};
 
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
@@ -106,8 +109,12 @@ impl<'a> Index<usize> for Triangle<'a> {
 }
 */
 
-impl<'a> Shape for Triangle<'a> {
-    fn intersect(&self, ray: &Ray) -> Intersection {
+impl<'a> Primitive for Triangle<'a> {
+    fn bound(&self) -> Bounds {
+        Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
+    }
+
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         // 1. Get triangle vertices
         let (p0, p1, p2) = (self.p0(), self.p1(), self.p2());
 
@@ -171,12 +178,12 @@ impl<'a> Shape for Triangle<'a> {
         // Perform triangle edge and determinant tests
         if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
             // Edge coefficients differ, origin is outside
-            return Intersection::none()
+            return false
         };
 
         // If the sum is 0, the triangle is right on the edge
         let det = e0 + e1 + e2;
-        if det == 0.0 { return Intersection::none() };
+        if det == 0.0 { return false };
 
         // Compute scaled hit distance to triangle and test against ray t range
         // This step was saved from later
@@ -187,7 +194,7 @@ impl<'a> Shape for Triangle<'a> {
 
         // Check for mismatched determinant and tscaled signs (triangle is behind ray)
         if (det < 0.0 && tscaled >= 0.0) || (det > 0.0 && tscaled <= 0.0) {
-            return Intersection::none()
+            return false
         }
 
         // compute barycentric coordinates and t value for triangle intersection
@@ -197,6 +204,7 @@ impl<'a> Shape for Triangle<'a> {
         // let b1 = e1 * invdet;
         // let b2 = e2 * invdet;
         let t = tscaled * invdet;
+        if t >= interaction.t { return false };
 
         // TODO: ensure that computed triangle t is conservatively greater than 0
 
@@ -208,6 +216,10 @@ impl<'a> Shape for Triangle<'a> {
         // 7. fill in Intersection from triangle hit
         // There is for sure an intersection at this point, compute the normal from original points
         let normal = (p2 - p1).cross(p1 - p0);
-        Intersection::new(t, normal::Normal3(normal).face_forward(ray.d))
+        interaction.t = t;
+        interaction.n = normal::Normal3(normal).face_forward(ray.d);
+        true
     }
 }
+
+impl<'a> Shape for Triangle<'a> {}

@@ -1,26 +1,21 @@
 use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
 
-use crate::space::*;
+use crate::{space::*, interaction::SurfaceInteraction};
 
 use super::*;
 use super::triangle::*;
 
 /// A triangle mesh loaded from a .obj file
 pub struct Mesh {
-    pub obj: Obj,
-    pub bounds: Bounds
+    pub obj: Obj
 }
-
 
 /// Container representing a triangle mesh.
 /// You can iterate over all of a mesh's triangles by calling the into_iter method
 
 impl Mesh {
     pub fn new(obj: Obj) -> Mesh {
-        let bounds = obj.position.iter().fold(Bounds::none(), |bounds, pos| {
-            bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
-        });
-        Mesh { obj, bounds }
+        Mesh { obj }
     }
 
     /// Load from an object file at the given path
@@ -41,21 +36,32 @@ impl Mesh {
         let mut buf = io::Cursor::new(slice);
         Mesh::load_buf(&mut buf)
     }
-}
 
-impl Shape for Mesh {
-    fn intersect(&self, ray: &Ray) -> Intersection {
-        // Check if intersects with bounding box before doing triangle intersection
-        if !self.bounds.intersect(ray).exists() { return Intersection::none() }
-
-        let init = Intersection::none();
-        self.into_iter().fold(init, |closest, triangle| {
-            let next = triangle.intersect(ray);
-            if next.t < closest.t { next } else { closest }
+    /// Number of faces on this mesh
+    pub fn fcount(&self) -> usize {
+        self.obj.objects.iter().fold(0, |size, object| {
+            object.groups.iter().fold(size, |size, group| {
+                size + group.polys.len()
+            })
         })
     }
 }
 
+// NOTE: This implementation is not used. BVH hierarchy construction is
+// responsible for this.
+impl Primitive for Mesh {
+    fn bound(&self) -> Bounds {
+        self.obj.position.iter().fold(Bounds::none(), |bounds, pos| {
+            bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
+        })
+    }
+
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+        self.into_iter().fold(false, |exists, triangle| {
+            triangle.intersect(ray, interaction) || exists
+        })
+    }
+}
 
 impl<'a> IntoIterator for &'a Mesh {
     type Item = Triangle<'a>;
@@ -77,15 +83,9 @@ pub struct MeshIterator<'a> {
 
 impl<'a> MeshIterator<'a> {
     fn new(mesh: &'a Mesh) -> MeshIterator<'a> {
-        let size_hint = mesh.obj.objects.iter().fold(0, |size, object| {
-            object.groups.iter().fold(size, |size, group| {
-                size + group.polys.len()
-            })
-        });
-
         MeshIterator {
             obj: &mesh.obj,
-            size_hint,
+            size_hint: mesh.fcount(),
             object_index: 0,
             group_index: 0,
             poly_index: 0,
@@ -126,7 +126,7 @@ impl<'a> Iterator for MeshIterator<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.size_hint as usize, Some(self.size_hint as usize))
+        (self.size_hint, Some(self.size_hint))
     }
 }
 
@@ -148,9 +148,10 @@ f 1 4 3
         ).unwrap();
 
         let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
-        let intersection = plane.intersect(&ray);
+        let mut interaction = SurfaceInteraction::none();
 
-        assert_eq!(intersection.t, 1.0);
-        assert_eq!(intersection.normal.0.normalize(), Vector::unit_y());
+        assert!(plane.intersect(&ray, &mut interaction));
+        assert_eq!(interaction.t, 1.0);
+        assert_eq!(interaction.n.0.normalize(), Vector::unit_y());
     }
 }

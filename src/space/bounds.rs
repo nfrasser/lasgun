@@ -1,6 +1,6 @@
 use std::{ ops::Index };
 use cgmath::prelude::*;
-use cgmath::{ Vector3, Point3, BaseNum, Bounded };
+use cgmath::{ Vector3, Point3, BaseNum, BaseFloat, Bounded };
 
 /// Bounding box
 #[derive(Debug, Copy, Clone)]
@@ -55,7 +55,7 @@ impl<S: BaseNum> Bounds3<S> {
     pub fn union(&self, with: &Self) -> Self {
         Bounds3 {
             min: zip_points!(self.min, with.min, min),
-            max: zip_points!(self.max, with.max, min)
+            max: zip_points!(self.max, with.max, max)
         }
     }
 
@@ -89,28 +89,6 @@ impl<S: BaseNum> Bounds3<S> {
         all_coords_match!(p, self.max, |coord, max| coord < max)
     }
 
-}
-
-impl<S: BaseNum + Bounded> Bounds3<S> {
-    #[inline]
-    pub fn infinite() -> Bounds3<S> {
-        Bounds3 {
-            min: Point3::min_value(),
-            max: Point3::max_value()
-        }
-    }
-
-    #[inline]
-    pub fn none() -> Bounds3<S> {
-        Bounds3 {
-            min: Point3::max_value(),
-            max: Point3::min_value()
-        }
-    }
-}
-
-impl<S: BaseNum> Bounds3<S> {
-
     /// Expand the bounds by a constant factor
     #[inline]
     pub fn expand(&self, delta: S) -> Self {
@@ -140,6 +118,52 @@ impl<S: BaseNum> Bounds3<S> {
     pub fn volume(&self) -> S {
         let d = self.diagonal();
         d.x * d.y * d.z
+    }
+
+    // Returns inde of which of three axes is longest
+    #[inline]
+    pub fn maximum_extent(&self) -> usize {
+        let d = self.diagonal();
+        if d.x > d.y && d.z > d.z { 0 }
+        else if d.y > d.z { 1 }
+        else { 2 }
+    }
+
+    #[inline]
+    pub fn offset(&self, p: &Point3<S>) -> Vector3<S> {
+        let mut o = p - self.min;
+        if self.max.x > self.min.x { o.x /= self.max.x - self.min.x };
+        if self.max.y > self.min.y { o.y /= self.max.y - self.min.y };
+        if self.max.z > self.min.z { o.z /= self.max.z - self.min.z };
+        o
+    }
+}
+
+impl<S: BaseNum + Bounded> Bounds3<S> {
+    #[inline]
+    pub fn infinite() -> Bounds3<S> {
+        Bounds3 {
+            min: Point3::min_value(),
+            max: Point3::max_value()
+        }
+    }
+
+    #[inline]
+    pub fn none() -> Bounds3<S> {
+        Bounds3 {
+            min: Point3::max_value(),
+            max: Point3::min_value()
+        }
+    }
+}
+
+impl<S: BaseFloat> Bounds3<S> {
+    #[inline]
+    pub fn lerp(&self, t: &Point3<S>) -> Point3<S> {
+        Point3::new(
+            super::lerp(t.x, self.min.x, self.max.x),
+            super::lerp(t.y, self.min.y, self.max.y),
+            super::lerp(t.z, self.min.z, self.max.z))
     }
 }
 

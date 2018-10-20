@@ -117,11 +117,11 @@ pub fn capture(scene: &Scene, film: &mut Film) {
 /// addition to writing data, writes the target start and end x/y coordinates
 /// into the hunk.
 #[wasm_bindgen]
-pub fn capture_hunk(i: u32, scene: &Scene, hunk: &mut Hunk) {
+pub fn capture_hunk(i: u32, scene: &Scene, root: &Accel, hunk: &mut Hunk) {
     let (hhunks, _) = scene.hunk_dims();
     hunk.x = (i % hhunks as u32 * 16) as u16;
     hunk.y = (i / hhunks as u32 * 16) as u16;
-    lasgun::capture_hunk(hunk.x, hunk.y, scene.native(), hunk.data_mut())
+    lasgun::capture_hunk(hunk.x, hunk.y, scene.native(), root.native(), hunk.data_mut())
 }
 
 /// The number of 16x16 hunks that make up this scene
@@ -131,20 +131,20 @@ pub fn hunk_count(scene: &Scene) -> u32 {
     (hcount as u32) * (vcount as u32)
 }
 
+// Reference to a material in a scene
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug)]
-pub struct MaterialRef(lasgun::scene::MaterialRef);
+pub struct MaterialRef(lasgun::scene::MaterialRef); impl MaterialRef {
+    #[inline] pub fn native(&self) -> lasgun::scene::MaterialRef { self.0 }
+    #[inline] pub fn as_native(self) -> lasgun::scene::MaterialRef { self.0 }
+}
 
-impl MaterialRef {
-    #[inline]
-    pub fn native(&self) -> lasgun::scene::MaterialRef {
-        self.0
-    }
-
-    #[inline]
-    pub fn as_native(self) -> lasgun::scene::MaterialRef {
-        self.0
-    }
+// Triangle mesh reference in a scene
+#[wasm_bindgen]
+#[derive(Clone, Copy, Debug)]
+pub struct ObjRef(lasgun::scene::ObjRef); impl ObjRef {
+    #[inline] pub fn native(&self) -> lasgun::scene::ObjRef { self.0 }
+    #[inline] pub fn as_native(self) -> lasgun::scene::ObjRef { self.0 }
 }
 
 /// A 16×16 view into some scene, starting at the given x/y coordinates
@@ -216,8 +216,8 @@ impl Scene {
         self.data.options.height
     }
 
-    pub fn set_contents(&mut self, content: Aggregate) {
-        self.data.set_contents(content.as_native_aggregate())
+    pub fn set_root(&mut self, content: Aggregate) {
+        self.data.set_root(content.as_native_aggregate())
     }
 
     pub fn add_phong_material(&mut self, settings: &Phong) -> MaterialRef {
@@ -225,6 +225,10 @@ impl Scene {
         let ks = utils::to_vec3f(settings.ks());
         let shininess = settings.shininess();
         MaterialRef(self.data.add_phong_material(kd, ks, shininess))
+    }
+
+    pub fn add_obj(&mut self, obj: &str) -> ObjRef {
+        ObjRef(self.data.add_mesh_from(obj).unwrap())
     }
 
     pub fn add_point_light(&mut self, settings: &PointLight) {
@@ -270,18 +274,16 @@ impl Scene {
 }
 
 #[wasm_bindgen]
-pub struct Aggregate {
-    data: lasgun::aggregate::Aggregate
-}
+pub struct Aggregate { data: lasgun::scene::Aggregate }
 
 #[wasm_bindgen]
 impl Aggregate {
     pub fn new() -> Aggregate {
-        Aggregate { data: lasgun::aggregate::Aggregate::new() }
+        Aggregate { data: lasgun::scene::Aggregate::new() }
     }
 
-    pub fn add_node(&mut self, node: Aggregate) {
-        self.data.add_aggregate(node.data)
+    pub fn add_group(&mut self, node: Aggregate) {
+        self.data.add_group(node.data)
     }
 
     pub fn add_sphere(&mut self, sphere: &Sphere, material: &MaterialRef) {
@@ -302,8 +304,8 @@ impl Aggregate {
         self.data.add_box(start, end, material.native())
     }
 
-    pub fn add_mesh(&mut self, obj: &str, material: &MaterialRef) {
-        self.data.add_mesh_from(obj, material.native())
+    pub fn add_mesh(&mut self, mesh: &ObjRef, material: &MaterialRef) {
+        self.data.add_mesh(mesh.native(), material.native())
     }
 
     /// Translate by the given delta values, x y and z
@@ -335,13 +337,36 @@ impl Aggregate {
 
 impl Aggregate {
     #[inline]
-    pub fn as_native_aggregate(self) -> lasgun::aggregate::Aggregate {
+    pub fn as_native_aggregate(self) -> lasgun::scene::Aggregate {
         self.data
     }
 }
 
+/// Rendering Accelerator primitive. Implementation includes unsafe lifetime
+/// extension, as bindgen does not yet support lifetime constraints. The program
+/// will access invalid memory if the instance is accessed after its referenced
+/// scene is moved/dropped.
 #[wasm_bindgen]
-pub struct Film(lasgun::Film);
+pub struct Accel(lasgun::Accel<'static>); impl Accel {
+    pub fn native(&self) -> &lasgun::Accel<'static> { &self.0 }
+    pub fn as_native(self) -> lasgun::Accel<'static> { self.0 }
+}
+
+#[wasm_bindgen]
+impl Accel {
+    pub fn from(scene: &Scene) -> Accel {
+        // This is necessary because wasm_bindgen does not yet support lifetimes
+        let scene = unsafe { mem::transmute::<&Scene, &'static Scene>(scene) };
+        Accel(lasgun::Accel::from(&scene.data))
+    }
+}
+
+/// Captureable film
+#[wasm_bindgen]
+pub struct Film(lasgun::Film); impl Film {
+    pub fn native(&self) -> &lasgun::Film { &self.0 }
+    pub fn native_mut(&mut self) -> &mut lasgun::Film { &mut self.0 }
+}
 
 #[wasm_bindgen]
 impl Film {
@@ -369,15 +394,5 @@ impl Film {
         4
         * self.0.width as usize
         * self.0.height as usize
-    }
-}
-
-impl Film {
-    pub fn native(&self) -> &lasgun::Film {
-        &self.0
-    }
-
-    pub fn native_mut(&mut self) -> &mut lasgun::Film {
-        &mut self.0
     }
 }

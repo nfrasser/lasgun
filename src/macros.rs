@@ -22,3 +22,10 @@ macro_rules! zip_points {
         Point3::new($cb($p0.x, $p1.x), $cb($p0.y, $p1.y), $cb($p0.z, $p1.z))
     }
 }
+
+/// Create a new point by joining the components
+macro_rules! zip_vectors {
+    ($p0:expr, $p1:expr, $cb:expr) => {
+        Vector3::new($cb($p0.x, $p1.x), $cb($p0.y, $p1.y), $cb($p0.z, $p1.z))
+    }
+}

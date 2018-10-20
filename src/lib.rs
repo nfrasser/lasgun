@@ -7,29 +7,35 @@ pub(crate) mod math;
 pub(crate) mod ray;
 pub(crate) mod img;
 pub(crate) mod space;
+pub(crate) mod interaction;
+pub(crate) mod material;
+pub(crate) mod shape;
+pub(crate) mod primitive;
+pub(crate) mod light;
+pub(crate) mod accelerators;
 
-pub mod material;
-pub mod shape;
-pub mod primitive;
-pub mod light;
 pub mod scene;
-pub mod aggregate;
+
 #[cfg(feature = "bin")]
 pub mod output;
 
 use std::thread;
 use std::ptr::NonNull;
 
-pub use crate::space::{Point, Color, Vector};
 pub use crate::scene::Scene;
 pub use crate::img::{Film, Pixel, PixelBuffer};
 use crate::ray::primary::PrimaryRay;
+use crate::primitive::Primitive;
 
 /// A 16×16 portion of pixels taken from a film, arranged in row-major order.
 /// Used for streaming render results. NOT a slice of `Film::data`.
 ///
 /// 16 * 16 pixels = 256 pixels = 4 * 256 bytes = 1024 bytes
 pub type FilmDataHunk = [u8; 1024];
+
+/// An acceleration structure tied to a give scene
+/// Internally implemented as a Bounding-Volume Hierarchy
+pub type Accel<'s> = self::accelerators::bvh::BVHAccel<'s>;
 
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
@@ -53,9 +59,12 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     };
 
     let pixel_ptr = film.data.raw_pixels_mut();
+
+    let root = Accel::from(scene);
     let mut threads: Vec<thread::JoinHandle<_>> = vec![];
 
     for i in 1..barrel_count {
+
         // This weird unsafe pointer casting is to allow multiple instances of
         // the constant scene reference and the mutable pixel buffer reference
         // to be used by the tracing code.
@@ -66,20 +75,28 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         //
         // It's very important that the threads join the main thread before
         // this function call ends, otherwise very bad things will happen.
+        //
+        // TODO: Pls. make this less terrifying
         let sendable_scene_ptr = UnsafeThreadWrapper(scene as *const Scene);
+        let sendable_root_ptr = UnsafeThreadWrapper(unsafe {
+            // I am so, so, so sorry, I need this to get sendable_root_ptr
+            // across the thread boundary. I promise I super-quadruple-checked
+            // that this is safe.
+            std::mem::transmute::<&Accel<'_>, &Accel<'static>>(&root)
+        } as *const Accel);
         let sendable_pixel_ptr = UnsafeThreadWrapperMut(NonNull::new(pixel_ptr).unwrap());
-
         let handle = thread::spawn(move || {
             let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
+            let root: &Accel = unsafe { &*sendable_root_ptr.0 };
             let pixels: *mut Pixel = sendable_pixel_ptr.0.as_ptr();
-            capture_subset(i, barrel_count, scene, pixels)
+            capture_subset(i, barrel_count, scene, root, pixels)
         });
 
         threads.push(handle)
     }
 
     // Ensure main thread does processing
-    capture_subset(0, barrel_count, scene, pixel_ptr);
+    capture_subset(0, barrel_count, scene, &root, pixel_ptr);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
@@ -88,7 +105,7 @@ pub fn capture(scene: &Scene, film: &mut Film) {
 
 /// Get a 16×16 view into the film for the scene starting at coordinates
 /// startx/starty. Puts the result in the given film chunk.
-pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, hunk: &mut FilmDataHunk) {
+pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primitive, hunk: &mut FilmDataHunk) {
     let (width, height) = (scene.options.width, scene.options.height);
     debug_assert!(startx < width && starty < height);
 
@@ -111,9 +128,8 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, hunk: &mut FilmData
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene);
+        let color = ray.cast(scene, root);
 
-        //
         let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
     }
@@ -123,7 +139,7 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, hunk: &mut FilmData
 /// pixel buffer, arranged in row-major order. The pixel pointer is the start of
 /// the image buffer. The pointer must allow data access into
 /// (scene.width * scene.height) pixels.
-fn capture_subset(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
+fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *mut Pixel) {
     let (width, height) = (scene.options.width, scene.options.height);
     let up = scene.up;
     let aux = scene.aux;
@@ -177,7 +193,7 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, pixels: *mut Pixel) {
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene);
+        let color = ray.cast(scene, root);
 
         // This is okay to do assuming the pixel buffer is always the correct
         // size. See the capture method for why this is necessary
@@ -194,8 +210,8 @@ fn get_max_threads() -> u8 { 1 }
 
 // Funky Pointer containers to allow sharing pointers between threads
 // Need this for the capture function.
-struct UnsafeThreadWrapper<T>(*const T);
-struct UnsafeThreadWrapperMut<T>(NonNull<T>);
+#[derive(Copy, Clone)] struct UnsafeThreadWrapper<T>(*const T);
+#[derive(Copy, Clone)] struct UnsafeThreadWrapperMut<T>(NonNull<T>);
 unsafe impl<T> std::marker::Send for UnsafeThreadWrapper<T> {}
 unsafe impl<T> std::marker::Send for UnsafeThreadWrapperMut<T> {}
 

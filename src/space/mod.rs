@@ -1,6 +1,6 @@
 // Contains shortcuts for commonly used linear-algebra types used in the ray-tracer
 pub use cgmath::prelude::*;
-use cgmath::{ Point3, Vector3 };
+use cgmath::{ Point3, Vector3, BaseFloat };
 pub mod normal;
 pub mod bounds;
 pub mod transform;
@@ -19,17 +19,10 @@ pub fn abs(v: &Vector) -> Vector {
     v.map(|c| c.abs())
 }
 
-/*
 #[inline]
-pub fn min_component(v: &Vector) -> f64 {
-    v.x.min(v.y).min(v.z)
+pub fn lerp<N: BaseFloat>(t: N, p0: N, p1: N) -> N {
+    p0 * (N::one() - t) + p1 * t
 }
-
-#[inline]
-pub fn max_component(v: &Vector) -> f64 {
-    v.x.max(v.y).max(v.z)
-}
-*/
 
 #[inline]
 pub fn max_dimension(v: &Vector) -> usize {

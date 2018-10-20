@@ -1,5 +1,5 @@
 use crate::space::*;
-use crate::scene::Scene;
+use crate::{scene::Scene, primitive::Primitive};
 
 pub trait Material {
 
@@ -12,9 +12,9 @@ pub trait Material {
         q: &Point, // Point on the scene to be lit
         e: &Point, // Eye position
         n: &Normal, // Normal to the point and surface
-        scene: &Scene // The scene, for reference
+        scene: &Scene, // The scene, for reference
+        root: &dyn Primitive
     ) -> Color;
 }
 
-pub mod background;
 pub mod phong;

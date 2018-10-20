@@ -1,20 +1,47 @@
 use cgmath::{
     Matrix, Transform,
-    Vector3, Point3, Matrix4,
+    Vector3, Point3, Matrix4, Vector4,
     BaseFloat, Deg,
     InnerSpace
 };
-use super::normal::Normal3;
-// use super::bounds::Bounds3;
-use crate::ray::Ray3;
+use super::{normal::Normal3, bounds::Bounds3};
+use crate::{ray::Ray3, interaction::surface::SurfaceInteraction};
+
+/// Identity transformation
+pub const ID: Transform3<f64> = Transform3 { m: ID_MATRIX, minv: ID_MATRIX };
+
+/// Identity matrix
+const ID_MATRIX: Matrix4<f64> = Matrix4 {
+    x: Vector4 { x: 1.0, y: 0.0, z: 0.0, w: 0.0 },
+    y: Vector4 { x: 0.0, y: 1.0, z: 0.0, w: 0.0 },
+    z: Vector4 { x: 0.0, y: 0.0, z: 1.0, w: 0.0 },
+    w: Vector4 { x: 0.0, y: 0.0, z: 0.0, w: 1.0 },
+};
 
 /// Generic lasgun-wise transformation
 pub trait Trans<N: BaseFloat>: Transform<Point3<N>> {
     fn transform_normal(&self, normal: Normal3<N>) -> Normal3<N>;
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N>;
-    fn inverse_transform_normal(&self, normal: Normal3<N>) -> Normal3<N>;
-    fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N>;
-    // fn transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N>;
+    fn transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N>;
+    fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
+    -> SurfaceInteraction<N>;
+
+    // Default implementations
+    fn inverse_transform_normal(&self, normal: Normal3<N>) -> Normal3<N> {
+        self.inverse_transform().unwrap().transform_normal(normal)
+    }
+    fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
+        self.inverse_transform().unwrap().transform_ray(ray)
+    }
+
+    fn inverse_transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N> {
+        self.inverse_transform().unwrap().transform_bounds(bounds)
+    }
+
+    fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
+    -> SurfaceInteraction<N> {
+        self.inverse_transform().unwrap().transform_surface_interaction(interaction)
+    }
 }
 
 /// A transformation for three-space constructs
@@ -191,6 +218,41 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     }
 
     #[inline]
+    fn transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N> {
+        // Implementation from http://dev.theomader.com/transform-bounding-boxes/
+        let xa = self.m.x * bounds.min.x;
+        let xb = self.m.x * bounds.max.x;
+
+        let ya = self.m.y * bounds.min.y;
+        let yb = self.m.y * bounds.max.y;
+
+        let za = self.m.z * bounds.min.z;
+        let zb = self.m.z * bounds.max.z;
+
+        // Get min and max, transformed
+        let min = zip_vectors!(xa, xb, min) + zip_vectors!(ya, yb, min) + zip_vectors!(za, zb, min);
+        let max = zip_vectors!(xa, xb, max) + zip_vectors!(ya, yb, max) + zip_vectors!(za, zb, max);
+
+        // Apply translation
+        let w = &self.m.w;
+        let min = Point3 { x: min.x + w.x, y: min.y + w.y, z: min.z + w.z };
+        let max = Point3 { x: max.x + w.x, y: max.y + w.y, z: max.z + w.z };
+
+        Bounds3::new(min, max)
+    }
+
+    #[inline]
+    fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
+    -> SurfaceInteraction<N> {
+        SurfaceInteraction {
+            t: interaction.t,
+            p: self.transform_point(interaction.p),
+            n: self.transform_normal(interaction.n),
+            material: interaction.material
+        }
+    }
+
+    #[inline]
     fn inverse_transform_normal(&self, normal: Normal3<N>) -> Normal3<N> {
         let (x, y, z) = (normal.0.x, normal.0.y, normal.0.z);
         let m = &self.m;
@@ -200,6 +262,7 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
             m[2][0]*x + m[2][1]*y + m[2][2]*z)
     }
 
+
     /// Transform a ray from its world coordinates to model coordinates
     #[inline]
     fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
@@ -207,5 +270,19 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
         let d = self.minv.transform_vector(ray.d);
         Ray3::new(origin, d)
     }
+
+    #[inline]
+    fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
+    -> SurfaceInteraction<N> {
+        SurfaceInteraction {
+            t: interaction.t,
+            p: self.minv.transform_point(interaction.p),
+            n: self.inverse_transform_normal(interaction.n),
+            material: interaction.material
+        }
+    }
+
 }
 
+#[inline] fn min<S: BaseFloat>(a: S, b: S) -> S { if a < b { a } else { b } }
+#[inline] fn max<S: BaseFloat>(a: S, b: S) -> S { if a < b { b } else { a } }

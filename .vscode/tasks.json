@@ -4,20 +4,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "shell",
-            "label": "cargo build example simple",
-            "command": "cargo",
-            "args": [
-                "build",
-                "--example",
-                "simple",
-                "--features='bin'"
-            ],
-            "problemMatcher": [
-                "$rustc"
-            ],
-        },
-        {
             "type": "cargo",
             "label": "cargo build",
             "command": "cargo",
@@ -30,17 +16,42 @@
         },
         {
             "type": "shell",
-            "label": "cargo run example simple",
+            "label": "cargo build example simple",
             "command": "cargo",
             "args": [
-                "run",
+                "build",
                 "--example",
-                "simple",
-                "--features='bin'"
+                "simple"
             ],
             "problemMatcher": [
                 "$rustc"
-            ]
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "cargo build example simplecows",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--example",
+                "simplecows"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "cargo build example playground",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--example",
+                "playground"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
         },
         {
             "type": "shell",

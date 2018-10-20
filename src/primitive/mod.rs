@@ -1,7 +1,4 @@
-use crate::scene::Scene;
-use crate::material::Material;
-use crate::shape::Intersection;
-use crate::ray::Ray;
+use crate::{ space::*, ray::Ray,  interaction::SurfaceInteraction };
 
 /// A primitive is a 3D shape placed in the scene. All primitives can intersect
 /// with a Ray defined by an origin point and (d)irection vector.
@@ -9,8 +6,13 @@ use crate::ray::Ray;
 /// The returned material reference must have at least the same lifetime as the
 /// Scene and the primitive to which it belongs.
 pub trait Primitive {
-    fn material<'a>(&'a self, scene: &'a Scene) -> &'a dyn Material;
-    fn intersect(&self, ray: &Ray) -> (Intersection, &dyn Primitive);
+    // Object-level bounds for this primitive
+    fn bound(&self) -> Bounds;
+
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool;
+    fn intersects(&self, ray: &Ray) -> bool {
+        self.intersect(ray, &mut SurfaceInteraction::none())
+    }
 }
 
 pub mod geometry;

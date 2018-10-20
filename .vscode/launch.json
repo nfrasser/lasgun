@@ -11,7 +11,8 @@
             "program": "${workspaceFolder}/target/debug/examples/playground",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "sourceLanguages": ["rust"]
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build example playground"
         },
         {
             "type": "lldb",
@@ -20,7 +21,8 @@
             "program": "${workspaceFolder}/target/debug/examples/simple",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "sourceLanguages": ["rust"]
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build example simple"
         },
         {
             "type": "lldb",
@@ -29,7 +31,8 @@
             "program": "${workspaceFolder}/target/debug/examples/simplecows",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "sourceLanguages": ["rust"]
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build example simplecows"
         },
         {
             "type": "lldb",
@@ -38,7 +41,8 @@
             "program": "${workspaceFolder}/target/debug/deps/${workspaceRootFolderName}-55c75722ef79820f",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "sourceLanguages": ["rust"]
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build"
         },
         {
             "type": "lldb",
