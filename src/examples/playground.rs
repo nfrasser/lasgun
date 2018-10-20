@@ -19,10 +19,12 @@ fn playground() -> Scene {
     let mut scene = Scene::new(options);
     let mat0 = scene.add_phong_material([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 25);
 
+    let bunny = scene.add_mesh_at(meshes::path("bunny").as_path()).unwrap();
+
     scene.add_point_light([0.0, 2.0, 3.0], [0.9, 0.9, 0.9], [1.0, 0.0, 0.0]);
 
     // scene.contents.add_sphere([0.0, 0.0, 0.0], 1.0, mat0);
-    scene.contents.add_mesh_at(meshes::path("bunny").as_path(), mat0);
+    scene.root.add_mesh(bunny, mat0);
 
     scene
 }

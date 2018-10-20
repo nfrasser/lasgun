@@ -94,7 +94,7 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     }
 
     // Ensure main thread does processing
-    // capture_subset(0, barrel_count, scene, &root, pixel_ptr);
+    capture_subset(0, barrel_count, scene, &root, pixel_ptr);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
@@ -128,7 +128,6 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene, root);
 
-        //
         let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
     }

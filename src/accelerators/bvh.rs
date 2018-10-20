@@ -60,6 +60,14 @@ pub struct BVHAccel<'s> {
     max_prims_per_node: u8
 }
 
+/// Deterministic sorting construct for objects in 3D space
+/// See PBRT book v3 page 268
+#[derive(Copy, Clone, PartialEq)]
+struct MortonPrimitive {
+    pub index: BVHPrimNumber,
+    pub code: u32 // morton code
+}
+
 /// Information about each primitive stored in a BVHAccel
 struct BVHPrimitiveInfo {
     number: BVHPrimNumber,
@@ -92,6 +100,13 @@ struct BVHBuildNode<'a> {
     bounds: Bounds
 }
 
+// Cluster of primitives that can processeded for bounds checks independently
+// Lifetime is tied to the referenced build nodes (allocated in an arena)
+struct LBVHTreelet<'a> {
+    pub start: BVHPrimNumber,
+    pub node: &'a BVHBuildNode<'a>
+}
+
 #[derive(Copy, Clone)]
 enum LinearBVHNodeType {
     // First/second child offset and prim count
@@ -106,20 +121,6 @@ struct LinearBVHNode {
     pub content: LinearBVHNodeType
 }
 
-/// Deterministic sorting construct for objects in 3D space
-/// See PBRT book v3 page 268
-#[derive(Copy, Clone, PartialEq)]
-struct MortonPrimitive {
-    pub index: BVHPrimNumber,
-    pub code: u32 // morton code
-}
-
-// Cluster of primitives that can processeded for bounds checks independently
-// Lifetime is tied to the referenced build nodes (allocated in an arean)
-struct LBVHTreelet<'a> {
-    pub start: BVHPrimNumber,
-    pub node: &'a BVHBuildNode<'a>
-}
 
 impl<'s> BVHAccel<'s> {
     pub fn from(scene: &'s Scene) -> BVHAccel<'s> {
@@ -134,33 +135,29 @@ impl<'s> BVHAccel<'s> {
             .into_iter()
             .map(|t| -> PrimBox<'s> { Box::new(t) })
             .collect();
-        BVHAccel::new(triangles, &transform::ID, Some(*material), 255)
+        let per_node = triangles.len();
+        BVHAccel::new(triangles, &transform::ID, Some(*material), per_node)
     }
 
     fn from_aggregate(scene: &'s Scene, aggregate: &'s description::Aggregate) -> BVHAccel<'s> {
-        let mut primitives = Vec::with_capacity(aggregate.contents.len());
-        for node in aggregate.contents.iter() {
-            match node {
-                SceneNode::Geometry(shape, mat) => {
-                    primitives.push(geometry(shape, mat));
-                },
-                SceneNode::Mesh(obj, mat) => {
-                    primitives.push(Box::new(BVHAccel::from_mesh(scene, obj, mat)))
-                },
-                SceneNode::Group(aggregate) => {
-                    primitives.push(Box::new(BVHAccel::from_aggregate(scene, aggregate)));
-                }
-            }
-        };
-
-        BVHAccel::new(primitives, &aggregate.transform, None, 255)
+        let primitives: Vec<PrimBox<'s>> = aggregate.contents.iter()
+        .map(|node| match node {
+            SceneNode::Geometry(shape, mat) =>
+                geometry(shape, mat),
+            SceneNode::Mesh(obj, mat) =>
+                Box::new(BVHAccel::from_mesh(scene, obj, mat)),
+            SceneNode::Group(aggregate) =>
+                Box::new(BVHAccel::from_aggregate(scene, aggregate))
+        }).collect();
+        let per_node = primitives.len();
+        BVHAccel::new(primitives, &aggregate.transform, None, per_node)
     }
 
     fn new(
         primitives: Vec<PrimBox<'s>>,
         transform: &'s Transformation,
         material: Option<MaterialRef>,
-        max_prims_per_node: u8
+        max_prims_per_node: usize
     ) -> BVHAccel<'s> {
 
         let arena = Arena::with_capacity(1024 * 1024);
@@ -176,7 +173,7 @@ impl<'s> BVHAccel<'s> {
             order: vec![std::usize::MAX; nprims], // Fill with dummy values
             transform,
             material,
-            max_prims_per_node
+            max_prims_per_node: max_prims_per_node.min(255) as u8
         };
 
         let mut total_nodes = 0;
@@ -207,10 +204,11 @@ impl<'s> BVHAccel<'s> {
         // TODO: Parallelize
         let mut morton_prims = prim_info.iter().map(|info| {
             let centroid_offset = bounds.offset(&info.centroid);
-            MortonPrimitive {
+            let morton = MortonPrimitive {
                 index: info.number,
                 code: encode_morton_3(&(centroid_offset * MORTON_SCALE.into()))
-            }
+            };
+            morton
         }).collect();
 
         // Constant-time sort. Once this is done, the morton primitives are
@@ -243,7 +241,7 @@ impl<'s> BVHAccel<'s> {
                     }));
 
                 let first_bit_index = 29 - 12; // Something to do with Morton encoding bit positions, I think
-                let node = self.emit_lbvh(
+                let (node, _) = self.emit_lbvh(
                     nodes, &morton_prims[start..], nprims, prim_info,
                     &mut nodes_created, &mut ordered_prims_offset, first_bit_index);
 
@@ -262,8 +260,9 @@ impl<'s> BVHAccel<'s> {
         BVHAccel::build_upper_sah(arena, &mut finished_treelets[..], total_nodes)
     }
 
-    /// Creates and returns LBVH nodes and returns the the total of nodes created
-    /// Also calculates the prim_order order
+    /// Creates and returns LBVH nodes and returns the the total of nodes
+    /// created. Also calculates the prim_order order and returns yet-unused
+    /// build nodes.
     fn emit_lbvh<'a>(
         &mut self,
         nodes: &'a mut [BVHBuildNode<'a>],
@@ -273,12 +272,13 @@ impl<'s> BVHAccel<'s> {
         total_nodes: &mut BVHPrimCount,
         ordered_prims_offset: &mut usize,
         bit_index: i32
-    ) -> &'a mut BVHBuildNode<'a> {
+    ) -> (&'a BVHBuildNode<'a>, &'a mut [BVHBuildNode<'a>]) {
 
         if bit_index == -1 || nprims < self.max_prims_per_node as usize {
             // Create and return leaf node of LBVH treelet
             let first_prim_offset = *ordered_prims_offset;
-            let node = &mut nodes[0];
+            let (node, rest) = nodes.split_at_mut(1);
+            let node = &mut node[0];
             *ordered_prims_offset += nprims;
             *total_nodes += 1;
 
@@ -289,7 +289,7 @@ impl<'s> BVHAccel<'s> {
             });
 
             node.init_leaf(first_prim_offset, nprims, bounds);
-            return &mut nodes[0]
+            return (node, rest)
         }
 
         let mask = 1 << bit_index;
@@ -304,7 +304,7 @@ impl<'s> BVHAccel<'s> {
         // Find LVBH split point for this dimension
         let (mut search_start, mut search_end) = (0, nprims - 1);
         while search_start + 1 != search_end {
-            let mid = (search_start - search_end) / 2;
+            let mid = (search_end - search_start) / 2;
             if (morton_prims[search_start].code & mask)
             == (morton_prims[mid].code & mask) {
                 search_start = mid
@@ -313,25 +313,24 @@ impl<'s> BVHAccel<'s> {
             }
         }
         let split_offset = search_end;
-        let (nodes0, nodes1) = nodes.split_at_mut(split_offset);
-        let (node, nodes0) = nodes0.split_at_mut(1);
+        let (node, nodes) = nodes.split_at_mut(1);
+        let node = &mut node[0];
         *total_nodes += 1;
 
         // Create and return interial LBVH node
-        let (lbvh0, lbvh1) = (
-            self.emit_lbvh(
-                nodes0, morton_prims, split_offset,
-                prim_info, total_nodes,
-                ordered_prims_offset, bit_index - 1),
-            self.emit_lbvh(
-                nodes1, &morton_prims[split_offset..], nprims - split_offset,
-                prim_info, total_nodes,
-                ordered_prims_offset, bit_index - 1)
-        );
+        let (lbvh0, nodes) = self.emit_lbvh(
+            nodes, morton_prims, split_offset,
+            prim_info, total_nodes,
+            ordered_prims_offset, bit_index - 1);
+
+        let (lbvh1, nodes) = self.emit_lbvh(
+            nodes, &morton_prims[split_offset..], nprims - split_offset,
+            prim_info, total_nodes,
+            ordered_prims_offset, bit_index - 1);
 
         let axis = (bit_index % 3) as BVHSplitAxis;
-        node[0].init_interior(axis, lbvh0, lbvh1);
-        &mut node[0]
+        node.init_interior(axis, lbvh0, lbvh1);
+        (node, nodes)
     }
 
     /// Use surface area heuristic to build BVH
@@ -449,8 +448,8 @@ impl<'s> Primitive for BVHAccel<'s> {
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         let ray = self.transform.inverse_transform_ray(*ray);
-        let mut isect = self.transform.inverse_transform_surface_interaction(interaction);
         let dir_is_neg = [ray.dinv.x < 0.0, ray.dinv.y < 0.0, ray.dinv.z < 0.0];
+        let mut isect = self.transform.inverse_transform_surface_interaction(interaction);
 
         let mut hit = false;
         let mut to_visit_offset = 0;
@@ -459,37 +458,38 @@ impl<'s> Primitive for BVHAccel<'s> {
 
         loop {
             let node = &self.nodes[current_node_index];
-            let (prim_offset, nprims) = match node.content {
-                LinearBVHNodeType::Leaf(offset, nprims) => (offset, nprims),
-                _ => (0, 0)
-            };
-            let (axis, child_offset) = match node.content {
-                LinearBVHNodeType::Interior(axis, child_offset) => (axis, child_offset),
-                _ => (0, 0)
-            };
-
-            if node.bounds.intersects(&ray) {
-                // intersect with primitives in leaf node
-                for i in 0..(nprims as u32) {
-                    let prim_index = self.order[(prim_offset + i) as usize];
-                    if self.primitives[prim_index].intersect(&ray, &mut isect) {
-                        hit = true
-                    }
-                }
+            if !node.bounds.intersects(&ray) {
                 if to_visit_offset == 0 { break };
                 to_visit_offset -= 1;
                 current_node_index = nodes_to_visit[to_visit_offset];
-            } else {
-                // put far BVH node on nodes_to_visit stack, advance to near node
-                // Node direction helps determine which way to go
-                if dir_is_neg[axis as usize] {
-                    nodes_to_visit[to_visit_offset] = current_node_index + 1;
-                    current_node_index = child_offset as usize;
-                } else {
-                    nodes_to_visit[to_visit_offset] = child_offset as usize;
-                    current_node_index = current_node_index + 1;
+                continue;
+            }
+
+            match node.content {
+                LinearBVHNodeType::Leaf(prim_offset, nprims) => {
+                    // intersect with primitives in leaf node
+                    for i in 0..(nprims as u32) {
+                        let prim_index = self.order[(prim_offset + i) as usize];
+                        if self.primitives[prim_index].intersect(&ray, &mut isect) {
+                            hit = true
+                        }
+                    }
+                    if to_visit_offset == 0 { break };
+                    to_visit_offset -= 1;
+                    current_node_index = nodes_to_visit[to_visit_offset];
                 }
-                to_visit_offset += 1;
+                LinearBVHNodeType::Interior(axis, child_offset) => {
+                    // Put far BVH node on nodes_to_visit stack, advance to near
+                    // node. Node direction helps determine which way to go.
+                    if dir_is_neg[axis as usize] {
+                        nodes_to_visit[to_visit_offset] = current_node_index + 1;
+                        current_node_index = child_offset as usize;
+                    } else {
+                        nodes_to_visit[to_visit_offset] = child_offset as usize;
+                        current_node_index += 1;
+                    }
+                    to_visit_offset += 1;
+                }
             }
         }
 
