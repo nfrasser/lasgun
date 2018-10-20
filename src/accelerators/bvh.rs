@@ -304,7 +304,7 @@ impl<'s> BVHAccel<'s> {
         // Find LVBH split point for this dimension
         let (mut search_start, mut search_end) = (0, nprims - 1);
         while search_start + 1 != search_end {
-            let mid = (search_end - search_start) / 2;
+            let mid = (search_start + search_end) / 2;
             if (morton_prims[search_start].code & mask)
             == (morton_prims[mid].code & mask) {
                 search_start = mid
@@ -312,6 +312,7 @@ impl<'s> BVHAccel<'s> {
                 search_end = mid
             }
         }
+
         let split_offset = search_end;
         let (node, nodes) = nodes.split_at_mut(1);
         let node = &mut node[0];

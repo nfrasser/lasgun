@@ -57,8 +57,8 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     };
 
     let pixel_ptr = film.data.raw_pixels_mut();
-    let root = BVHAccel::from(scene);
 
+    let root = BVHAccel::from(scene);
     let mut threads: Vec<thread::JoinHandle<_>> = vec![];
 
     for i in 1..barrel_count {

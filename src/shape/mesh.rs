@@ -7,8 +7,7 @@ use super::triangle::*;
 
 /// A triangle mesh loaded from a .obj file
 pub struct Mesh {
-    pub obj: Obj,
-    pub bounds: Bounds
+    pub obj: Obj
 }
 
 
@@ -17,10 +16,7 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn new(obj: Obj) -> Mesh {
-        let bounds = obj.position.iter().fold(Bounds::none(), |bounds, pos| {
-            bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
-        });
-        Mesh { obj, bounds }
+        Mesh { obj }
     }
 
     /// Load from an object file at the given path
@@ -52,15 +48,16 @@ impl Mesh {
     }
 }
 
+// NOTE: This implementation is not used. BVH hierarchy construction is
+// responsible for this.
 impl Primitive for Mesh {
     fn object_bound(&self) -> Bounds {
-        self.bounds
+        self.obj.position.iter().fold(Bounds::none(), |bounds, pos| {
+            bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
+        })
     }
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
-        // Check if intersects with bounding box before doing triangle intersection
-        if !self.bounds.intersects(ray) { return false }
-
         self.into_iter().fold(false, |exists, triangle| {
             triangle.intersect(ray, interaction) || exists
         })
