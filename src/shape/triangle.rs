@@ -110,15 +110,8 @@ impl<'a> Index<usize> for Triangle<'a> {
 */
 
 impl<'a> Primitive for Triangle<'a> {
-    fn object_bound(&self) -> Bounds {
+    fn bound(&self) -> Bounds {
         Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
-    }
-
-    fn world_bound(&self, object_to_world: &Transformation) -> Bounds {
-        let p0 = object_to_world.transform_point(self.p0());
-        let p1 = object_to_world.transform_point(self.p1());
-        let p2 = object_to_world.transform_point(self.p2());
-        Bounds::new(p0, p1).point_union(&p2)
     }
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {

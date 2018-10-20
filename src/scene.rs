@@ -23,7 +23,7 @@ pub struct Scene {
     pub options: Options,
 
     /// The primitives to use in the scene
-    pub root: description::Aggregate,
+    pub root: Aggregate,
 
     pub materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
     pub lights: Vec<Box<dyn Light>>, // point-light sources in the scene
@@ -223,3 +223,4 @@ impl Scene {
 }
 
 pub mod description;
+pub use self::description::*;

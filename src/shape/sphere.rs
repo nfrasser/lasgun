@@ -24,7 +24,7 @@ impl Sphere {
 }
 
 impl Primitive for Sphere {
-    fn object_bound(&self) -> Bounds {
+    fn bound(&self) -> Bounds {
         Bounds::new(
             self.origin - Vector::from_value(self.radius),
             self.origin + Vector::from_value(self.radius))

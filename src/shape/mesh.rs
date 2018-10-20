@@ -10,7 +10,6 @@ pub struct Mesh {
     pub obj: Obj
 }
 
-
 /// Container representing a triangle mesh.
 /// You can iterate over all of a mesh's triangles by calling the into_iter method
 
@@ -51,7 +50,7 @@ impl Mesh {
 // NOTE: This implementation is not used. BVH hierarchy construction is
 // responsible for this.
 impl Primitive for Mesh {
-    fn object_bound(&self) -> Bounds {
+    fn bound(&self) -> Bounds {
         self.obj.position.iter().fold(Bounds::none(), |bounds, pos| {
             bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
         })

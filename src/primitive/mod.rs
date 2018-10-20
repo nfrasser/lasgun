@@ -6,10 +6,8 @@ use crate::{ space::*, ray::Ray,  interaction::SurfaceInteraction };
 /// The returned material reference must have at least the same lifetime as the
 /// Scene and the primitive to which it belongs.
 pub trait Primitive {
-    fn object_bound(&self) -> Bounds;
-    fn world_bound(&self, object_to_world: &Transformation) -> Bounds {
-        object_to_world.transform_bounds(self.object_bound())
-    }
+    // Object-level bounds for this primitive
+    fn bound(&self) -> Bounds;
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool;
     fn intersects(&self, ray: &Ray) -> bool {

@@ -18,10 +18,7 @@ pub struct Geometry<S: Shape> {
 }
 
 impl<S: Shape> Primitive for Geometry<S> {
-    fn object_bound(&self) -> Bounds { self.shape.object_bound() }
-    fn world_bound(&self, transform: &Transformation) -> Bounds {
-        self.shape.world_bound(transform)
-    }
+    fn bound(&self) -> Bounds { self.shape.bound() }
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         if self.shape.intersect(ray, interaction) {

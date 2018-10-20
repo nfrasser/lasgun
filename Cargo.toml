@@ -44,4 +44,3 @@ version = "*"
 optional = true
 default-features = false
 features = ["png_codec"]
-

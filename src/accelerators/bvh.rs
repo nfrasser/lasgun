@@ -164,7 +164,7 @@ impl<'s> BVHAccel<'s> {
         let nprims = primitives.len();
         let prim_info: Vec<BVHPrimitiveInfo> = primitives.iter()
             .enumerate()
-            .map(|(i, prim)| BVHPrimitiveInfo::new(i, prim.object_bound()))
+            .map(|(i, prim)| BVHPrimitiveInfo::new(i, prim.bound()))
             .collect();
 
         let mut accel = BVHAccel {
@@ -443,7 +443,7 @@ impl<'s> BVHAccel<'s> {
 }
 
 impl<'s> Primitive for BVHAccel<'s> {
-    fn object_bound(&self) -> Bounds {
+    fn bound(&self) -> Bounds {
         self.transform.transform_bounds(self.nodes[0].bounds)
     }
 

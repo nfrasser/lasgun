@@ -27,8 +27,8 @@ impl Cuboid {
 }
 
 impl Primitive for Cuboid {
-    fn object_bound(&self) -> Bounds {
-        self.bounds.object_bound()
+    fn bound(&self) -> Bounds {
+        self.bounds.bound()
     }
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
@@ -42,7 +42,7 @@ impl Primitive for Cuboid {
 impl Shape for Cuboid {}
 
 impl Primitive for Bounds {
-    fn object_bound(&self) -> Bounds { *self }
+    fn bound(&self) -> Bounds { *self }
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
         let mut tnear = f64::NEG_INFINITY;
