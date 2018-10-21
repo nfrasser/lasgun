@@ -18,6 +18,8 @@ fn simplecows() -> Scene {
         threads: 0
     });
 
+    scene.set_radial_background([218, 210, 153], [176, 218, 185]);
+
     scene.add_point_light([200.0, 202.0, 430.0], [0.8, 0.8, 0.8], [1.0, 0.0, 0.0]);
 
     // Materials

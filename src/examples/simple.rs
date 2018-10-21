@@ -19,6 +19,7 @@ fn simple() -> Scene {
 
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new(options);
+    scene.set_radial_background([67, 198, 172], [25, 22, 84]);
 
     // Add materials to the scene
     let mat0 = scene.add_phong_material([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 25);

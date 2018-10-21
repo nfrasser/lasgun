@@ -12,6 +12,8 @@ let scene = lasgun.scene({
     sampling: 0,
 })
 
+scene.set_radial_background({ inner: [237, 222, 93], outer: [240, 152, 25] });
+
 let mat0 = scene.add_phong_material({ kd: [1.0, 0.7, 1.0], ks: [0.5, 0.7, 0.5], shininess: 25 })
 let bunny = scene.add_obj(await lasgun.mesh("./meshes/bunny.obj"))
 

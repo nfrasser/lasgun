@@ -24,6 +24,9 @@ let smstdodeca = scene.add_obj(await lasgun.mesh("./meshes/smstdodeca.obj"))
 scene.add_point_light({ position: [-100, 150, 400], intensity: [0.9, 0.9, 0.9], falloff: [1, 0, 0] })
 scene.add_point_light({ position: [400, 100, 150], intensity: [0.7, 0, 0.7], falloff: [1, 0, 0] })
 
+// Background
+scene.set_radial_background({ inner: [67, 198, 172], outer: [25, 22, 84] })
+
 // Scene contents
 let contents = lasgun.group()
 contents.add_sphere({ origin: [0, 0, -400], radius: 100 }, mat0)

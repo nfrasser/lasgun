@@ -13,6 +13,8 @@ const scene = lasgun.scene({
 })
 let contents = lasgun.group();
 
+scene.set_radial_background({ inner: [218, 210, 153], outer: [176, 218, 185] });
+
 scene.add_point_light({
     position: [200.0, 202.0, 430.0],
     intensity: [0.8, 0.8, 0.8],
