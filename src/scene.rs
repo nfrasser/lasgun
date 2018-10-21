@@ -51,7 +51,10 @@ pub struct Scene {
     pub pixel_radius: f64,
 
     /// Precomputed supersampling options
-    pub supersampling: Sampling
+    pub supersampling: Sampling,
+
+    // Background computation
+    pub background: Background
 }
 
 /// User-configurable description of the scene to render, passed to the scene
@@ -148,7 +151,8 @@ impl Scene {
                 radius: pixel_radius * supersample_scale,
                 power: supersample_power
             },
-            options
+            background: Background::solid([0, 0, 0]),
+            options,
         }
     }
 
@@ -215,10 +219,67 @@ impl Scene {
         self.meshes.get(mesh.0)
     }
 
+    pub fn background(&self, x: u16, y: u16) -> Color {
+        self.background.at(self, x, y)
+    }
+
+    pub fn set_solid_background(&mut self, color: [u8; 3]) {
+        self.background = Background::solid(color)
+    }
+
+    pub fn set_radial_background(&mut self, inner: [u8; 3], outer: [u8; 3]) {
+        self.background = Background::radial(inner, outer)
+    }
+
     fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
         let reference = MaterialRef(self.materials.len());
         self.materials.push(material);
         reference
+    }
+}
+
+/// Scene background colour implementation
+pub enum Background {
+    Solid(Color),
+
+    // inner, outer colours
+    Radial(Color, Color)
+}
+
+impl Background {
+    pub fn solid(color: [u8; 3]) -> Background {
+        Background::Solid(Self::to_color(color))
+    }
+
+    pub fn radial(inner: [u8; 3], outer: [u8; 3]) -> Background {
+        Background::Radial(Self::to_color(inner), Self::to_color(outer))
+    }
+
+    pub fn at(&self, scene: &Scene, x: u16, y: u16) -> Color {
+        match self {
+            Background::Solid(color) => *color,
+            Background::Radial(inner, outer) => {
+                let (width, height) = (scene.options.width, scene.options.height);
+                let (midx, midy) = ((width / 2) as f64, (height / 2) as f64);
+                let (dx, dy) = (midx - x as f64, midy - y as f64);
+
+                let maxd = (midx*midx + midy*midy).sqrt();
+                let d = (dx*dx + dy*dy).sqrt();
+                let t = d / maxd;
+
+                Color::new(
+                    lerp(t, inner.x, outer.x),
+                    lerp(t, inner.y, outer.y),
+                    lerp(t, inner.z, outer.z))
+            }
+        }
+    }
+
+    fn to_color(pixel: [u8; 3]) -> Color {
+        Color::new(
+            pixel[0] as f64 / 255.0,
+            pixel[1] as f64 / 255.0,
+            pixel[2] as f64 / 255.0)
     }
 }
 

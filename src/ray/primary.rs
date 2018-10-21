@@ -29,7 +29,8 @@ impl PrimaryRay {
         PrimaryRay { origin, d }
     }
 
-    pub fn cast(&self, scene: &Scene, root: &impl Primitive) -> Color {
+    /// Takes the scene, the scene's root node, and the background color
+    pub fn cast(&self, scene: &Scene, root: &impl Primitive, bg: Color) -> Color {
         let dim = scene.supersampling.dim as i32;
         let mut color = Color::zero();
 
@@ -50,14 +51,17 @@ impl PrimaryRay {
 
             let mut interaction = SurfaceInteraction::none();
             root.intersect(&ray, &mut interaction);
-            if !interaction.exists() { continue };
+            if !interaction.exists() {
+                color += bg;
+                continue
+            };
 
             // Try getting the material
             let material: &dyn Material;
             if let Some(mref) = interaction.material {
                 if let Some(m) = scene.material(&mref) { material = m }
-                else { continue }
-            } else { continue }
+                else { color += bg; continue }
+            } else { color += bg; continue }
 
             // The vector spanning from the eye to the point of intersection
             // eye + direction = point of intersection

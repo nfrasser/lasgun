@@ -12,7 +12,7 @@ pub(crate) mod material;
 pub(crate) mod shape;
 pub(crate) mod primitive;
 pub(crate) mod light;
-pub(crate) mod accelerators;
+mod accelerators;
 
 pub mod scene;
 
@@ -120,6 +120,9 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
         // Don't bother rendering pixels outside the frame
         if x >= width || x >= height { continue };
 
+        // Get default background color
+        let bg = scene.background(x, y);
+
         // Calculate offsets distances from the view vector
         let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
         let voffset = ((height as f64 - 1.0) * 0.5 - y as f64) * sample_distance;
@@ -128,7 +131,7 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene, root);
+        let color = ray.cast(scene, root, bg);
 
         let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
@@ -176,14 +179,17 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *m
 
     // Calculate the chunk size such that we can yield n chunks,
     // where n is the number of threads
-    let capacity = width as isize * height as isize; // total image capacity
+    let capacity = width as usize * height as usize; // total image capacity
 
     // Skip over chunks that other threads are processing/ Assuming
     // capture_subset is never called concurrently with the same k and n values,
     // this will never cause contention/race conditions.
-    for offset in ((k as isize)..capacity).step_by(n as usize) {
-        let x = (offset % width as isize) as f64;
-        let y = (offset / height as isize) as f64;
+    for offset in ((k as usize)..capacity).step_by(n as usize) {
+        let x = offset % width as usize;
+        let y = offset / height as usize;
+
+        let bg = scene.background(x as u16, y as u16);
+        let (x, y) = (x as f64, y as f64);
 
         // Calculate offsets distances from the view vector
         let hoffset = (x - ((width as f64 - 1.0) * 0.5)) * sample_distance;
@@ -193,11 +199,11 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *m
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene, root);
+        let color = ray.cast(scene, root, bg);
 
         // This is okay to do assuming the pixel buffer is always the correct
         // size. See the capture method for why this is necessary
-        let pixel: &mut Pixel = unsafe { pixels.offset(offset).as_mut().unwrap() };
+        let pixel: &mut Pixel = unsafe { pixels.offset(offset as isize).as_mut().unwrap() };
         img::set_pixel_color(pixel as &mut Pixel, &color)
     }
 }
