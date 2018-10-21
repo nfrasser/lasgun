@@ -90,6 +90,13 @@ extern {
     #[wasm_bindgen(method, getter, structural)]
     pub fn end(this: &Cuboid) -> Box<[JsValue]>; // Vector
 
+    // Duck type for radial background definition
+    pub type RadialBackground;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn inner(this: &RadialBackground) -> Box<[JsValue]>; // Color
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn outer(this: &RadialBackground) -> Box<[JsValue]>; // Color
+
     fn alert(s: &str);
 }
 
@@ -218,6 +225,17 @@ impl Scene {
 
     pub fn set_root(&mut self, content: Aggregate) {
         self.data.set_root(content.as_native_aggregate())
+    }
+
+    pub fn set_solid_background(&mut self, color: Box<[JsValue]>) {
+        let color = utils::to_vec3u8(color);
+        self.data.set_solid_background(color)
+    }
+
+    pub fn set_radial_background(&mut self, background: RadialBackground) {
+        let inner = utils::to_vec3u8(background.inner());
+        let outer = utils::to_vec3u8(background.outer());
+        self.data.set_radial_background(inner, outer)
     }
 
     pub fn add_phong_material(&mut self, settings: &Phong) -> MaterialRef {

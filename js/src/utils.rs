@@ -31,3 +31,12 @@ pub fn to_vec3f(values: Box<[JsValue]>) -> [f64; 3] {
         values.get(2).unwrap_or(&JsValue::NULL).as_f64().unwrap_or(0.0)
     ]
 }
+
+// Get a [u8; 3] from a JavaScript value
+pub fn to_vec3u8(values: Box<[JsValue]>) -> [u8; 3] {
+    [
+        values.get(0).unwrap_or(&JsValue::NULL).as_f64().unwrap_or(0.0) as u8,
+        values.get(1).unwrap_or(&JsValue::NULL).as_f64().unwrap_or(0.0) as u8,
+        values.get(2).unwrap_or(&JsValue::NULL).as_f64().unwrap_or(0.0) as u8
+    ]
+}
