@@ -227,8 +227,8 @@ impl Scene {
         self.meshes.get(mesh.0)
     }
 
-    pub fn background(&self, x: u16, y: u16) -> Color {
-        self.background.at(self, x, y)
+    pub fn background(&self, x: usize, y: usize) -> Color {
+        self.background.at(self, x as u16, y as u16)
     }
 
     pub fn set_solid_background(&mut self, color: [u8; 3]) {

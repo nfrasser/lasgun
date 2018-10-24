@@ -15,6 +15,16 @@ pub fn render(scene: &Scene, filename: &str) {
     film.data.save(filename)
 }
 
+/// Create a film in the correct x/y dimensions for the given scene
+pub fn film_for(scene: &Scene) -> Film {
+    let (width, height) = (scene.options.width, scene.options.height);
+
+    // Pre-allocate traced image data
+    let rgba = RgbaImage::new(width as u32, height as u32);
+    let image = Box::new(Image(rgba));
+    Film::new_with_data(width, height, image)
+}
+
 struct Image(RgbaImage);
 
 impl Index<usize> for Image {
