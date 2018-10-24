@@ -3,9 +3,17 @@
 
 use cgmath::{prelude::*, Deg};
 use crate::{space::*};
-use super::{ObjRef, MaterialRef};
+use super::{ObjRef as Obj, MaterialRef as Material};
 
-/// Possible shapes
+pub enum SceneNode {
+    /// A geometric shape and a material
+    Geometry(Shape, Material),
+    /// Triangle mesh
+    Mesh(Obj, Material),
+    /// A collection of multiple scene nodes
+    Group(Aggregate)
+}
+
 pub enum Shape {
     /// Sphere with origin and radius
     Sphere([f64; 3], f64),
@@ -13,15 +21,6 @@ pub enum Shape {
     Cube([f64; 3], f64),
     /// Similar to cube: a rectagular prism with start and end corners
     Cuboid([f64; 3], [f64; 3])
-}
-
-/// A scene node
-pub enum SceneNode {
-    /// A geometric shape and a material
-    Geometry(Shape, MaterialRef),
-    Mesh(ObjRef, MaterialRef),
-    /// A collection of multiple scene ndoes
-    Group(Aggregate)
 }
 
 pub struct Aggregate {
@@ -42,26 +41,26 @@ impl Aggregate {
     }
 
     pub fn add_group(&mut self, aggregate: Aggregate) {
-        self.contents.push(SceneNode::Group(aggregate))
+        self.add(SceneNode::Group(aggregate))
     }
 
-    pub fn add_sphere(&mut self, center: [f64; 3], radius: f64, material: MaterialRef) {
+    pub fn add_sphere(&mut self, center: [f64; 3], radius: f64, material: Material) {
         let shape = Shape::Sphere(center, radius);
-        self.contents.push(SceneNode::Geometry(shape, material))
+        self.add(SceneNode::Geometry(shape, material))
     }
 
-    pub fn add_cube(&mut self, origin: [f64; 3], dim: f64, material: MaterialRef) {
+    pub fn add_cube(&mut self, origin: [f64; 3], dim: f64, material: Material) {
         let shape = Shape::Cube(origin, dim);
-        self.contents.push(SceneNode::Geometry(shape, material))
+        self.add(SceneNode::Geometry(shape, material))
     }
 
-    pub fn add_box(&mut self, minbound: [f64; 3], maxbound: [f64; 3], material: MaterialRef) {
+    pub fn add_box(&mut self, minbound: [f64; 3], maxbound: [f64; 3], material: Material) {
         let shape = Shape::Cuboid(minbound, maxbound);
-        self.contents.push(SceneNode::Geometry(shape, material))
+        self.add(SceneNode::Geometry(shape, material))
     }
 
-    pub fn add_mesh(&mut self, mesh: ObjRef, material: MaterialRef) {
-        self.contents.push(SceneNode::Mesh(mesh, material))
+    pub fn add_mesh(&mut self, mesh: Obj, material: Material) {
+        self.add(SceneNode::Mesh(mesh, material))
     }
 
     #[inline]

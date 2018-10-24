@@ -7,7 +7,7 @@ use crate::{
     ray::Ray,
     primitive::{Primitive, geometry::Geometry},
     interaction::SurfaceInteraction,
-    scene::{Scene, MaterialRef, ObjRef, description::{self, SceneNode}}
+    scene::{Scene, MaterialRef, ObjRef, node::{self, SceneNode}}
 };
 
 // Hiding my ugly dynamic dispatch type.
@@ -143,7 +143,7 @@ impl<'s> BVHAccel<'s> {
         BVHAccel::new(triangles, &transform::ID, Some(*material), per_node)
     }
 
-    fn from_aggregate(scene: &'s Scene, aggregate: &'s description::Aggregate) -> BVHAccel<'s> {
+    fn from_aggregate(scene: &'s Scene, aggregate: &'s node::Aggregate) -> BVHAccel<'s> {
         let primitives: Vec<PrimBox<'s>> = aggregate.contents.iter()
         .map(|node| match node {
             SceneNode::Geometry(shape, mat) =>
@@ -554,13 +554,13 @@ impl<'a> BVHBuildNode<'a> {
     }
 }
 
-fn geometry<'s>(shape: &description::Shape, mat: &MaterialRef) -> PrimBox<'s> {
+fn geometry<'s>(shape: &node::Shape, mat: &MaterialRef) -> PrimBox<'s> {
     match shape {
-        description::Shape::Sphere(o, r) =>
+        node::Shape::Sphere(o, r) =>
             Box::new(Geometry { shape: Sphere::new(*o, *r), material: *mat }),
-        description::Shape::Cube(o, d) =>
+        node::Shape::Cube(o, d) =>
             Box::new(Geometry { shape: Cuboid::cube(*o, *d), material: *mat }),
-        description::Shape::Cuboid(c0, c1) =>
+        node::Shape::Cuboid(c0, c1) =>
             Box::new(Geometry { shape: Cuboid::new(*c0, *c1), material: *mat }),
     }
 }

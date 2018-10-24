@@ -34,7 +34,7 @@ impl super::Material for Phong {
         let output = self.kd.mul_element_wise(ambient);
 
         // For each scene light, sample point lights from it
-        scene.lights.iter().fold(output, |output, scene_light| {
+        scene.lights().iter().fold(output, |output, scene_light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
             scene_light.iter_samples(root, *q).fold(output, |output, light| {

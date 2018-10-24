@@ -5,29 +5,18 @@ use crate::light::{Light, point::PointLight};
 use crate::material::{Material, phong::Phong};
 use crate::shape::mesh::Mesh;
 
-/// Opaque reference to a material within a scene. May be passed around and
-/// copied freely but is not relevant outside the noted scene.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct MaterialRef(usize);
-
-/// Opaque reference to a .object file mesh in a scene
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ObjRef(usize);
-
-/**
-    Description of the world to render
-*/
+/// Description of the world to render and how it should be rendered
 pub struct Scene {
+
+    /// Node
+    pub root: Aggregate,
 
     /// Additional scene rendering options
     pub options: Options,
 
-    /// The primitives to use in the scene
-    pub root: Aggregate,
-
-    pub materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
-    pub lights: Vec<Box<dyn Light>>, // point-light sources in the scene
-    pub meshes: Vec<Mesh>,
+    materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
+    lights: Vec<Box<dyn Light>>, // point-light sources in the scene
+    meshes: Vec<Mesh>,
 
     pub ambient: Color, // ambient lighting
 
@@ -56,6 +45,15 @@ pub struct Scene {
     // Background computation
     pub background: Background
 }
+
+/// Opaque reference to a material within a scene. May be passed around and
+/// copied freely but is not relevant outside the noted scene.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MaterialRef(usize);
+
+/// Opaque reference to a .object file mesh in a scene
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ObjRef(usize);
 
 /// User-configurable description of the scene to render, passed to the scene
 /// contructor.
@@ -103,6 +101,14 @@ pub struct Sampling {
 
     /// A number getween 0 and 1 representing the contribution of a single supersample ray.
     pub power: f64,
+}
+
+/// Scene background colour implementation
+pub enum Background {
+    Solid(Color),
+
+    // inner, outer colours
+    Radial(Color, Color)
 }
 
 impl Scene {
@@ -215,6 +221,8 @@ impl Scene {
         }
     }
 
+    pub fn lights(&self) -> &Vec<Box<dyn Light>> { &self.lights }
+
     pub fn mesh<'a>(&'a self, mesh: &ObjRef) -> Option<&'a Mesh> {
         self.meshes.get(mesh.0)
     }
@@ -236,14 +244,6 @@ impl Scene {
         self.materials.push(material);
         reference
     }
-}
-
-/// Scene background colour implementation
-pub enum Background {
-    Solid(Color),
-
-    // inner, outer colours
-    Radial(Color, Color)
 }
 
 impl Background {
@@ -283,5 +283,5 @@ impl Background {
     }
 }
 
-pub mod description;
-pub use self::description::*;
+pub mod node;
+pub use self::node::*;
