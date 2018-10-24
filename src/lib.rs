@@ -24,8 +24,8 @@ use std::ptr::NonNull;
 
 pub use crate::scene::Scene;
 pub use crate::img::{Film, Pixel, PixelBuffer};
-use crate::ray::primary::PrimaryRay;
-use crate::primitive::Primitive;
+pub use crate::ray::primary::PrimaryRay;
+pub use crate::primitive::Primitive;
 
 /// A 16×16 portion of pixels taken from a film, arranged in row-major order.
 /// Used for streaming render results. NOT a slice of `Film::data`.
@@ -121,7 +121,7 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
         if x >= width || x >= height { continue };
 
         // Get default background color
-        let bg = scene.background(x, y);
+        let bg = scene.background(x as usize, y as usize);
 
         // Calculate offsets distances from the view vector
         let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
@@ -131,7 +131,7 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene, root, bg);
+        let color = ray.cast(scene, root, &bg);
 
         let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
@@ -143,7 +143,10 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
 /// the image buffer. The pointer must allow data access into
 /// (scene.width * scene.height) pixels.
 fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *mut Pixel) {
-    let (width, height) = (scene.options.width, scene.options.height);
+    let (width, height) = (
+        scene.options.width as usize,
+        scene.options.height as usize
+    );
     let up = scene.up;
     let aux = scene.aux;
     let sample_distance = scene.pixel_radius * 2.0;
@@ -179,16 +182,16 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *m
 
     // Calculate the chunk size such that we can yield n chunks,
     // where n is the number of threads
-    let capacity = width as usize * height as usize; // total image capacity
+    let capacity = width * height; // total image capacity
 
     // Skip over chunks that other threads are processing/ Assuming
     // capture_subset is never called concurrently with the same k and n values,
     // this will never cause contention/race conditions.
     for offset in ((k as usize)..capacity).step_by(n as usize) {
-        let x = offset % width as usize;
-        let y = offset / height as usize;
+        let x = offset % width;
+        let y = offset / height;
 
-        let bg = scene.background(x as u16, y as u16);
+        let bg = scene.background(x, y);
         let (x, y) = (x as f64, y as f64);
 
         // Calculate offsets distances from the view vector
@@ -199,7 +202,7 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *m
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene, root, bg);
+        let color = ray.cast(scene, root, &bg);
 
         // This is okay to do assuming the pixel buffer is always the correct
         // size. See the capture method for why this is necessary

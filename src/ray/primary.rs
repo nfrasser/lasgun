@@ -29,8 +29,28 @@ impl PrimaryRay {
         PrimaryRay { origin, d }
     }
 
+    /// Create a new primary ray casting into the given scene at film
+    /// coordinates x/y
+    pub fn at(scene: &Scene, x: usize, y: usize) -> PrimaryRay {
+        let (width, height) = (scene.options.width, scene.options.height);
+        let up = scene.up;
+        let aux = scene.aux;
+        let sample_distance = scene.pixel_radius * 2.0;
+
+        let (x, y) = (x as f64, y as f64);
+
+        // Calculate offsets distances from the view vector
+        let hoffset = (x - ((width as f64 - 1.0) * 0.5)) * sample_distance;
+        let voffset = ((height as f64 - 1.0) * 0.5 - y) * sample_distance;
+
+        // The direction in which this ray travels
+        let d = scene.view + (voffset * up) + (hoffset * aux);
+
+        PrimaryRay::new(scene.eye, d)
+    }
+
     /// Takes the scene, the scene's root node, and the background color
-    pub fn cast(&self, scene: &Scene, root: &impl Primitive, bg: Color) -> Color {
+    pub fn cast(&self, scene: &Scene, root: &impl Primitive, bg: &Color) -> Color {
         let dim = scene.supersampling.dim as i32;
         let mut color = Color::zero();
 
@@ -52,7 +72,7 @@ impl PrimaryRay {
             let mut interaction = SurfaceInteraction::none();
             root.intersect(&ray, &mut interaction);
             if !interaction.exists() {
-                color += bg;
+                color += *bg;
                 continue
             };
 
@@ -60,8 +80,8 @@ impl PrimaryRay {
             let material: &dyn Material;
             if let Some(mref) = interaction.material {
                 if let Some(m) = scene.material(&mref) { material = m }
-                else { color += bg; continue }
-            } else { color += bg; continue }
+                else { color += *bg; continue }
+            } else { color += *bg; continue }
 
             // The vector spanning from the eye to the point of intersection
             // eye + direction = point of intersection
