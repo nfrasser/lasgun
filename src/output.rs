@@ -1,6 +1,6 @@
 use std::{mem, ops::{Index, IndexMut}};
 use ::image::RgbaImage;
-use crate::{Scene, Film, Pixel, PixelBuffer};
+use crate::{capture, Scene, Film, Pixel, PixelBuffer};
 
 pub fn render(scene: &Scene, filename: &str) {
     let (width, height) = (scene.options.width, scene.options.height);
@@ -11,8 +11,9 @@ pub fn render(scene: &Scene, filename: &str) {
     let mut film = Film::new_with_data(width, height, image);
 
     // Capture the image
-    crate::capture(&scene, &mut film);
-    film.data.save(filename)
+    capture(&scene, &mut film);
+
+    film.save(filename)
 }
 
 /// Create a film in the correct x/y dimensions for the given scene
