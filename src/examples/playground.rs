@@ -1,4 +1,4 @@
-use ::lasgun::{ scene::{Scene, Options}, output };
+use ::lasgun::{ scene::{Aggregate, Scene, Options}, output };
 
 mod meshes;
 

@@ -33,7 +33,10 @@ pub use crate::primitive::Primitive;
 /// 16 * 16 pixels = 256 pixels = 4 * 256 bytes = 1024 bytes
 pub type FilmDataHunk = [u8; 1024];
 
-/// An acceleration structure tied to a give scene
+/// An acceleration structure to reduce the number of ray-object intersection
+/// tests. Call the associated `from` method with a scene reference to get back
+/// a new primitive to be used for ray intersection.
+///
 /// Internally implemented as a Bounding-Volume Hierarchy
 pub type Accel<'s> = self::accelerators::bvh::BVHAccel<'s>;
 
@@ -58,10 +61,8 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         scene.options.threads
     };
 
-    let pixel_ptr = film.data.raw_pixels_mut();
-
     let root = Accel::from(scene);
-    let mut threads: Vec<thread::JoinHandle<_>> = vec![];
+    let mut threads = Vec::with_capacity(barrel_count as usize - 1);
 
     for i in 1..barrel_count {
 
@@ -78,25 +79,26 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         //
         // TODO: Pls. make this less terrifying
         let sendable_scene_ptr = UnsafeThreadWrapper(scene as *const Scene);
+        let sendable_film_ptr = UnsafeThreadWrapperMut(NonNull::new(film as *mut Film).unwrap());
         let sendable_root_ptr = UnsafeThreadWrapper(unsafe {
             // I am so, so, so sorry, I need this to get sendable_root_ptr
             // across the thread boundary. I promise I super-quadruple-checked
             // that this is safe.
             std::mem::transmute::<&Accel<'_>, &Accel<'static>>(&root)
         } as *const Accel);
-        let sendable_pixel_ptr = UnsafeThreadWrapperMut(NonNull::new(pixel_ptr).unwrap());
+
         let handle = thread::spawn(move || {
             let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
             let root: &Accel = unsafe { &*sendable_root_ptr.0 };
-            let pixels: *mut Pixel = sendable_pixel_ptr.0.as_ptr();
-            capture_subset(i, barrel_count, scene, root, pixels)
+            let film: &mut Film = unsafe { &mut *sendable_film_ptr.0.as_ptr() };
+            capture_subset(i, barrel_count, scene, root, film)
         });
 
         threads.push(handle)
     }
 
     // Ensure main thread does processing
-    capture_subset(0, barrel_count, scene, &root, pixel_ptr);
+    capture_subset(0, barrel_count, scene, &root, film);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
@@ -142,7 +144,7 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
 /// pixel buffer, arranged in row-major order. The pixel pointer is the start of
 /// the image buffer. The pointer must allow data access into
 /// (scene.width * scene.height) pixels.
-fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *mut Pixel) {
+fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, film: &mut Film) {
     let (width, height) = (
         scene.options.width as usize,
         scene.options.height as usize
@@ -192,11 +194,11 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *m
         let y = offset / height;
 
         let bg = scene.background(x, y);
-        let (x, y) = (x as f64, y as f64);
+        let (xf, yf) = (x as f64, y as f64);
 
         // Calculate offsets distances from the view vector
-        let hoffset = (x - ((width as f64 - 1.0) * 0.5)) * sample_distance;
-        let voffset = ((height as f64 - 1.0) * 0.5 - y) * sample_distance;
+        let hoffset = (xf - ((width as f64 - 1.0) * 0.5)) * sample_distance;
+        let voffset = ((height as f64 - 1.0) * 0.5 - yf) * sample_distance;
 
         // The direction in which this ray travels
         let d = scene.view + (voffset * up) + (hoffset * aux);
@@ -204,10 +206,7 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, pixels: *m
         let ray = PrimaryRay::new(scene.eye, d);
         let color = ray.cast(scene, root, &bg);
 
-        // This is okay to do assuming the pixel buffer is always the correct
-        // size. See the capture method for why this is necessary
-        let pixel: &mut Pixel = unsafe { pixels.offset(offset as isize).as_mut().unwrap() };
-        img::set_pixel_color(pixel as &mut Pixel, &color)
+        film.set(x, y, &color)
     }
 }
 

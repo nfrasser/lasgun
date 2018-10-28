@@ -1,5 +1,5 @@
 use ::lasgun::{
-    scene::{Scene, Options, description::Aggregate},
+    scene::{Scene, Options, Aggregate},
     output
 };
 

@@ -1,6 +1,5 @@
 // This module contains structures for providing a simple representation of the
 // contents of a scene. The elements here are later used to build up a full scene
-
 use cgmath::{prelude::*, Deg};
 use crate::{space::*};
 use super::{ObjRef as Obj, MaterialRef as Material};
