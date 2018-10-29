@@ -1,8 +1,9 @@
 mod utils;
 
 use std::mem;
-use lasgun;
+use lasgun::{self, PixelBuffer};
 use wasm_bindgen::prelude::*;
+
 
 #[wasm_bindgen]
 extern {
@@ -38,6 +39,8 @@ extern {
     pub fn sampling(this: &Settings) -> Option<u8>;
     #[wasm_bindgen(method, getter, structural)]
     pub fn threads(this: &Settings) -> Option<u8>;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn recursion(this: &Settings) -> Option<u32>;
 
     /// Duck-type Phong material settings
     /// For JavaScript objects that have the form
@@ -209,7 +212,8 @@ impl Scene {
             height: settings.height(),
             fov: settings.fov(),
             supersampling: settings.sampling().unwrap_or(0),
-            threads: settings.threads().unwrap_or(0)
+            threads: settings.threads().unwrap_or(0),
+            recursion: settings.recursion().unwrap_or(0)
         };
 
         Scene { data: lasgun::Scene::new(options) }
@@ -246,7 +250,7 @@ impl Scene {
     }
 
     pub fn add_obj(&mut self, obj: &str) -> ObjRef {
-        ObjRef(self.data.add_mesh_from(obj).unwrap())
+        ObjRef(self.data.load_mesh_from(obj).unwrap())
     }
 
     pub fn add_point_light(&mut self, settings: &PointLight) {
@@ -268,7 +272,8 @@ impl Scene {
             height: 0,
             fov: 0.0,
             supersampling: 0,
-            threads: 0
+            threads: 0,
+            recursion: 0
         };
 
         Scene { data: lasgun::Scene::new(options) }
@@ -399,12 +404,12 @@ impl Film {
     /// Get a Uint8Array of pixels for display in a browser environment
     /// Each set of 4 bytes represents an RGBA pixel
     pub fn pixels(&self) -> Box<[u8]> {
-        self.0.data.as_slice().to_vec().into_boxed_slice()
+        self.0.as_slice().to_vec().into_boxed_slice()
     }
 
     /// Get a pointer to the first pixel in the data set
     pub fn data(&self) -> *const u8 {
-        unsafe { mem::transmute(self.0.data.raw_pixels()) }
+        unsafe { mem::transmute(self.0.raw_pixels()) }
     }
 
     /// How many bytes there are in the data pointer

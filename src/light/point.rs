@@ -44,7 +44,9 @@ impl Light for PointLight {
         // Move point slighly outside the surface of the intersecting primitive
         // accounts for floating point errors
         let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
-        let ray = Ray::new(p, d);
+
+        // Create a shadow ray
+        let ray = Ray::new(p, d, 0, false);
 
         // See if there's anything that intersects
         let mut interaction = SurfaceInteraction::none();
@@ -62,3 +64,5 @@ impl Light for PointLight {
         LightSampleIterator::new(self, root, p, 1)
     }
 }
+
+unsafe impl Sync for PointLight {}

@@ -214,7 +214,7 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
         let origin = self.m.transform_point(ray.origin);
         let d = self.m.transform_vector(ray.d);
-        Ray3::new(origin, d)
+        Ray3::new(origin, d, ray.level, ray.medium)
     }
 
     #[inline]
@@ -268,7 +268,7 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
         let origin = self.minv.transform_point(ray.origin);
         let d = self.minv.transform_vector(ray.d);
-        Ray3::new(origin, d)
+        Ray3::new(origin, d, ray.level, ray.medium)
     }
 
     #[inline]

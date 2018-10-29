@@ -223,6 +223,21 @@ fn get_max_threads() -> u8 { 1 }
 unsafe impl<T> std::marker::Send for UnsafeThreadWrapper<T> {}
 unsafe impl<T> std::marker::Send for UnsafeThreadWrapperMut<T> {}
 
+pub mod prelude {
+    pub use super::{
+        Scene,
+        Pixel,
+        PixelBuffer,
+        Film,
+        FilmDataHunk,
+        PrimaryRay,
+        Accel
+    };
+
+    #[cfg(feature = "bin")]
+    pub use super::output;
+}
+
 #[cfg(test)]
 mod tests {
     // use super::*;

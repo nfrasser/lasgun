@@ -2,7 +2,7 @@ use std::{io, path::Path, f64};
 
 use crate::space::*;
 use crate::light::{Light, point::PointLight};
-use crate::material::{Material, phong::Phong};
+use crate::material::{Material, phong::Phong, refractive::Refractive};
 use crate::shape::mesh::Mesh;
 
 /// Description of the world to render and how it should be rendered
@@ -13,10 +13,6 @@ pub struct Scene {
 
     /// Additional scene rendering options
     pub options: Options,
-
-    materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
-    lights: Vec<Box<dyn Light>>, // point-light sources in the scene
-    meshes: Vec<Mesh>,
 
     pub ambient: Color, // ambient lighting
 
@@ -43,7 +39,12 @@ pub struct Scene {
     pub supersampling: Sampling,
 
     // Background computation
-    pub background: Background
+    pub background: Background,
+
+    materials: Vec<Box<dyn Material + Send>>, // available materials for primitives in the scene
+    lights: Vec<Box<dyn Light + Send>>, // point-light sources in the scene
+    meshes: Vec<Mesh>,
+
 }
 
 /// Opaque reference to a material within a scene. May be passed around and
@@ -82,6 +83,9 @@ pub struct Options {
     /// Number of CPU render threads to use. Setting this to 0 means default to
     /// the system concurrency, if available.
     pub threads: u8,
+
+    /// Maximum ray recursion depth for reflective and refactive materials
+    pub recursion: u32
 }
 
 /// Pre-computed supersampling settings for a pixel
@@ -173,12 +177,18 @@ impl Scene {
             width: 1,
             height: 1,
             supersampling: 0,
-            threads: 0
+            threads: 0,
+            recursion: 0
         })
     }
 
     pub fn add_phong_material(&mut self, kd: [f64; 3], ks: [f64; 3], shininess: i32) -> MaterialRef {
         let material: Phong = Phong::new(kd, ks, shininess);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_refractive_material(&mut self, base: MaterialRef, index: f64, contribution: f64) -> MaterialRef {
+        let material = Refractive::new(base, index, contribution);
         self.add_material(Box::new(material))
     }
 
@@ -195,14 +205,14 @@ impl Scene {
     }
 
     /// Add a mesh from a obj file loaded as a string
-    pub fn add_mesh_from(&mut self, obj: &str) -> io::Result<ObjRef> {
+    pub fn load_mesh_from(&mut self, obj: &str) -> io::Result<ObjRef> {
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(Mesh::from(obj)?);
         Ok(reference)
     }
 
     // Add the .obj file mesh at the given file-system path
-    pub fn add_mesh_at(&mut self, obj_path: &Path) -> io::Result<ObjRef> {
+    pub fn load_mesh_at(&mut self, obj_path: &Path) -> io::Result<ObjRef> {
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(Mesh::load(obj_path)?);
         Ok(reference)
@@ -221,7 +231,7 @@ impl Scene {
         }
     }
 
-    pub fn lights(&self) -> &Vec<Box<dyn Light>> { &self.lights }
+    pub fn lights(&self) -> &Vec<Box<dyn Light + Send>> { &self.lights }
 
     pub fn mesh<'a>(&'a self, mesh: &ObjRef) -> Option<&'a Mesh> {
         self.meshes.get(mesh.0)
@@ -239,7 +249,7 @@ impl Scene {
         self.background = Background::radial(inner, outer)
     }
 
-    fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
+    fn add_material(&mut self, material: Box<dyn Material + Send>) -> MaterialRef {
         let reference = MaterialRef(self.materials.len());
         self.materials.push(material);
         reference
@@ -282,6 +292,8 @@ impl Background {
             pixel[2] as f64 / 255.0)
     }
 }
+
+unsafe impl Sync for Scene {}
 
 pub mod node;
 pub use self::node::*;

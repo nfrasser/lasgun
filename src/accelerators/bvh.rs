@@ -12,7 +12,7 @@ use crate::{
 
 // Hiding my ugly dynamic dispatch type.
 // Should have the lifetime of the referenced Scene instance.
-type PrimBox<'s> = Box<dyn Primitive + 's>;
+type PrimBox<'s> = Box<dyn Primitive + Send + 's>;
 
 // (In)convenience types, mostly for documentation
 type BVHSplitAxis = usize;
@@ -627,3 +627,5 @@ fn radix_sort(v: &mut Vec<MortonPrimitive>) {
         mem::swap(v, &mut temp)
     }
 }
+
+unsafe impl<'s> Sync for BVHAccel<'s> {}

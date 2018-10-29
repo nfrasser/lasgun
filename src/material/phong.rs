@@ -1,5 +1,11 @@
+use std::f64;
 use crate::space::*;
-use crate::{scene::Scene, primitive::Primitive};
+use crate::{
+    ray::Ray,
+    interaction::SurfaceInteraction,
+    scene::Scene,
+    primitive::Primitive
+};
 
 // Phong-lighted material
 pub struct Phong {
@@ -19,12 +25,18 @@ impl Phong {
 }
 
 impl super::Material for Phong {
-    fn color(&self,
-        q: &Point, eye: &Point, normal: &Normal,
+fn color(&self,
+        ray: &Ray, interaction: &SurfaceInteraction,
         scene: &Scene, root: &dyn Primitive
     ) -> Color {
-        let n = normal.as_vec().normalize();
-        let v: Vector = (eye - q).normalize();
+        let n = interaction.n.as_vec().normalize();
+        let v: Vector = (ray.origin - interaction.p).normalize();
+
+        // Add a small fraction of the normal to avoid speckling due to floating
+        // point errors (the calculated point ends up inside the geometric
+        // primitive).
+        let q = interaction.p + (f64::EPSILON * 32.0) * n;
+
         let ambient = Color::new(
             scene.options.ambient[0],
             scene.options.ambient[1],
@@ -34,12 +46,12 @@ impl super::Material for Phong {
         let output = self.kd.mul_element_wise(ambient);
 
         // For each scene light, sample point lights from it
-        scene.lights().iter().fold(output, |output, scene_light| {
+        scene.lights().iter().fold(output, |output, light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
-            scene_light.iter_samples(root, *q).fold(output, |output, light| {
-                // vector to light and its length (distance to the light from q)
-                let l = light.position - q;
+            light.iter_samples(root, q).fold(output, |output, plight| {
+                // vector to plight and its length (distance to the plight from q)
+                let l = plight.position - q;
                 let d = l.magnitude();
                 let l = l.normalize();
                 let n_dot_l = n.dot(l);
@@ -49,8 +61,8 @@ impl super::Material for Phong {
                 let r_dot_v = r.dot(v);
 
                 // Light attenuation over distance used to compute energy received at q
-                let f_att = light.falloff[0] + light.falloff[1]*d + light.falloff[2]*d*d;
-                let e = light.intensity / f_att;
+                let f_att = plight.falloff[0] + plight.falloff[1]*d + plight.falloff[2]*d*d;
+                let e = plight.intensity / f_att;
 
                 // Use material properties to determine color at given pixel
                 // as if this is the only light in the scene
@@ -58,6 +70,7 @@ impl super::Material for Phong {
                 output + self.ks.mul_element_wise(e)*r_dot_v.max(0.0).powi(self.shininess)
             })
         })
-
     }
 }
+
+unsafe impl Sync for Phong {}

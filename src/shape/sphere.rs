@@ -104,7 +104,7 @@ mod test {
     fn straight_on_intersection() {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
         let origin = Point::new(0.0, 0.0, 2.0);
-        let ray = Ray::new(origin, Vector::new(0.0, 0.0, -1.0));
+        let ray = Ray::new(origin, Vector::new(0.0, 0.0, -1.0), 0, false);
         let mut interation = SurfaceInteraction::none();
 
         assert!(sphere.intersect(&ray, &mut interation));
@@ -115,7 +115,7 @@ mod test {
     #[test]
     fn inside_intersection() {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
-        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
+        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0), 0, false);
         let mut interaction = SurfaceInteraction::none();
 
         assert!(sphere.intersect(&ray, &mut interaction));

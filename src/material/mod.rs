@@ -1,7 +1,14 @@
-use crate::space::*;
-use crate::{scene::Scene, primitive::Primitive};
+use crate::{
+    space::*,
+    scene::Scene,
+    primitive::Primitive,
+    ray::Ray,
+    interaction::SurfaceInteraction
+};
 
-pub trait Material {
+use std::marker::{Sync, Send};
+
+pub trait Material: Sync + Send {
 
     /**
         Get the colour of the material at point q as observed from point e
@@ -9,12 +16,12 @@ pub trait Material {
     */
     fn color(
         &self,
-        q: &Point, // Point on the scene to be lit
-        e: &Point, // Eye position
-        n: &Normal, // Normal to the point and surface
-        scene: &Scene, // The scene, for reference
+        ray: &Ray, // Incident ray
+        interaction: &SurfaceInteraction, // interaction at the surface
+        scene: &Scene, // The scene and root, for reference/refraction
         root: &dyn Primitive
     ) -> Color;
 }
 
 pub mod phong;
+pub mod refractive;

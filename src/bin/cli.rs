@@ -13,7 +13,8 @@ fn main() {
         up: [0.0; 3],
         fov: 50.0,
         supersampling: 1,
-        threads: 1
+        threads: 1,
+        recursion: 0
     };
 
     let scene = Scene::new(options);

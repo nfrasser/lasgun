@@ -1,10 +1,11 @@
 use super::space::Point;
 use super::primitive::Primitive;
+use std::marker::Sync;
 
 pub mod point;
 pub use self::point::PointLight;
 
-pub trait Light {
+pub trait Light: Sync {
     /// Sample the light received by the given point in the scene. The returned
     /// point light is to be used in shading calculations. A None is returned if
     /// an internally-calculated PointLight sample is not visible from the given

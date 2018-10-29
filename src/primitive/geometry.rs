@@ -5,6 +5,7 @@ use crate::{
     interaction::SurfaceInteraction,
     scene::MaterialRef,
 };
+use std::marker::Sync;
 
 use super::Primitive;
 
@@ -33,3 +34,5 @@ impl<S: Shape> Primitive for Geometry<S> {
         self.shape.intersects(ray)
     }
 }
+
+unsafe impl<S: Shape> Sync for Geometry<S> {}

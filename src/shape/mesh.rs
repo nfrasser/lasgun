@@ -147,7 +147,7 @@ f 1 4 3
 "#
         ).unwrap();
 
-        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0), 0, false);
         let mut interaction = SurfaceInteraction::none();
 
         assert!(plane.intersect(&ray, &mut interaction));

@@ -67,7 +67,7 @@ impl PrimaryRay {
 
             // New point at which the ray intersects the focal plane given this direction
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
-            let ray = Ray::new(self.origin, d);
+            let ray = Ray::new(self.origin, d, scene.options.recursion, false);
 
             let mut interaction = SurfaceInteraction::none();
             root.intersect(&ray, &mut interaction);
@@ -83,19 +83,10 @@ impl PrimaryRay {
                 else { color += *bg; continue }
             } else { color += *bg; continue }
 
-            // The vector spanning from the eye to the point of intersection
-            // eye + direction = point of intersection
-            let normal = &interaction.n;
-
-            // Add a small fraction of the normal to avoid speckling due to
-            // floating point errors (the calculated point ends up inside the
-            // geometric primitive).
-            interaction.p = ray.origin
-                + interaction.t * ray.d
-                + (f64::EPSILON * 32.0) * normal.as_vec();
+            interaction.p = ray.origin + interaction.t * ray.d;
 
             // Query the material for the color at the given point
-            color += material.color(&interaction.p, &ray.origin, normal, scene, root)
+            color += material.color(&ray, &interaction, scene, root)
         }
 
         color * scene.supersampling.power

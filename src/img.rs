@@ -32,7 +32,7 @@ impl PixelBuffer for [Pixel] {
 pub struct Film {
     pub width: u16,
     pub height: u16,
-    pub data: Box<dyn PixelBuffer<Output = Pixel>>
+    data: Box<dyn PixelBuffer<Output = Pixel> + Send>
 }
 
 impl Film {
@@ -58,7 +58,7 @@ impl Film {
     ///
     /// Assumes that that data has room for width * height * 4 bytes worth of
     /// pixels.
-    pub fn new_with_data(width: u16, height: u16, data: Box<dyn PixelBuffer<Output = Pixel>>) -> Film {
+    pub fn new_with_data(width: u16, height: u16, data: Box<dyn PixelBuffer<Output = Pixel> + Send>) -> Film {
         Film { width, height, data }
     }
 

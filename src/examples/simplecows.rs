@@ -15,7 +15,8 @@ fn simplecows() -> Scene {
         width: 512,
         height: 512,
         supersampling: 2,
-        threads: 0
+        threads: 0,
+        recursion: 0
     });
 
     scene.set_radial_background([218, 210, 153], [176, 218, 185]);
@@ -28,8 +29,8 @@ fn simplecows() -> Scene {
     let hide = scene.add_phong_material([0.84, 0.6, 0.53], [0.3, 0.3, 0.3], 20);
 
     // Meshes
-    let planemesh = scene.add_mesh_at(meshes::path("plane").as_path()).unwrap();
-    let buckyballmesh = scene.add_mesh_at(meshes::path("buckyball").as_path()).unwrap();
+    let planemesh = scene.load_mesh_at(meshes::path("plane").as_path()).unwrap();
+    let buckyballmesh = scene.load_mesh_at(meshes::path("buckyball").as_path()).unwrap();
 
     // The Floor
     let mut plane = Aggregate::new();
