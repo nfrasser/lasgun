@@ -43,6 +43,8 @@ const RADIX_BITMASK: u32 = (1 << RADIX_BITS_PER_PASS) - 1;
 ///
 /// http://www.pbr-book.org/3ed-2018/Primitives_and_Intersection_Acceleration/Bounding_Volume_Hierarchies.html
 pub struct BVHAccel<'s> {
+    pub scene: &'s Scene,
+
     primitives: Vec<PrimBox<'s>>,
 
     /// BVH tree nodes arranged in linear memory
@@ -140,7 +142,7 @@ impl<'s> BVHAccel<'s> {
             .map(|t| -> PrimBox<'s> { Box::new(t) })
             .collect();
         let per_node = triangles.len();
-        BVHAccel::new(triangles, &transform::ID, Some(*material), per_node)
+        BVHAccel::new(scene, triangles, &transform::ID, Some(*material), per_node)
     }
 
     fn from_aggregate(scene: &'s Scene, aggregate: &'s node::Aggregate) -> BVHAccel<'s> {
@@ -154,10 +156,11 @@ impl<'s> BVHAccel<'s> {
                 Box::new(BVHAccel::from_aggregate(scene, aggregate))
         }).collect();
         let per_node = primitives.len();
-        BVHAccel::new(primitives, &aggregate.transform, None, per_node)
+        BVHAccel::new(scene, primitives, &aggregate.transform, None, per_node)
     }
 
     fn new(
+        scene: &'s Scene,
         primitives: Vec<PrimBox<'s>>,
         transform: &'s Transformation,
         material: Option<MaterialRef>,
@@ -172,6 +175,7 @@ impl<'s> BVHAccel<'s> {
             .collect();
 
         let mut accel = BVHAccel {
+            scene,
             primitives,
             nodes: vec![],
             order: vec![std::usize::MAX; nprims], // Fill with dummy values
@@ -502,9 +506,10 @@ impl<'s> Primitive for BVHAccel<'s> {
         if hit {
             interaction.t = isect.t;
             interaction.n = self.transform.transform_normal(isect.n);
-            interaction.p = self.transform.transform_point(isect.p);
 
-            // Assign the uniform material if it hit
+            // If the uniform node material is available (i.e., for triangle
+            // meshes where every triangle uses the same material), assign that
+            // material
             if let Some(material) = self.material {
                 interaction.material = Some(material);
             } else {

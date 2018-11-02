@@ -32,7 +32,7 @@ impl PixelBuffer for [Pixel] {
 pub struct Film {
     pub width: u16,
     pub height: u16,
-    pub data: Box<dyn PixelBuffer<Output = Pixel>>
+    data: Box<dyn PixelBuffer<Output = Pixel>>
 }
 
 impl Film {

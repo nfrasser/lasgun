@@ -118,7 +118,7 @@ mod test {
     fn straight_on_intersection() {
         let cube = Cuboid::new([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
         let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(0.0, 0.0, 1.0));
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
@@ -129,7 +129,7 @@ mod test {
     fn edge_intersection() {
         let cube = Cuboid::new([-1.1, -1.1, -1.0], [1.1, 1.1, 1.0]);
         let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 0.0, 1.0));
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
@@ -140,7 +140,7 @@ mod test {
     fn corner_intersection() {
         let cube = Cuboid::new([-1.1, -1.1, -1.0], [1.1, 1.1, 1.0]);
         let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 1.0, 1.0));
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
@@ -151,7 +151,7 @@ mod test {
     fn inside_intersection() {
         let cube = Cuboid::new([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
         let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::unit_z());
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
