@@ -1,11 +1,6 @@
 use std::f64;
 use crate::space::*;
-use crate::{
-    ray::Ray,
-    interaction::SurfaceInteraction,
-    scene::Scene,
-    primitive::Primitive
-};
+use crate::{interaction::SurfaceInteraction, Accel};
 
 // Phong-lighted material
 pub struct Phong {
@@ -25,28 +20,25 @@ impl Phong {
 }
 
 impl super::Material for Phong {
-fn color(&self,
-        ray: &Ray, interaction: &SurfaceInteraction,
-        scene: &Scene, root: &dyn Primitive
-    ) -> Color {
+fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color {
         let n = interaction.n.as_vec().normalize();
-        let v: Vector = (ray.origin - interaction.p).normalize();
+        let v: Vector = interaction.d().normalize();
 
         // Add a small fraction of the normal to avoid speckling due to floating
         // point errors (the calculated point ends up inside the geometric
         // primitive).
-        let q = interaction.p + (f64::EPSILON * 32.0) * n;
+        let q = interaction.p() + (f64::EPSILON * 32.0) * n;
 
         let ambient = Color::new(
-            scene.options.ambient[0],
-            scene.options.ambient[1],
-            scene.options.ambient[2]);
+            root.scene.options.ambient[0],
+            root.scene.options.ambient[1],
+            root.scene.options.ambient[2]);
 
         // start with ambient lighting
         let output = self.kd.mul_element_wise(ambient);
 
         // For each scene light, sample point lights from it
-        scene.lights().iter().fold(output, |output, light| {
+        let result = root.scene.lights().iter().fold(output, |output, light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
             light.iter_samples(root, q).fold(output, |output, plight| {
@@ -69,7 +61,10 @@ fn color(&self,
                 self.kd.mul_element_wise(e)*n_dot_l.max(0.0) +
                 output + self.ks.mul_element_wise(e)*r_dot_v.max(0.0).powi(self.shininess)
             })
-        })
+        });
+
+        result
+        // Color::new(result.x.min(1.0), result.y.min(1.0), result.z.min(1.0))
     }
 }
 

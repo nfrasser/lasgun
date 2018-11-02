@@ -147,8 +147,8 @@ f 1 4 3
 "#
         ).unwrap();
 
-        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0), 0, false);
-        let mut interaction = SurfaceInteraction::none();
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0), 0);
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(plane.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);

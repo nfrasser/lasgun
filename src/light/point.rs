@@ -1,8 +1,11 @@
 use std::f64;
-use crate::space::*;
-use crate::ray::Ray;
-use crate::primitive::Primitive;
-use crate::interaction::SurfaceInteraction;
+use crate::{
+    space::*,
+    ray::Ray,
+    primitive::Primitive,
+    interaction::SurfaceInteraction,
+    Accel
+};
 
 use super::{Light, LightSampleIterator};
 
@@ -37,7 +40,7 @@ impl Light for PointLight {
     ///     let f_att = falloff[0] + falloff[1]*d + falloff[2]*d*d;
     ///     println!("{}", f_att);
     ///
-    fn sample(&self, root: &dyn Primitive, p: &Point) -> Option<PointLight> {
+    fn sample(&self, root: &Accel, p: &Point) -> Option<PointLight> {
         let d = self.position - p; // direction from p to light
         let t = d.magnitude(); // distance to light in world coordinates
 
@@ -46,19 +49,19 @@ impl Light for PointLight {
         let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
 
         // Create a shadow ray
-        let ray = Ray::new(p, d, 0, false);
+        let ray = Ray::new(p, d, 0);
 
         // See if there's anything that intersects
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
         root.intersect(&ray, &mut interaction);
-        if interaction.exists() && interaction.t < t {
+        if interaction.t < t {
             None
         } else {
             Some(*self)
         }
     }
 
-    fn iter_samples<'l, 's>(&'l self, root: &'s dyn Primitive, p: Point)
+    fn iter_samples<'l, 's>(&'l self, root: &'s Accel<'s>, p: Point)
     -> LightSampleIterator<'l, 's> {
         // Point lights only require one sample
         LightSampleIterator::new(self, root, p, 1)

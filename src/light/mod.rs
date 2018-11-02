@@ -1,22 +1,22 @@
-use super::space::Point;
-use super::primitive::Primitive;
+use crate::{Accel, space::*};
 use std::marker::Sync;
 
 pub mod point;
 pub use self::point::PointLight;
+
 
 pub trait Light: Sync {
     /// Sample the light received by the given point in the scene. The returned
     /// point light is to be used in shading calculations. A None is returned if
     /// an internally-calculated PointLight sample is not visible from the given
     /// point. Depending on the Light implementation
-    fn sample(&self, root: &dyn Primitive, p: &Point) -> Option<PointLight>;
+    fn sample(&self, root: &Accel, p: &Point) -> Option<PointLight>;
 
     /// Create an iterator that yields point lights that are visible from the
     /// given point in the given scene. Most implementations return
     /// LightSampleIterator instances initialized as are required given the
     /// scene parameters for a nice rendering
-    fn iter_samples<'l, 's>(&'l self, root: &'s dyn Primitive, p: Point) -> LightSampleIterator<'l, 's>;
+    fn iter_samples<'l, 's>(&'l self, root: &'s Accel<'s>, p: Point) -> LightSampleIterator<'l, 's>;
 }
 
 /// An iteratator for conveniently looping through samples taken from a given
@@ -24,14 +24,14 @@ pub trait Light: Sync {
 /// depends on the type of light and the sampling settings on the scene
 pub struct LightSampleIterator<'l, 's> {
     light: &'l dyn Light,
-    root: &'s dyn Primitive,
+    root: &'s Accel<'s>,
     point: Point,
     /// Number of samples remaning
     remaining: usize,
 }
 
 impl<'l, 's> LightSampleIterator<'l, 's> {
-    pub fn new(light: &'l dyn Light, root: &'s dyn Primitive, point: Point, samples: usize)
+    pub fn new(light: &'l dyn Light, root: &'s Accel, point: Point, samples: usize)
     -> LightSampleIterator<'l, 's> {
         LightSampleIterator {
             light, root, point, remaining: samples

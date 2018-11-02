@@ -187,8 +187,8 @@ impl Scene {
         self.add_material(Box::new(material))
     }
 
-    pub fn add_refractive_material(&mut self, base: MaterialRef, index: f64, contribution: f64) -> MaterialRef {
-        let material = Refractive::new(base, index, contribution);
+    pub fn add_refractive_material(&mut self, base: MaterialRef, index: f64, opacity: f64) -> MaterialRef {
+        let material = Refractive::new(base, index, opacity);
         self.add_material(Box::new(material))
     }
 

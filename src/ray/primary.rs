@@ -3,9 +3,9 @@ use std::f64;
 use crate::{
     space::*,
     primitive::Primitive,
-    material::Material,
     interaction::SurfaceInteraction,
     scene::Scene,
+    Accel,
 };
 
 use super::Ray;
@@ -50,7 +50,8 @@ impl PrimaryRay {
     }
 
     /// Takes the scene, the scene's root node, and the background color
-    pub fn cast(&self, scene: &Scene, root: &impl Primitive, bg: &Color) -> Color {
+    pub fn cast(&self, root: &Accel, bg: &Color) -> Color {
+        let scene = root.scene;
         let dim = scene.supersampling.dim as i32;
         let mut color = Color::zero();
 
@@ -67,26 +68,25 @@ impl PrimaryRay {
 
             // New point at which the ray intersects the focal plane given this direction
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
-            let ray = Ray::new(self.origin, d, scene.options.recursion, false);
+            let ray = Ray::new(self.origin, d, scene.options.recursion);
 
-            let mut interaction = SurfaceInteraction::none();
+            let mut interaction = SurfaceInteraction::default();
             root.intersect(&ray, &mut interaction);
             if !interaction.exists() {
                 color += *bg;
                 continue
             };
 
-            // Try getting the material
-            let material: &dyn Material;
-            if let Some(mref) = interaction.material {
-                if let Some(m) = scene.material(&mref) { material = m }
-                else { color += *bg; continue }
-            } else { color += *bg; continue }
+            // Calculates the actual intersection point and normalizes
+            // requireed before getting p(), d(), etc.
+            interaction.commit(&ray);
 
-            interaction.p = ray.origin + interaction.t * ray.d;
+            // Get the correct scene material
+            let material = scene.material(&interaction.material.unwrap())
+                .unwrap();
 
             // Query the material for the color at the given point
-            color += material.color(&ray, &interaction, scene, root)
+            color += material.color(&interaction, root)
         }
 
         color * scene.supersampling.power

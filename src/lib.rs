@@ -78,7 +78,6 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         // this function call ends, otherwise very bad things will happen.
         //
         // TODO: Pls. make this less terrifying
-        let sendable_scene_ptr = UnsafeThreadWrapper(scene as *const Scene);
         let sendable_film_ptr = UnsafeThreadWrapperMut(NonNull::new(film as *mut Film).unwrap());
         let sendable_root_ptr = UnsafeThreadWrapper(unsafe {
             // I am so, so, so sorry, I need this to get sendable_root_ptr
@@ -88,17 +87,16 @@ pub fn capture(scene: &Scene, film: &mut Film) {
         } as *const Accel);
 
         let handle = thread::spawn(move || {
-            let scene: &Scene = unsafe { &*sendable_scene_ptr.0 };
             let root: &Accel = unsafe { &*sendable_root_ptr.0 };
             let film: &mut Film = unsafe { &mut *sendable_film_ptr.0.as_ptr() };
-            capture_subset(i, barrel_count, scene, root, film)
+            capture_subset(i, barrel_count, root, film)
         });
 
         threads.push(handle)
     }
 
     // Ensure main thread does processing
-    capture_subset(0, barrel_count, scene, &root, film);
+    capture_subset(0, barrel_count, &root, film);
 
     // IMPORTANT: Ensure the threads join before the function returns. Otherwise
     // the Scene reference might disappear and everything will explode.
@@ -107,7 +105,8 @@ pub fn capture(scene: &Scene, film: &mut Film) {
 
 /// Get a 16×16 view into the film for the scene starting at coordinates
 /// startx/starty. Puts the result in the given film chunk.
-pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primitive, hunk: &mut FilmDataHunk) {
+pub fn capture_hunk(startx: u16, starty: u16, root: &Accel, hunk: &mut FilmDataHunk) {
+    let scene = root.scene;
     let (width, height) = (scene.options.width, scene.options.height);
     debug_assert!(startx < width && starty < height);
 
@@ -133,7 +132,7 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene, root, &bg);
+        let color = ray.cast(root, &bg);
 
         let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
@@ -144,7 +143,8 @@ pub fn capture_hunk(startx: u16, starty: u16, scene: &Scene, root: &impl Primiti
 /// pixel buffer, arranged in row-major order. The pixel pointer is the start of
 /// the image buffer. The pointer must allow data access into
 /// (scene.width * scene.height) pixels.
-fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, film: &mut Film) {
+fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
+    let scene = root.scene;
     let (width, height) = (
         scene.options.width as usize,
         scene.options.height as usize
@@ -204,7 +204,7 @@ fn capture_subset(k: u8, n: u8, scene: &Scene, root: &impl Primitive, film: &mut
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(scene, root, &bg);
+        let color = ray.cast(root, &bg);
 
         film.set(x, y, &color)
     }

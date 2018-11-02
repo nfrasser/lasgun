@@ -12,7 +12,7 @@ pub trait Primitive: Sync {
 
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool;
     fn intersects(&self, ray: &Ray) -> bool {
-        self.intersect(ray, &mut SurfaceInteraction::none())
+        self.intersect(ray, &mut SurfaceInteraction::default())
     }
 }
 

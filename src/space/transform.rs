@@ -214,7 +214,7 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
         let origin = self.m.transform_point(ray.origin);
         let d = self.m.transform_vector(ray.d);
-        Ray3::new(origin, d, ray.level, ray.medium)
+        Ray3::new(origin, d, ray.level)
     }
 
     #[inline]
@@ -244,12 +244,8 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     #[inline]
     fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
     -> SurfaceInteraction<N> {
-        SurfaceInteraction {
-            t: interaction.t,
-            p: self.transform_point(interaction.p),
-            n: self.transform_normal(interaction.n),
-            material: interaction.material
-        }
+        let n = self.transform_normal(interaction.n);
+        SurfaceInteraction::new(interaction.t, n, interaction.material)
     }
 
     #[inline]
@@ -268,18 +264,14 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     fn inverse_transform_ray(&self, ray: Ray3<N>) -> Ray3<N> {
         let origin = self.minv.transform_point(ray.origin);
         let d = self.minv.transform_vector(ray.d);
-        Ray3::new(origin, d, ray.level, ray.medium)
+        Ray3::new(origin, d, ray.level)
     }
 
     #[inline]
     fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
     -> SurfaceInteraction<N> {
-        SurfaceInteraction {
-            t: interaction.t,
-            p: self.minv.transform_point(interaction.p),
-            n: self.inverse_transform_normal(interaction.n),
-            material: interaction.material
-        }
+        let n = self.inverse_transform_normal(interaction.n);
+        SurfaceInteraction::new(interaction.t, n, interaction.material)
     }
 
 }

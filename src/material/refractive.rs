@@ -3,74 +3,73 @@ use crate::{
     space::*,
     ray::Ray,
     interaction::SurfaceInteraction,
-    scene::{Scene, MaterialRef},
+    scene::{MaterialRef},
     primitive::Primitive,
+    Accel
 };
 
 /// A refractive material leverages the properties of another material in the
 /// scene but continues colour calculations through to the other side following
-/// the point of intersection (recursively)
+/// the point of intersection (recursively).
+///
+/// All refractive materials also have some reflection, based on their
+/// refractive properties.
 pub struct Refractive {
     base: MaterialRef,
 
     /// refractive index
     index: f64,
 
-    /// Reflection/refraction contribution to material appearance. Between zero
-    /// and one. Higher numbers means less opaque materials.
-    contrib: f64
+    /// Used to determine refraction contribution to material appearance (per
+    /// world unit). Should generally be between zero and one, where one means
+    /// fully opaque (no refraction contribution).
+    opacity: f64
 }
 
+
 impl Refractive {
-    pub fn new(base: MaterialRef, index: f64, contrib: f64) -> Refractive {
-        Refractive { base, index, contrib }
+    pub fn new(base: MaterialRef, index: f64, opacity: f64) -> Refractive {
+        Refractive { base, index, opacity }
     }
 }
 
 impl super::Material for Refractive {
-    fn color(&self, ray: &Ray, interaction: &SurfaceInteraction, scene: &Scene, root: &dyn Primitive)
+    // TODO: Fix this
+    fn color(&self, interaction: &SurfaceInteraction, root: &Accel)
     -> Color {
-        let (n1, n2) = if ray.medium {
-            (self.index, 0.0)
-        } else {
-            (0.0, self.index)
-        };
+        let (n1, n2) = (1.0, self.index);
 
         // Base color
-        let base = if let Some(material) = scene.material(&self.base) {
-            material.color(ray, interaction, scene, root)
-        } else {
-            Color::zero()
-        };
+        let base = root.scene.material(&self.base)
+            .unwrap()
+            .color(interaction, root);
 
         // Recursive color
-        let recursive = if let Some(refract) = Refract::ray(ray, &interaction.p, &interaction.n, n1, n2) {
-            let mut rinteraction = SurfaceInteraction::none();
+        if let Some(refract) = Refract::at(interaction, n1, n2) {
+            let mut rinteraction = SurfaceInteraction::default();
             root.intersect(&refract.rray, &mut rinteraction);
-            let rcolor = if rinteraction.exists() {
-                rinteraction.p = refract.rray.origin + refract.rray.d*rinteraction.t;
-                let material = scene.material(&rinteraction.material.unwrap()).unwrap();
-                material.color(&refract.rray, &rinteraction, scene, root)
+            let rcolor = if let Some(material) = rinteraction.material {
+                rinteraction.commit(&refract.rray);
+                let material = root.scene.material(&material).unwrap();
+                material.color(&rinteraction, root)
             } else {
-                Color::zero()
+                base
             };
 
-            let mut tinteraction = SurfaceInteraction::none();
+            let mut tinteraction = SurfaceInteraction::default();
             root.intersect(&refract.tray, &mut tinteraction);
-            let tcolor = if tinteraction.exists() {
-                tinteraction.p = refract.tray.origin + refract.tray.d*tinteraction.t;
-                let material = scene.material(&tinteraction.material.unwrap()).unwrap();
-                material.color(&refract.tray, &tinteraction, scene, root)
+            let tcolor = if let Some(material) = tinteraction.material {
+                rinteraction.commit(&refract.tray);
+                let material = root.scene.material(&material).unwrap();
+                material.color(&tinteraction, root)
             } else {
-                Color::zero()
+                base
             };
 
-            (rcolor * refract.rcontrib) + (tcolor * refract.tcontrib)
+            base * self.opacity + (rcolor * refract.rcontrib) + (tcolor * refract.tcontrib * (1.0 - self.opacity))
         } else {
-            Color::zero()
-        };
-
-        (recursive * self.contrib) + base
+            base
+        }
     }
 }
 
@@ -92,11 +91,12 @@ impl Refract {
     /// and n1 is the refractive index of the transmission material.
     ///
     /// Returns None if the ray has reached its maximum recursion level
-    pub fn ray(ray: &Ray, p: &Point, n: &Normal, n1: f64, n2: f64) -> Option<Refract> {
-        if ray.level == 0 { return None };
+    pub fn at(interaction: &SurfaceInteraction, n1: f64, n2: f64) -> Option<Refract> {
+        if interaction.level() == 0 { return None }
         let one = 1.0;
-        let i = ray.d.normalize(); // incident vector
-        let n = n.as_vec().normalize();
+        let i = interaction.d(); // incident vector
+        let n = interaction.n.to_vec();
+        let p = *interaction.p();
         let cos_theta_i = i.dot(n);
 
         // Reflection direction
@@ -116,14 +116,14 @@ impl Refract {
 
         // Calculate error epsilon by which to multiply normal to sufficiently
         // push it away from the surface and avoid floaing point errors.
-        let eps = f64::EPSILON * 32.0;
-        let rray = Ray::reflect(ray, p + (n*eps), r).unwrap();
-        let tray = Ray::refract(ray, p - (n*eps), t).unwrap();
+        let eps = f64::EPSILON * 4294967296.0;
+        let rray = Ray::reflect(p + (n*eps), r, interaction.level()).unwrap();
+        let tray = Ray::refract(p - (n*eps), t, interaction.level()).unwrap();
 
         // Total internal reflection?
         let tir = sin2_theta_t > one;
 
-        // Reflection contrib
+        // Reflection opacity
         let rcontrib = if n1 <= n2 {
             let cos_theta_i_5 = (0..5).fold(one, |pow, _| pow*cos_theta_i); // power of 5
             r_0 + (one - r_0)*cos_theta_i_5
@@ -135,7 +135,7 @@ impl Refract {
             one
         };
 
-        // Refraction contrib
+        // Refraction opacity
         let tcontrib = one - rcontrib;
 
         Some(Refract { rray, tray, rcontrib, tcontrib })

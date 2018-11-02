@@ -117,8 +117,8 @@ mod test {
     #[test]
     fn straight_on_intersection() {
         let cube = Cuboid::new([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
-        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(0.0, 0.0, 1.0), 0, false);
-        let mut interaction = SurfaceInteraction::none();
+        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(0.0, 0.0, 1.0), 0);
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
@@ -128,8 +128,8 @@ mod test {
     #[test]
     fn edge_intersection() {
         let cube = Cuboid::new([-1.1, -1.1, -1.0], [1.1, 1.1, 1.0]);
-        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 0.0, 1.0), 0, false);
-        let mut interaction = SurfaceInteraction::none();
+        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 0.0, 1.0), 0);
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
@@ -139,8 +139,8 @@ mod test {
     #[test]
     fn corner_intersection() {
         let cube = Cuboid::new([-1.1, -1.1, -1.0], [1.1, 1.1, 1.0]);
-        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 1.0, 1.0), 0, false);
-        let mut interaction = SurfaceInteraction::none();
+        let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 1.0, 1.0), 0);
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
@@ -150,8 +150,8 @@ mod test {
     #[test]
     fn inside_intersection() {
         let cube = Cuboid::new([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
-        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::unit_z(), 0, false);
-        let mut interaction = SurfaceInteraction::none();
+        let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::unit_z(), 0);
+        let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
