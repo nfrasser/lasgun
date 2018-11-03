@@ -70,16 +70,16 @@ impl Refractive {
         let rcolor = if let Some(m) = rinteraction.material {
             root.scene.material(&m).unwrap().color(rprim, &rinteraction, root)
         } else {
-            root.scene.ambient
+            Color::zero()
         };
 
-        // let base = root.scene.material(&self.base).unwrap()
-        //     .color(primitive, interaction, root);
+        // Calculate opacity based on distance travelled by the exit ray
+        let opacity = (tinteraction.t * self.opacity).min(1.0);
 
         // Return the weighed contribution of each component
-        tcolor*refract.tcontrib + rcolor*refract.rcontrib
-        // base*self.opacity + (tcolor*refract.tcontrib*(1.0 - self.opacity)) + rcolor*refract.rcontrib
-        // base
+        base*opacity + (
+            (1.0 - opacity)*tcolor*refract.tcontrib
+        ) + rcolor*refract.rcontrib
     }
 
     // Exit from this material via the given interaction and return what colour
@@ -176,14 +176,15 @@ impl Refract {
 
         // Calculate error epsilon by which to multiply normal to sufficiently
         // push it away from the surface and avoid floaing point errors.
-        let eps = f64::EPSILON * 4294967296.0;
+        let eps = f64::EPSILON * (1 << 16) as f64;
         let rray = Ray::reflect(p + (n*eps), r, interaction.level()).unwrap();
         let tray = Ray::refract(p - (n*eps), t, interaction.level()).unwrap();
 
         // Total internal reflection?
         let tir = sin2_theta_t > one;
 
-        // Reflection opacity
+        // Reflection opacity approximation
+        let cos_theta_i = cos_theta_i.abs();
         let rcontrib = if n1 <= n2 {
             let cos_theta_i_5 = (0..5).fold(one, |pow, _| pow*cos_theta_i); // power of 5
             r_0 + (one - r_0)*cos_theta_i_5
@@ -194,6 +195,7 @@ impl Refract {
         } else {
             one
         };
+        // let rcontrib = rcontrib.min(1.0);
 
         // Refraction opacity
         let tcontrib = one - rcontrib;

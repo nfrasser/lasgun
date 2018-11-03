@@ -4,15 +4,20 @@ use super::Material;
 pub struct Background {
     inner: Color,
     outer: Color,
+    average: Color
 }
 
 impl Background {
     pub fn radial(inner: Color, outer: Color) -> Background {
-        Background { inner, outer }
+        Background { inner, outer, average: (inner + outer)*0.5 }
     }
 
     pub fn solid(color: Color) -> Background {
         Background::radial(color, color)
+    }
+
+    pub fn average(&self) -> Color {
+        self.average
     }
 }
 
