@@ -3,7 +3,8 @@ use std::f64;
 use crate::space::*;
 use crate::ray::Ray;
 use crate::interaction::SurfaceInteraction;
-use super::{Primitive, Shape};
+use crate::primitive::{Primitive, OptionalPrimitive};
+use super::Shape;
 
 /**
 aka "Box", aka "Rectangular prism"
@@ -31,7 +32,7 @@ impl Primitive for Cuboid {
         self.bounds.bound()
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         self.bounds.intersect(ray, interaction)
     }
     fn intersects(&self, ray: &Ray) -> bool {
@@ -44,7 +45,7 @@ impl Shape for Cuboid {}
 impl Primitive for Bounds {
     fn bound(&self) -> Bounds { *self }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
 

@@ -38,13 +38,17 @@ impl Refractive {
     fn enter(&self, primitive: &dyn Primitive, from_n: f64, interaction: &SurfaceInteraction, root: &Accel) -> Color {
         let refract = Refract::at(interaction, from_n, self.index);
         if let None = refract {
-            return root.scene.background().color(primitive, interaction, root)
+            return root.scene.material(&self.base).unwrap()
+                .color(primitive, interaction, root)
         };
         let refract = refract.unwrap();
 
         let mut tinteraction = SurfaceInteraction::default();
         let tprim = root.intersect(&refract.tray, &mut tinteraction).unwrap_or(root);
         tinteraction.commit(&refract.tray);
+
+        let base = root.scene.material(&self.base).unwrap()
+            .color(primitive, interaction, root);
 
         // Calculate the transmitted color
         let tcolor = if tprim as *const Primitive == primitive as *const Primitive {
@@ -112,16 +116,19 @@ impl Refractive {
                 .color(rprim, &rinteraction, root)
         };
 
-        // Return the weighed contribution of each component
-        // (tcolor*refract.tcontrib*(1.0 - self.opacity)) + rcolor*refract.rcontrib
+        // Return the weighed contribution of each component Inside a material,
+        // meaning all the lights aren't visible (until we get sampling) so
+        // don't count that
         tcolor*refract.tcontrib + rcolor*refract.rcontrib
     }
 }
 
 impl super::Material for Refractive {
-    // TODO: Fix this
-    fn color(&self, primitive: &dyn Primitive, interaction: &SurfaceInteraction, root: &Accel)
-    -> Color {
+    fn color(&self,
+        primitive: &dyn Primitive,
+        interaction: &SurfaceInteraction,
+        root: &Accel
+    ) -> Color {
         self.enter(primitive, 1.0, interaction, root)
     }
 }

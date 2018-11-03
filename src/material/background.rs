@@ -18,9 +18,11 @@ impl Background {
 
 impl Material for Background {
     fn color(&self, _: &dyn Primitive, interaction: &SurfaceInteraction, root: &Accel) -> Color {
-        let view = root.scene.view;
+        let view = root.scene.view.normalize();
         let d = interaction.d();
-        let t = ((1.0 - (view.dot(d)/(d.magnitude() * view.magnitude())).abs().sqrt()) * (360.0/root.scene.options.fov)).min(1.0);
+        let mut t = (1.0 - view.dot(d).abs())/(d.magnitude() * view.magnitude());
+        t *= 270.0/root.scene.options.fov;
+        t = t.min(1.0);
 
         Color {
             x: lerp(t, self.inner.x, self.outer.x),

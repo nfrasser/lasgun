@@ -2,7 +2,8 @@ use std::f64;
 use crate::math;
 use crate::space::*;
 use crate::ray::Ray;
-use crate::shape::{Primitive, Shape};
+use crate::primitive::{Primitive, OptionalPrimitive};
+use crate::shape::Shape;
 use crate::interaction::SurfaceInteraction;
 
 /**
@@ -30,7 +31,7 @@ impl Primitive for Sphere {
             self.origin + Vector::from_value(self.radius))
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let d = &ray.d;
         let rad = &self.radius;
         let cen = &self.origin;

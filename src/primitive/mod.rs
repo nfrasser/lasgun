@@ -7,17 +7,32 @@ use std::marker::Sync;
 /// The returned material reference must have at least the same lifetime as the
 /// Scene and the primitive to which it belongs.
 pub trait Primitive: Sync {
-    // Object-level bounds for this primitive
+    /// Object-level bounds for this primitive
     fn bound(&self) -> Bounds;
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive>;
+    /// Calculate intersection for a ray with this primitive.
+    ///
+    /// Implementors where an intersection occurs at a point _closer_ to the ray
+    /// origin (i.e., `t < interaction.t`) should return a reference to
+    /// themselves wrapped in `Some()`.
+    ///
+    /// Implementors should also update the following:
+    ///
+    /// - `interaction.t`: new interaction ray parameter
+    /// - `interaction.n`: new normal at the surface of intersection
+    /// - `interaction.material`: a `MaterialRef` for the material at the
+    ///    surface, if applicable.
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive;
+
+    /// Whether an intersection with the given ray exists. Default
+    /// implementation calls `intersect`. Available so that more efficient
+    /// intersection tests can be computed for some primitives without having to
+    /// update the interaction.
     fn intersects(&self, ray: &Ray) -> bool {
-        if let None = self.intersect(ray, &mut SurfaceInteraction::default()) {
-            false
-        } else {
-            true
-        }
+        self.intersect(ray, &mut SurfaceInteraction::default()).is_some()
     }
 }
+
+pub type OptionalPrimitive<'a> = Option<&'a dyn Primitive>;
 
 pub mod geometry;
