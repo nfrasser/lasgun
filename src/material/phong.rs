@@ -1,6 +1,6 @@
 use std::f64;
 use crate::space::*;
-use crate::{interaction::SurfaceInteraction, Accel};
+use crate::{interaction::SurfaceInteraction, primitive::Primitive, Accel};
 
 // Phong-lighted material
 pub struct Phong {
@@ -20,25 +20,20 @@ impl Phong {
 }
 
 impl super::Material for Phong {
-fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color {
-        let n = interaction.n.as_vec().normalize();
-        let v: Vector = interaction.d().normalize();
+    fn color(&self, _: &dyn Primitive, interaction: &SurfaceInteraction, root: &Accel) -> Color {
+        let n = interaction.n.to_vec();
+        let v: Vector = -interaction.d();
 
         // Add a small fraction of the normal to avoid speckling due to floating
         // point errors (the calculated point ends up inside the geometric
         // primitive).
-        let q = interaction.p() + (f64::EPSILON * 32.0) * n;
-
-        let ambient = Color::new(
-            root.scene.options.ambient[0],
-            root.scene.options.ambient[1],
-            root.scene.options.ambient[2]);
+        let q = interaction.p();
 
         // start with ambient lighting
-        let output = self.kd.mul_element_wise(ambient);
+        let output = self.kd.mul_element_wise(root.scene.ambient);
 
         // For each scene light, sample point lights from it
-        let result = root.scene.lights().iter().fold(output, |output, light| {
+        root.scene.lights().iter().fold(output, |output, light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
             light.iter_samples(root, q).fold(output, |output, plight| {
@@ -49,7 +44,7 @@ fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color {
                 let n_dot_l = n.dot(l);
 
                 // Vector at the angle of reflection
-                let r: Vector = 2.0*n_dot_l*n - l;
+                let r = 2.0*n_dot_l*n - l;
                 let r_dot_v = r.dot(v);
 
                 // Light attenuation over distance used to compute energy received at q
@@ -61,10 +56,7 @@ fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color {
                 self.kd.mul_element_wise(e)*n_dot_l.max(0.0) +
                 output + self.ks.mul_element_wise(e)*r_dot_v.max(0.0).powi(self.shininess)
             })
-        });
-
-        result
-        // Color::new(result.x.min(1.0), result.y.min(1.0), result.z.min(1.0))
+        })
     }
 }
 

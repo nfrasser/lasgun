@@ -54,7 +54,7 @@ impl Light for PointLight {
         // See if there's anything that intersects
         let mut interaction = SurfaceInteraction::default();
         root.intersect(&ray, &mut interaction);
-        if interaction.t < t {
+        if interaction.material != None && interaction.t < t {
             None
         } else {
             Some(*self)
