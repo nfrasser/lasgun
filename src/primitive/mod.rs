@@ -9,9 +9,13 @@ pub trait Primitive {
     // Object-level bounds for this primitive
     fn bound(&self) -> Bounds;
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool;
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive>;
     fn intersects(&self, ray: &Ray) -> bool {
-        self.intersect(ray, &mut SurfaceInteraction::default())
+        if let None = self.intersect(ray, &mut SurfaceInteraction::default()) {
+            false
+        } else {
+            true
+        }
     }
 }
 

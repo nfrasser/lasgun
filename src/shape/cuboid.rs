@@ -31,7 +31,7 @@ impl Primitive for Cuboid {
         self.bounds.bound()
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
         self.bounds.intersect(ray, interaction)
     }
     fn intersects(&self, ray: &Ray) -> bool {
@@ -44,7 +44,7 @@ impl Shape for Cuboid {}
 impl Primitive for Bounds {
     fn bound(&self) -> Bounds { *self }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
 
@@ -67,17 +67,17 @@ impl Primitive for Bounds {
         }
 
         // Check if out of bounds
-        if tnear > tfar || tfar <= 0.0 { return false }
+        if tnear > tfar || tfar <= 0.0 { return None }
 
         // Intersection, check if it happens behind the ray and set t accordingly
         let t = if tnear < 0.0 { tfar } else { tnear };
-        if t >= interaction.t { return false }
+        if t >= interaction.t { return None }
 
         interaction.t = t;
         // interaction.p = ray.origin + ray.d * t;
         interaction.n = normal::Normal3(normal).face_forward(ray.d);
 
-        true
+        Some(self)
     }
 
     fn intersects(&self, ray: &Ray) -> bool {
@@ -112,7 +112,6 @@ const CUBE_NORMALS: [[f64; 3]; 3] = [
 #[cfg(test)]
 mod test {
     use super::*;
-    // use cgmath::prelude::*;
 
     #[test]
     fn straight_on_intersection() {
@@ -120,7 +119,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(0.0, 0.0, 1.0));
         let mut interaction = SurfaceInteraction::default();
 
-        assert!(cube.intersect(&ray, &mut interaction));
+        assert!(cube.intersect(&ray, &mut interaction).is_some());
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
     }
@@ -131,7 +130,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 0.0, 1.0));
         let mut interaction = SurfaceInteraction::default();
 
-        assert!(cube.intersect(&ray, &mut interaction));
+        assert!(cube.intersect(&ray, &mut interaction).is_some());
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
     }
@@ -142,7 +141,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, -2.0), Vector::new(1.0, 1.0, 1.0));
         let mut interaction = SurfaceInteraction::default();
 
-        assert!(cube.intersect(&ray, &mut interaction));
+        assert!(cube.intersect(&ray, &mut interaction).is_some());
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
     }
@@ -153,7 +152,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::unit_z());
         let mut interaction = SurfaceInteraction::default();
 
-        assert!(cube.intersect(&ray, &mut interaction));
+        assert!(cube.intersect(&ray, &mut interaction).is_some());
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
     }

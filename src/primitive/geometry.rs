@@ -20,12 +20,12 @@ pub struct Geometry<S: Shape> {
 impl<S: Shape> Primitive for Geometry<S> {
     fn bound(&self) -> Bounds { self.shape.bound() }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
-        if self.shape.intersect(ray, interaction) {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
+        if let Some(primitive) = self.shape.intersect(ray, interaction) {
             interaction.material = Some(self.material);
-            true
+            Some(primitive)
         } else {
-            false
+            None
         }
     }
 

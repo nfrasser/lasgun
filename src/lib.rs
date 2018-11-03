@@ -121,9 +121,6 @@ pub fn capture_hunk(startx: u16, starty: u16, root: &Accel, hunk: &mut FilmDataH
         // Don't bother rendering pixels outside the frame
         if x >= width || x >= height { continue };
 
-        // Get default background color
-        let bg = scene.background(x as usize, y as usize);
-
         // Calculate offsets distances from the view vector
         let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
         let voffset = ((height as f64 - 1.0) * 0.5 - y as f64) * sample_distance;
@@ -132,7 +129,7 @@ pub fn capture_hunk(startx: u16, starty: u16, root: &Accel, hunk: &mut FilmDataH
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(root, &bg);
+        let color = ray.cast(root);
 
         let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
@@ -193,7 +190,6 @@ fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
         let x = offset % width;
         let y = offset / height;
 
-        let bg = scene.background(x, y);
         let (xf, yf) = (x as f64, y as f64);
 
         // Calculate offsets distances from the view vector
@@ -204,7 +200,7 @@ fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
         let d = scene.view + (voffset * up) + (hoffset * aux);
 
         let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(root, &bg);
+        let color = ray.cast(root);
 
         film.set(x, y, &color)
     }

@@ -50,7 +50,7 @@ impl PrimaryRay {
     }
 
     /// Takes the scene, the scene's root node, and the background color
-    pub fn cast(&self, root: &Accel, bg: &Color) -> Color {
+    pub fn cast(&self, root: &Accel) -> Color {
         let scene = root.scene;
         let dim = scene.supersampling.dim as i32;
         let mut color = Color::zero();
@@ -72,18 +72,13 @@ impl PrimaryRay {
 
             let mut interaction = SurfaceInteraction::default();
             root.intersect(&ray, &mut interaction);
-            if !interaction.exists() {
-                color += *bg;
-                continue
-            };
 
-            // Calculates the actual intersection point and normalizes
-            // requireed before getting p(), d(), etc.
+            // Calculates the actual intersection point and normalizes.
+            // Required before getting p(), d(), etc.
             interaction.commit(&ray);
 
             // Get the correct scene material
-            let material = scene.material(&interaction.material.unwrap())
-                .unwrap();
+            let material = scene.material_or_background(&interaction.material);
 
             // Query the material for the color at the given point
             color += material.color(&interaction, root)

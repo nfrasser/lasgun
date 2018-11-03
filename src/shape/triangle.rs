@@ -114,7 +114,7 @@ impl<'a> Primitive for Triangle<'a> {
         Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
         // 1. Get triangle vertices
         let (p0, p1, p2) = (self.p0(), self.p1(), self.p2());
 
@@ -178,12 +178,12 @@ impl<'a> Primitive for Triangle<'a> {
         // Perform triangle edge and determinant tests
         if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
             // Edge coefficients differ, origin is outside
-            return false
+            return None
         };
 
         // If the sum is 0, the triangle is right on the edge
         let det = e0 + e1 + e2;
-        if det == 0.0 { return false };
+        if det == 0.0 { return None };
 
         // Compute scaled hit distance to triangle and test against ray t range
         // This step was saved from later
@@ -194,7 +194,7 @@ impl<'a> Primitive for Triangle<'a> {
 
         // Check for mismatched determinant and tscaled signs (triangle is behind ray)
         if (det < 0.0 && tscaled >= 0.0) || (det > 0.0 && tscaled <= 0.0) {
-            return false
+            return None
         }
 
         // compute barycentric coordinates and t value for triangle intersection
@@ -204,7 +204,7 @@ impl<'a> Primitive for Triangle<'a> {
         // let b1 = e1 * invdet;
         // let b2 = e2 * invdet;
         let t = tscaled * invdet;
-        if t >= interaction.t { return false };
+        if t >= interaction.t { return None };
 
         // TODO: ensure that computed triangle t is conservatively greater than 0
 
@@ -218,7 +218,7 @@ impl<'a> Primitive for Triangle<'a> {
         let normal = (p2 - p1).cross(p1 - p0);
         interaction.t = t;
         interaction.n = normal::Normal3(normal).face_forward(ray.d);
-        true
+        Some(self)
     }
 }
 

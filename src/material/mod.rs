@@ -7,4 +7,5 @@ pub trait Material {
     fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color;
 }
 
+pub mod background;
 pub mod phong;

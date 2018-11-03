@@ -2,7 +2,7 @@ use std::{io, path::Path, f64};
 
 use crate::space::*;
 use crate::light::{Light, point::PointLight};
-use crate::material::{Material, phong::Phong};
+use crate::material::{Material, background::Background, phong::Phong};
 use crate::shape::mesh::Mesh;
 
 /// Description of the world to render and how it should be rendered
@@ -13,10 +13,6 @@ pub struct Scene {
 
     /// Additional scene rendering options
     pub options: Options,
-
-    materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
-    lights: Vec<Box<dyn Light>>, // point-light sources in the scene
-    meshes: Vec<Mesh>,
 
     pub ambient: Color, // ambient lighting
 
@@ -42,8 +38,12 @@ pub struct Scene {
     /// Precomputed supersampling options
     pub supersampling: Sampling,
 
-    // Background computation
-    pub background: Background
+    // Background material
+    pub background: Background,
+
+    materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
+    lights: Vec<Box<dyn Light>>, // point-light sources in the scene
+    meshes: Vec<Mesh>,
 }
 
 /// Opaque reference to a material within a scene. May be passed around and
@@ -103,14 +103,6 @@ pub struct Sampling {
     pub power: f64,
 }
 
-/// Scene background colour implementation
-pub enum Background {
-    Solid(Color),
-
-    // inner, outer colours
-    Radial(Color, Color)
-}
-
 impl Scene {
     pub fn new(options: Options) -> Scene {
         // The Auxilary Vector is normal to the view and up vectors
@@ -147,9 +139,9 @@ impl Scene {
         let supersample_power = 1.0/(supersample_count as f64);
 
         Scene {
-            lights: vec![], materials: vec![], meshes: vec![],
-            ambient: Color::new(options.ambient[0], options.ambient[1], options.ambient[2]),
             root: Aggregate::new(),
+            options,
+            ambient: Color::new(options.ambient[0], options.ambient[1], options.ambient[2]),
             eye, view, up, aux, pixel_radius,
             supersampling: Sampling {
                 dim: supersample_dim,
@@ -157,8 +149,8 @@ impl Scene {
                 radius: pixel_radius * supersample_scale,
                 power: supersample_power
             },
-            background: Background::solid([0, 0, 0]),
-            options,
+            background: Background::solid(Color::zero()),
+            lights: vec![], materials: vec![], meshes: vec![],
         }
     }
 
@@ -221,22 +213,30 @@ impl Scene {
         }
     }
 
+    pub fn material_or_background(&self, m: &Option<MaterialRef>) -> &dyn Material {
+        if let Some(mref) = m {
+            self.material(mref).unwrap_or(&self.background)
+        } else {
+            &self.background
+        }
+    }
+
     pub fn lights(&self) -> &Vec<Box<dyn Light>> { &self.lights }
 
     pub fn mesh<'a>(&'a self, mesh: &ObjRef) -> Option<&'a Mesh> {
         self.meshes.get(mesh.0)
     }
 
-    pub fn background(&self, x: usize, y: usize) -> Color {
-        self.background.at(self, x as u16, y as u16)
+    pub fn background(&self) -> &dyn Material {
+        &self.background
     }
 
     pub fn set_solid_background(&mut self, color: [u8; 3]) {
-        self.background = Background::solid(color)
+        self.background = Background::solid(from_pixel_bytes(color))
     }
 
     pub fn set_radial_background(&mut self, inner: [u8; 3], outer: [u8; 3]) {
-        self.background = Background::radial(inner, outer)
+        self.background = Background::radial(from_pixel_bytes(inner), from_pixel_bytes(outer))
     }
 
     fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
@@ -246,40 +246,13 @@ impl Scene {
     }
 }
 
-impl Background {
-    pub fn solid(color: [u8; 3]) -> Background {
-        Background::Solid(Self::to_color(color))
-    }
-
-    pub fn radial(inner: [u8; 3], outer: [u8; 3]) -> Background {
-        Background::Radial(Self::to_color(inner), Self::to_color(outer))
-    }
-
-    pub fn at(&self, scene: &Scene, x: u16, y: u16) -> Color {
-        match self {
-            Background::Solid(color) => *color,
-            Background::Radial(inner, outer) => {
-                let (width, height) = (scene.options.width, scene.options.height);
-                let (midx, midy) = ((width / 2) as f64, (height / 2) as f64);
-                let (dx, dy) = (midx - x as f64, midy - y as f64);
-
-                let maxd = (midx*midx + midy*midy).sqrt();
-                let d = (dx*dx + dy*dy).sqrt();
-                let t = d / maxd;
-
-                Color::new(
-                    lerp(t, inner.x, outer.x),
-                    lerp(t, inner.y, outer.y),
-                    lerp(t, inner.z, outer.z))
-            }
-        }
-    }
-
-    fn to_color(pixel: [u8; 3]) -> Color {
-        Color::new(
-            pixel[0] as f64 / 255.0,
-            pixel[1] as f64 / 255.0,
-            pixel[2] as f64 / 255.0)
+/// Convert a colour channel from between 0 and 1 to an interger between 0 and 255
+#[inline]
+fn from_pixel_bytes(bytes: [u8; 3]) -> Color {
+    Color {
+        x: (bytes[0] as f64) / 255.0,
+        y: (bytes[1] as f64) / 255.0,
+        z: (bytes[2] as f64) / 255.0
     }
 }
 
