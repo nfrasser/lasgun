@@ -51,7 +51,6 @@ pub struct Transform3<N: BaseFloat> {
     minv: Matrix4<N>
 }
 
-#[allow(dead_code)]
 impl<N: BaseFloat> Transform3<N> {
 
     /// Create a new transformation with the given matrix and inverse

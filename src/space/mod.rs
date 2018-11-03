@@ -10,7 +10,7 @@ pub use self::transform::Trans;
 pub type Point = Point3<f64>;
 pub type Vector = Vector3<f64>;
 pub type Color = Vector3<f64>;
-pub type Normal = normal::Normal3<f64>;
+#[allow(dead_code)] pub type Normal = normal::Normal3<f64>; // used in tests
 pub type Bounds = bounds::Bounds3<f64>;
 pub type Transformation = transform::Transform3<f64>;
 

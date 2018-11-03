@@ -31,45 +31,98 @@ impl Refractive {
     pub fn new(base: MaterialRef, index: f64, opacity: f64) -> Refractive {
         Refractive { base, index, opacity }
     }
+
+    /// Enter the material via the given interaction and return the discovered
+    /// color. Counts reflected light when attempting to enter. Assumes
+    /// interaction has recursion levels available.
+    fn enter(&self, primitive: &dyn Primitive, from_n: f64, interaction: &SurfaceInteraction, root: &Accel) -> Color {
+        let refract = Refract::at(interaction, from_n, self.index);
+        if let None = refract {
+            return root.scene.background().color(primitive, interaction, root)
+        };
+        let refract = refract.unwrap();
+
+        let mut tinteraction = SurfaceInteraction::default();
+        let tprim = root.intersect(&refract.tray, &mut tinteraction).unwrap_or(root);
+        tinteraction.commit(&refract.tray);
+
+        // Calculate the transmitted color
+        let tcolor = if tprim as *const Primitive == primitive as *const Primitive {
+            // Exit back into the previous medium
+            self.exit(tprim, from_n, &tinteraction, root)
+        } else {
+            // Existed out into the real world, probably. Fails if primitives
+            // are nested. In which case we're out of luck until a proper
+            // integrator is implemented.
+            root.scene.material_or_background(&tinteraction.material)
+                .color(tprim, &tinteraction, root)
+
+        };
+
+        // Calculate the reflected color
+        let mut rinteraction = SurfaceInteraction::default();
+        let rprim = root.intersect(&refract.rray, &mut rinteraction).unwrap_or(root);
+        rinteraction.commit(&refract.rray);
+        let rcolor = if let Some(m) = rinteraction.material {
+            root.scene.material(&m).unwrap().color(rprim, &rinteraction, root)
+        } else {
+            root.scene.ambient
+        };
+
+        // let base = root.scene.material(&self.base).unwrap()
+        //     .color(primitive, interaction, root);
+
+        // Return the weighed contribution of each component
+        tcolor*refract.tcontrib + rcolor*refract.rcontrib
+        // base*self.opacity + (tcolor*refract.tcontrib*(1.0 - self.opacity)) + rcolor*refract.rcontrib
+        // base
+    }
+
+    // Exit from this material via the given interaction and return what colour
+    // is discovered upon exiting. Counts reflected light when attempting to
+    // exit (e.g., Total Internal Reflection). Assumes interaction has recursion
+    // levels available.
+    fn exit(&self, primitive: &dyn Primitive, to_n: f64, interaction: &SurfaceInteraction, root: &Accel) -> Color {
+        let refract = Refract::at(interaction, self.index, to_n);
+        if let None = refract {
+            return root.scene.background().color(primitive, interaction, root)
+        };
+        let refract = refract.unwrap();
+
+        // Calculate the transmitted color (now outside the material)
+        let mut tinteraction = SurfaceInteraction::default();
+        let tprim = root.intersect(&refract.tray, &mut tinteraction).unwrap_or(root);
+        tinteraction.commit(&refract.tray);
+        let tcolor = root.scene.material_or_background(&tinteraction.material)
+            .color(tprim, &tinteraction, root);
+
+        // Calculate the reflected color (e.g., total internal reflection)
+        let mut rinteraction = SurfaceInteraction::default();
+        let rprim = root.intersect(&refract.rray, &mut rinteraction).unwrap_or(root);
+        rinteraction.commit(&refract.tray);
+
+        let rcolor = if rprim as *const Primitive == primitive as *const Primitive {
+            // Enter back into the previous medium
+            self.enter(rprim, to_n, &rinteraction, root)
+        } else {
+            // Existed out into the real world, probably. Fails if primitives
+            // are nested. In which case we're out of luck until a proper
+            // integrator is implemented.
+            root.scene.material_or_background(&rinteraction.material)
+                .color(rprim, &rinteraction, root)
+        };
+
+        // Return the weighed contribution of each component
+        // (tcolor*refract.tcontrib*(1.0 - self.opacity)) + rcolor*refract.rcontrib
+        tcolor*refract.tcontrib + rcolor*refract.rcontrib
+    }
 }
 
 impl super::Material for Refractive {
     // TODO: Fix this
-    fn color(&self, interaction: &SurfaceInteraction, root: &Accel)
+    fn color(&self, primitive: &dyn Primitive, interaction: &SurfaceInteraction, root: &Accel)
     -> Color {
-        let (n1, n2) = (1.0, self.index);
-
-        // Base color
-        let base = root.scene.material(&self.base)
-            .unwrap()
-            .color(interaction, root);
-
-        // Recursive color
-        if let Some(refract) = Refract::at(interaction, n1, n2) {
-            let mut rinteraction = SurfaceInteraction::default();
-            root.intersect(&refract.rray, &mut rinteraction);
-            let rcolor = if let Some(material) = rinteraction.material {
-                rinteraction.commit(&refract.rray);
-                let material = root.scene.material(&material).unwrap();
-                material.color(&rinteraction, root)
-            } else {
-                base
-            };
-
-            let mut tinteraction = SurfaceInteraction::default();
-            root.intersect(&refract.tray, &mut tinteraction);
-            let tcolor = if let Some(material) = tinteraction.material {
-                rinteraction.commit(&refract.tray);
-                let material = root.scene.material(&material).unwrap();
-                material.color(&tinteraction, root)
-            } else {
-                base
-            };
-
-            base * self.opacity + (rcolor * refract.rcontrib) + (tcolor * refract.tcontrib * (1.0 - self.opacity))
-        } else {
-            base
-        }
+        self.enter(primitive, 1.0, interaction, root)
     }
 }
 
@@ -96,7 +149,7 @@ impl Refract {
         let one = 1.0;
         let i = interaction.d(); // incident vector
         let n = interaction.n.to_vec();
-        let p = *interaction.p();
+        let p = interaction.p();
         let cos_theta_i = i.dot(n);
 
         // Reflection direction

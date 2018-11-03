@@ -30,7 +30,7 @@ impl Primitive for Sphere {
             self.origin + Vector::from_value(self.radius))
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
         let d = &ray.d;
         let rad = &self.radius;
         let cen = &self.origin;
@@ -83,13 +83,13 @@ impl Primitive for Sphere {
         };
 
         if let Some(normal) = normal {
-            if t >= interaction.t { return false }
+            if t >= interaction.t { return None }
             // A nearby interaction exists
             interaction.t = t;
             interaction.n = normal;
-            true
+            Some(self)
         } else {
-            false
+            None
         }
     }
 }
@@ -107,7 +107,7 @@ mod test {
         let ray = Ray::new(origin, Vector::new(0.0, 0.0, -1.0), 0);
         let mut interation = SurfaceInteraction::default();
 
-        assert!(sphere.intersect(&ray, &mut interation));
+        assert!(sphere.intersect(&ray, &mut interation).is_some());
         assert_eq!(interation.t, 1.0);
         assert_eq!(interation.n, Normal::new(0.0, 0.0, 1.0));
     }
@@ -118,7 +118,7 @@ mod test {
         let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0), 0);
         let mut interaction = SurfaceInteraction::default();
 
-        assert!(sphere.intersect(&ray, &mut interaction));
+        assert!(sphere.intersect(&ray, &mut interaction).is_some());
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
     }

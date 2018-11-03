@@ -58,12 +58,11 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// is complete. Returns the resulting interaction point in world space. The
     /// interaction is valid once this method is called. Also normalizes
     /// everything.
-    pub fn commit(&mut self, ray: &Ray3<N>) -> &Point3<N> {
+    pub fn commit(&mut self, ray: &Ray3<N>) {
         self.n.normalize();
         self.p = ray.origin + ray.d*self.t;
         self.d = ray.d.normalize();
         self.level = ray.level;
-        &self.p
     }
 
     /// Has in interaction been successfully found
@@ -72,15 +71,15 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     }
 
     /// Incident direction vector. self must be committed
-    pub fn d(&self) -> &Vector3<N> {
+    pub fn d(&self) -> Vector3<N> {
         debug_assert!(self.valid());
-        &self.d
+        self.d
     }
 
     /// Point of interaction in world coordinates. self must be committed
-    pub fn p(&self) -> &Point3<N> {
+    pub fn p(&self) -> Point3<N> {
         debug_assert!(self.valid());
-        &self.p
+        self.p
     }
 
     /// Recursion level of ray causing this interaction. self must be committed
