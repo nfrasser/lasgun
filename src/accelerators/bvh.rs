@@ -5,7 +5,7 @@ use crate::{
     space::*,
     shape::*,
     ray::Ray,
-    primitive::{Primitive, geometry::Geometry},
+    primitive::{Primitive, OptionalPrimitive, geometry::Geometry},
     interaction::SurfaceInteraction,
     scene::{Scene, MaterialRef, ObjRef, node::{self, SceneNode}}
 };
@@ -455,7 +455,7 @@ impl<'s> Primitive for BVHAccel<'s> {
         self.transform.transform_bounds(self.nodes[0].bounds)
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let ray = self.transform.inverse_transform_ray(*ray);
         let dir_is_neg = [ray.dinv.x < 0.0, ray.dinv.y < 0.0, ray.dinv.z < 0.0];
         let mut isect = self.transform.inverse_transform_surface_interaction(interaction);

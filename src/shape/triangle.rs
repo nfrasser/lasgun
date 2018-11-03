@@ -5,10 +5,11 @@ use obj;
 use crate::{
     space::*,
     ray::Ray,
-    interaction::SurfaceInteraction
+    primitive::{Primitive, OptionalPrimitive},
+    interaction::SurfaceInteraction,
 };
 
-use super::{Primitive, Shape};
+use super::Shape;
 
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
@@ -114,7 +115,7 @@ impl<'a> Primitive for Triangle<'a> {
         Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> Option<&dyn Primitive> {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         // 1. Get triangle vertices
         let (p0, p1, p2) = (self.p0(), self.p1(), self.p2());
 
