@@ -106,11 +106,11 @@ mod test {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
         let origin = Point::new(0.0, 0.0, 2.0);
         let ray = Ray::new(origin, Vector::new(0.0, 0.0, -1.0), 0);
-        let mut interation = SurfaceInteraction::default();
+        let mut interaction = SurfaceInteraction::default();
 
-        assert!(sphere.intersect(&ray, &mut interation).is_some());
-        assert_eq!(interation.t, 1.0);
-        assert_eq!(interation.n, Normal::new(0.0, 0.0, 1.0));
+        assert!(sphere.intersect(&ray, &mut interaction).is_some());
+        assert_eq!(interaction.t, 1.0);
+        assert_eq!(interaction.n, Normal::new(0.0, 0.0, 1.0));
     }
 
     #[test]

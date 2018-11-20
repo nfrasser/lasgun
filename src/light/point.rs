@@ -42,19 +42,15 @@ impl Light for PointLight {
     ///
     fn sample(&self, root: &Accel, p: &Point) -> Option<PointLight> {
         let d = self.position - p; // direction from p to light
-        let t = d.magnitude(); // distance to light in world coordinates
-
-        // Move point slighly outside the surface of the intersecting primitive
-        // accounts for floating point errors
-        let p = p + (f64::EPSILON * (1 << 15) as f64) * d;
+        // let t = d.magnitude(); // distance to light in world coordinates
 
         // Create a shadow ray
-        let ray = Ray::new(p, d, 0);
+        let ray = Ray::new(*p, d, 0);
 
         // See if there's anything that intersects
         let mut interaction = SurfaceInteraction::default();
         root.intersect(&ray, &mut interaction);
-        if interaction.material != None && interaction.t < t {
+        if interaction.material != None && interaction.t < 1.0 {
             None
         } else {
             Some(*self)

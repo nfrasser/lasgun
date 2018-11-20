@@ -21,13 +21,13 @@ impl Phong {
 
 impl super::Material for Phong {
     fn color(&self, _: &dyn Primitive, interaction: &SurfaceInteraction, root: &Accel) -> Color {
-        let n = interaction.n.to_vec();
+        let n = interaction.n.as_vec();
         let v: Vector = -interaction.d();
 
         // Add a small fraction of the normal to avoid speckling due to floating
         // point errors (the calculated point ends up inside the geometric
         // primitive).
-        let q = interaction.p();
+        let q = interaction.p() + (f64::EPSILON * (1 << 15) as f64) * n;
 
         // start with ambient lighting
         let output = self.kd.mul_element_wise(root.scene.ambient);

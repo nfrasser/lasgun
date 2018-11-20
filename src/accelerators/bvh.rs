@@ -12,7 +12,7 @@ use crate::{
 
 // Hiding my ugly dynamic dispatch type.
 // Should have the lifetime of the referenced Scene instance.
-type PrimBox<'s> = Box<dyn Primitive + Send + 's>;
+type PrimBox<'s> = Box<dyn Primitive + 's>;
 
 // (In)convenience types, mostly for documentation
 type BVHSplitAxis = usize;
