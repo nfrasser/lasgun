@@ -1,5 +1,5 @@
 git:
-  depth: false
+  depth: 1
 language: rust
 cache: cargo
 rust:
@@ -8,7 +8,7 @@ matrix:
   fast_finish: true
 before_install:
   curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-scripts:
+script:
   - cargo build --verbose --all
   - wasm-pack build js
   - cargo test --verbose --all
