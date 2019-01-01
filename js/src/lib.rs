@@ -1,8 +1,20 @@
 mod utils;
 
+use cfg_if::cfg_if;
 use std::mem;
 use lasgun;
+use lasgun::PixelBuffer;
 use wasm_bindgen::prelude::*;
+
+cfg_if! {
+    // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+    // allocator.
+    if #[cfg(feature = "wee_alloc")] {
+        extern crate wee_alloc;
+        #[global_allocator]
+        static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+    }
+}
 
 #[wasm_bindgen]
 extern {
@@ -128,7 +140,7 @@ pub fn capture_hunk(i: u32, scene: &Scene, root: &Accel, hunk: &mut Hunk) {
     let (hhunks, _) = scene.hunk_dims();
     hunk.x = (i % hhunks as u32 * 16) as u16;
     hunk.y = (i / hhunks as u32 * 16) as u16;
-    lasgun::capture_hunk(hunk.x, hunk.y, scene.native(), root.native(), hunk.data_mut())
+    lasgun::capture_hunk(hunk.x, hunk.y, root.native(), hunk.data_mut())
 }
 
 /// The number of 16x16 hunks that make up this scene
@@ -399,12 +411,12 @@ impl Film {
     /// Get a Uint8Array of pixels for display in a browser environment
     /// Each set of 4 bytes represents an RGBA pixel
     pub fn pixels(&self) -> Box<[u8]> {
-        self.0.data.as_slice().to_vec().into_boxed_slice()
+        self.0.as_slice().to_vec().into_boxed_slice()
     }
 
     /// Get a pointer to the first pixel in the data set
     pub fn data(&self) -> *const u8 {
-        unsafe { mem::transmute(self.0.data.raw_pixels()) }
+        unsafe { mem::transmute(self.0.raw_pixels()) }
     }
 
     /// How many bytes there are in the data pointer
