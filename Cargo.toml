@@ -31,6 +31,16 @@ name = "simplecows"
 path = "src/examples/simplecows.rs"
 required-features = ["bin"]
 
+[[example]]
+name = "spooky"
+path = "src/examples/spooky.rs"
+required-features = ["bin"]
+
+[[example]]
+name = "cornell"
+path = "src/examples/cornell.rs"
+required-features = ["bin"]
+
 [dependencies]
 rand = "^0.4"
 cgmath = "^0.16"
