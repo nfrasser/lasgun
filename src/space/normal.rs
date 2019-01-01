@@ -27,6 +27,7 @@ impl<S: BaseNum> Normal3<S> {
     /// Conver to the underlyinv vector
     #[inline]
     pub fn into_vec(self) -> Vector3<S> { self.0 }
+
 }
 
 impl<S: BaseFloat> Normal3<S> {
@@ -35,5 +36,11 @@ impl<S: BaseFloat> Normal3<S> {
     pub fn face_forward(self, d: Vector3<S>) -> Normal3<S> {
         let zero = S::zero();
         Normal3(if self.0.dot(d) > zero { -self.0 } else { self.0 })
+    }
+
+    /// Normalize the inner vector
+    #[inline]
+    pub fn normalize(&mut self) {
+        self.0 = self.0.normalize();
     }
 }

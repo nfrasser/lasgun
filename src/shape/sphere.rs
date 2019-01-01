@@ -2,7 +2,8 @@ use std::f64;
 use crate::math;
 use crate::space::*;
 use crate::ray::Ray;
-use crate::shape::{Primitive, Shape};
+use crate::primitive::{Primitive, OptionalPrimitive};
+use crate::shape::Shape;
 use crate::interaction::SurfaceInteraction;
 
 /**
@@ -30,7 +31,7 @@ impl Primitive for Sphere {
             self.origin + Vector::from_value(self.radius))
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let d = &ray.d;
         let rad = &self.radius;
         let cen = &self.origin;
@@ -77,19 +78,19 @@ impl Primitive for Sphere {
             }
         } else if numroots == 1 && roots[0] > 0.0 {
             let normal = normal::Normal3(ray.origin + roots[0]*d - cen);
-            (roots[0], Some(normal.face_forward(ray.d)))
+            (roots[0], Some(normal))
         } else {
             (-1.0, None)
         };
 
         if let Some(normal) = normal {
-            if t >= interaction.t { return false }
+            if t >= interaction.t { return None }
             // A nearby interaction exists
             interaction.t = t;
-            interaction.n = normal;
-            true
+            interaction.n = normal.face_forward(ray.d);
+            Some(self)
         } else {
-            false
+            None
         }
     }
 }
@@ -105,20 +106,20 @@ mod test {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
         let origin = Point::new(0.0, 0.0, 2.0);
         let ray = Ray::new(origin, Vector::new(0.0, 0.0, -1.0));
-        let mut interation = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
 
-        assert!(sphere.intersect(&ray, &mut interation));
-        assert_eq!(interation.t, 1.0);
-        assert_eq!(interation.n, Normal::new(0.0, 0.0, 1.0));
+        assert!(sphere.intersect(&ray, &mut interaction).is_some());
+        assert_eq!(interaction.t, 1.0);
+        assert_eq!(interaction.n, Normal::new(0.0, 0.0, 1.0));
     }
 
     #[test]
     fn inside_intersection() {
         let sphere = Sphere::new([0.0, 0.0, 0.0], 1.0);
         let ray = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
 
-        assert!(sphere.intersect(&ray, &mut interaction));
+        assert!(sphere.intersect(&ray, &mut interaction).is_some());
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
     }

@@ -6,7 +6,7 @@ use crate::{
     scene::MaterialRef,
 };
 
-use super::Primitive;
+use super::{Primitive, OptionalPrimitive};
 
 /// A primitive representing a geometric shape such as a sphere or cube.
 /// The intersection is computed mathematically.
@@ -20,12 +20,12 @@ pub struct Geometry<S: Shape> {
 impl<S: Shape> Primitive for Geometry<S> {
     fn bound(&self) -> Bounds { self.shape.bound() }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
-        if self.shape.intersect(ray, interaction) {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
+        if let Some(primitive) = self.shape.intersect(ray, interaction) {
             interaction.material = Some(self.material);
-            true
+            Some(primitive)
         } else {
-            false
+            None
         }
     }
 

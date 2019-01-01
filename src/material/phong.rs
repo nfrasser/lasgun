@@ -1,5 +1,5 @@
 use crate::space::*;
-use crate::{scene::Scene, primitive::Primitive};
+use crate::{interaction::SurfaceInteraction, Accel};
 
 // Phong-lighted material
 pub struct Phong {
@@ -19,27 +19,23 @@ impl Phong {
 }
 
 impl super::Material for Phong {
-    fn color(&self,
-        q: &Point, eye: &Point, normal: &Normal,
-        scene: &Scene, root: &dyn Primitive
-    ) -> Color {
-        let n = normal.as_vec().normalize();
-        let v: Vector = (eye - q).normalize();
-        let ambient = Color::new(
-            scene.options.ambient[0],
-            scene.options.ambient[1],
-            scene.options.ambient[2]);
+    fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color {
+        let n = interaction.n.to_vec();
+        let v = -interaction.d();
+
+        let ambient = root.scene.ambient;
 
         // start with ambient lighting
         let output = self.kd.mul_element_wise(ambient);
+        let p = interaction.p();
 
         // For each scene light, sample point lights from it
-        scene.lights().iter().fold(output, |output, scene_light| {
+        root.scene.lights().iter().fold(output, |output, light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
-            scene_light.iter_samples(root, *q).fold(output, |output, light| {
+            light.iter_samples(root, p).fold(output, |output, light| {
                 // vector to light and its length (distance to the light from q)
-                let l = light.position - q;
+                let l = light.position - p;
                 let d = l.magnitude();
                 let l = l.normalize();
                 let n_dot_l = n.dot(l);
@@ -58,6 +54,5 @@ impl super::Material for Phong {
                 output + self.ks.mul_element_wise(e)*r_dot_v.max(0.0).powi(self.shininess)
             })
         })
-
     }
 }

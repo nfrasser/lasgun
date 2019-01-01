@@ -51,7 +51,6 @@ pub struct Transform3<N: BaseFloat> {
     minv: Matrix4<N>
 }
 
-#[allow(dead_code)]
 impl<N: BaseFloat> Transform3<N> {
 
     /// Create a new transformation with the given matrix and inverse
@@ -244,12 +243,8 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     #[inline]
     fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
     -> SurfaceInteraction<N> {
-        SurfaceInteraction {
-            t: interaction.t,
-            p: self.transform_point(interaction.p),
-            n: self.transform_normal(interaction.n),
-            material: interaction.material
-        }
+        let n = self.transform_normal(interaction.n);
+        SurfaceInteraction::new(interaction.t, n, interaction.material)
     }
 
     #[inline]
@@ -274,12 +269,8 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     #[inline]
     fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
     -> SurfaceInteraction<N> {
-        SurfaceInteraction {
-            t: interaction.t,
-            p: self.minv.transform_point(interaction.p),
-            n: self.inverse_transform_normal(interaction.n),
-            material: interaction.material
-        }
+        let n = self.inverse_transform_normal(interaction.n);
+        SurfaceInteraction::new(interaction.t, n, interaction.material)
     }
 
 }

@@ -1,8 +1,5 @@
 use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
 
-use crate::{space::*, interaction::SurfaceInteraction};
-
-use super::*;
 use super::triangle::*;
 
 /// A triangle mesh loaded from a .obj file
@@ -43,22 +40,6 @@ impl Mesh {
             object.groups.iter().fold(size, |size, group| {
                 size + group.polys.len()
             })
-        })
-    }
-}
-
-// NOTE: This implementation is not used. BVH hierarchy construction is
-// responsible for this.
-impl Primitive for Mesh {
-    fn bound(&self) -> Bounds {
-        self.obj.position.iter().fold(Bounds::none(), |bounds, pos| {
-            bounds.point_union(&Point::new(pos[0].into(), pos[1].into(), pos[2].into()))
-        })
-    }
-
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
-        self.into_iter().fold(false, |exists, triangle| {
-            triangle.intersect(ray, interaction) || exists
         })
     }
 }
@@ -133,6 +114,13 @@ impl<'a> Iterator for MeshIterator<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use cgmath::prelude::*;
+    use crate::{
+        primitive::Primitive,
+        ray::Ray,
+        interaction::SurfaceInteraction,
+        space::*,
+    };
 
     #[test]
     fn plane_intersection() {
@@ -148,9 +136,11 @@ f 1 4 3
         ).unwrap();
 
         let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
-        let mut interaction = SurfaceInteraction::none();
+        let mut interaction = SurfaceInteraction::default();
+        for triangle in plane.into_iter() {
+            triangle.intersect(&ray, &mut interaction);
+        }
 
-        assert!(plane.intersect(&ray, &mut interaction));
         assert_eq!(interaction.t, 1.0);
         assert_eq!(interaction.n.0.normalize(), Vector::unit_y());
     }

@@ -12,7 +12,11 @@
             ],
             "problemMatcher": [
                 "$rustc"
-            ]
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
             "type": "shell",
@@ -25,7 +29,7 @@
             ],
             "problemMatcher": [
                 "$rustc"
-            ],
+            ]
         },
         {
             "type": "shell",
@@ -38,7 +42,7 @@
             ],
             "problemMatcher": [
                 "$rustc"
-            ],
+            ]
         },
         {
             "type": "shell",
@@ -51,7 +55,7 @@
             ],
             "problemMatcher": [
                 "$rustc"
-            ],
+            ]
         },
         {
             "type": "shell",
@@ -61,10 +65,7 @@
                 "build",
                 "js"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "problemMatcher": [
                 "$rustc"
             ]

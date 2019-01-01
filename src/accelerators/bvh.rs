@@ -5,7 +5,7 @@ use crate::{
     space::*,
     shape::*,
     ray::Ray,
-    primitive::{Primitive, geometry::Geometry},
+    primitive::{Primitive, OptionalPrimitive, geometry::Geometry},
     interaction::SurfaceInteraction,
     scene::{Scene, MaterialRef, ObjRef, node::{self, SceneNode}}
 };
@@ -43,6 +43,8 @@ const RADIX_BITMASK: u32 = (1 << RADIX_BITS_PER_PASS) - 1;
 ///
 /// http://www.pbr-book.org/3ed-2018/Primitives_and_Intersection_Acceleration/Bounding_Volume_Hierarchies.html
 pub struct BVHAccel<'s> {
+    pub scene: &'s Scene,
+
     primitives: Vec<PrimBox<'s>>,
 
     /// BVH tree nodes arranged in linear memory
@@ -140,7 +142,7 @@ impl<'s> BVHAccel<'s> {
             .map(|t| -> PrimBox<'s> { Box::new(t) })
             .collect();
         let per_node = triangles.len();
-        BVHAccel::new(triangles, &transform::ID, Some(*material), per_node)
+        BVHAccel::new(scene, triangles, &transform::ID, Some(*material), per_node)
     }
 
     fn from_aggregate(scene: &'s Scene, aggregate: &'s node::Aggregate) -> BVHAccel<'s> {
@@ -154,10 +156,11 @@ impl<'s> BVHAccel<'s> {
                 Box::new(BVHAccel::from_aggregate(scene, aggregate))
         }).collect();
         let per_node = primitives.len();
-        BVHAccel::new(primitives, &aggregate.transform, None, per_node)
+        BVHAccel::new(scene, primitives, &aggregate.transform, None, per_node)
     }
 
     fn new(
+        scene: &'s Scene,
         primitives: Vec<PrimBox<'s>>,
         transform: &'s Transformation,
         material: Option<MaterialRef>,
@@ -172,6 +175,7 @@ impl<'s> BVHAccel<'s> {
             .collect();
 
         let mut accel = BVHAccel {
+            scene,
             primitives,
             nodes: vec![],
             order: vec![std::usize::MAX; nprims], // Fill with dummy values
@@ -451,12 +455,12 @@ impl<'s> Primitive for BVHAccel<'s> {
         self.transform.transform_bounds(self.nodes[0].bounds)
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> bool {
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let ray = self.transform.inverse_transform_ray(*ray);
         let dir_is_neg = [ray.dinv.x < 0.0, ray.dinv.y < 0.0, ray.dinv.z < 0.0];
         let mut isect = self.transform.inverse_transform_surface_interaction(interaction);
 
-        let mut hit = false;
+        let mut hit = None;
         let mut to_visit_offset = 0;
         let mut current_node_index = 0;
         let mut nodes_to_visit: [usize; 64] = [0; 64];
@@ -475,8 +479,8 @@ impl<'s> Primitive for BVHAccel<'s> {
                     // intersect with primitives in leaf node
                     for i in 0..(nprims as u32) {
                         let prim_index = self.order[(prim_offset + i) as usize];
-                        if self.primitives[prim_index].intersect(&ray, &mut isect) {
-                            hit = true
+                        if let Some(primitive) = self.primitives[prim_index].intersect(&ray, &mut isect) {
+                            hit = Some(primitive);
                         }
                     }
                     if to_visit_offset == 0 { break };
@@ -499,14 +503,16 @@ impl<'s> Primitive for BVHAccel<'s> {
         }
 
         // Transform normal before sending it back
-        if hit {
+        if let Some(_) = hit {
             interaction.t = isect.t;
             interaction.n = self.transform.transform_normal(isect.n);
-            interaction.p = self.transform.transform_point(isect.p);
 
-            // Assign the uniform material if it hit
+            // If the uniform node material is available (i.e., for triangle
+            // meshes where every triangle uses the same material), assign that
+            // material
             if let Some(material) = self.material {
                 interaction.material = Some(material);
+                hit = Some(self);
             } else {
                 interaction.material = isect.material;
             }

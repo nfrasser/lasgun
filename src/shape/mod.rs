@@ -1,4 +1,3 @@
-use crate::ray::Ray;
 pub use crate::primitive::Primitive;
 
 /// A gemetric shape that lives in 3D space. Must implement a way to intersect
