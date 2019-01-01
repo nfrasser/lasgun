@@ -157,7 +157,7 @@ impl Refract {
         let i = interaction.d(); // incident vector
         let n = interaction.n.to_vec();
         let p = interaction.p();
-        let cos_theta_i = i.dot(n);
+        let cos_theta_i = i.dot(n).abs();
 
         // Reflection direction
         let r = -n * (cos_theta_i + cos_theta_i) + i;
@@ -176,8 +176,8 @@ impl Refract {
 
         // Calculate error epsilon by which to multiply normal to sufficiently
         // push it away from the surface and avoid floaing point errors.
-        let eps = f64::EPSILON * (1 << 16) as f64;
-        let rray = Ray::reflect(p + (n*eps), r, interaction.level()).unwrap();
+        let eps = f64::EPSILON * (1 << 30) as f64;
+        let rray = Ray::reflect(p - (n*eps), r, interaction.level()).unwrap();
         let tray = Ray::refract(p - (n*eps), t, interaction.level()).unwrap();
 
         // Total internal reflection?
@@ -195,11 +195,12 @@ impl Refract {
         } else {
             one
         };
-        // let rcontrib = rcontrib.min(1.0);
+
 
         // Refraction opacity
         let tcontrib = one - rcontrib;
 
+        assert!(rcontrib <= one);
         Some(Refract { rray, tray, rcontrib, tcontrib })
     }
 

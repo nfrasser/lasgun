@@ -78,7 +78,7 @@ impl Primitive for Sphere {
             }
         } else if numroots == 1 && roots[0] > 0.0 {
             let normal = normal::Normal3(ray.origin + roots[0]*d - cen);
-            (roots[0], Some(normal.face_forward(ray.d)))
+            (roots[0], Some(normal))
         } else {
             (-1.0, None)
         };
@@ -87,7 +87,7 @@ impl Primitive for Sphere {
             if t >= interaction.t { return None }
             // A nearby interaction exists
             interaction.t = t;
-            interaction.n = normal;
+            interaction.n = normal.face_forward(ray.d);
             Some(self)
         } else {
             None

@@ -55,6 +55,32 @@
         },
         {
             "type": "shell",
+            "label": "cargo build example spooky",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--example",
+                "spooky"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "cargo build example cornell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--example",
+                "cornell"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+        },
+        {
+            "type": "shell",
             "label": "wasm-pack build",
             "command": "wasm-pack",
             "args": [
