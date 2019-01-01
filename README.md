@@ -1,4 +1,4 @@
-lasgun
+Lasgun [![Build Status](https://travis-ci.org/nfrasser/lasgun.svg?branch=master)](https://travis-ci.org/nfrasser/lasgun)
 ===
 
 A ray tracer that works in the browser.
