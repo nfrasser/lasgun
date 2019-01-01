@@ -20,7 +20,7 @@ cargo build --release
 ## Render a sample scene
 
 ```
-cargo run --release --example simple --features="bin"
+cargo run --example simple --release
 ```
 
 Renders `simple.png`.
