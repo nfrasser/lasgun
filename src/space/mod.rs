@@ -1,12 +1,13 @@
 // Contains shortcuts for commonly used linear-algebra types used in the ray-tracer
 pub use cgmath::prelude::*;
-use cgmath::{ Point3, Vector3, BaseFloat };
+use cgmath::{ Point2, Point3, Vector3, BaseFloat };
 pub mod normal;
 pub mod bounds;
 pub mod transform;
 
 pub use self::transform::Trans;
 
+pub type Point2f = Point2<f64>;
 pub type Point = Point3<f64>;
 pub type Vector = Vector3<f64>;
 pub type Color = Vector3<f64>;

@@ -1,5 +1,5 @@
 use std::f64;
-use crate::math;
+use crate::core::math;
 use crate::space::*;
 use crate::ray::Ray;
 use crate::primitive::{Primitive, OptionalPrimitive};

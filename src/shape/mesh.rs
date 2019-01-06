@@ -9,7 +9,6 @@ pub struct Mesh {
 
 /// Container representing a triangle mesh.
 /// You can iterate over all of a mesh's triangles by calling the into_iter method
-
 impl Mesh {
     pub fn new(obj: Obj) -> Mesh {
         Mesh { obj }
