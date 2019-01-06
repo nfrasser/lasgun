@@ -37,6 +37,7 @@ cgmath = "^0.17"
 obj = "^0.9"
 typed-arena = "^1.4"
 partition = "^0.1"
+bitflags = "^1.1"
 num_cpus = { version = "^1.10", optional = true }
 
 [dependencies.image]
