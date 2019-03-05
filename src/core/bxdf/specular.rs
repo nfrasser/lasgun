@@ -3,6 +3,7 @@ use super::{util::*, fresnel::Fresnel, TransportMode, BxDFSample};
 
 /// Describes physically plausible specular reflection with the Fresnel model to
 /// compute fraction of light that is reflected.
+#[derive(Copy, Clone)]
 pub struct Reflection {
     /// Reflection spectrum
     r: Color,
@@ -23,6 +24,7 @@ impl Reflection {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Transmission {
     t: Color,
     eta_a: f64,
@@ -62,7 +64,8 @@ impl Transmission {
 }
 
 
-/// Combined specular reflection and transmission parameters
+/// Combined specular reflection and transmission {parameters
+#[derive(Copy, Clone)]
 pub struct Combined {
     r: Color,
     t: Color,

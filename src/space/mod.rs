@@ -30,3 +30,9 @@ pub fn max_dimension(v: &Vector) -> usize {
     if v.x > v.y { if v.x > v.z { 0 } else { 2 } }
     else { if v.y > v.z { 1 } else { 2 } }
 }
+
+#[inline]
+pub fn min_dimension(v: &Vector) -> usize {
+    if v.x < v.y { if v.x < v.z { 0 } else { 2 } }
+    else { if v.y < v.z { 1 } else { 2 } }
+}

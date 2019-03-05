@@ -1,5 +1,6 @@
 use cgmath::{prelude::*, Point3, Vector3, BaseFloat };
 use crate::{space::normal::Normal3, ray::Ray3, scene::MaterialRef};
+use super::bsdf::BSDF;
 
 /// Surface interaction retrived by casting a specific ray through a scene. The
 /// `t` parameter is specified to compare previous parametric ray intersection
@@ -20,7 +21,7 @@ pub struct SurfaceInteraction<N: BaseFloat> {
 
     /// Incident direction vector at point of interaction based on ray
     /// definition
-    d: Vector3<N>
+    d: Vector3<N>,
 }
 
 impl<N: BaseFloat> SurfaceInteraction<N> {

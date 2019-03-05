@@ -31,7 +31,7 @@ impl PrimaryRay {
 
     /// Create a new primary ray casting into the given scene at film
     /// coordinates x/y
-    pub fn at(scene: &Scene, x: usize, y: usize) -> PrimaryRay {
+    pub fn at(scene: &Scene, x: u32, y: u32) -> PrimaryRay {
         let (width, height) = (scene.options.width, scene.options.height);
         let up = scene.up;
         let aux = scene.aux;
@@ -69,21 +69,66 @@ impl PrimaryRay {
             // New point at which the ray intersects the focal plane given this direction
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
             let ray = Ray::new(self.origin, d);
-
-            let mut interaction = SurfaceInteraction::default();
-            root.intersect(&ray, &mut interaction);
-
-            // Calculates the actual intersection point and normalizes.
-            // Required before getting p(), d(), etc.
-            interaction.commit(&ray);
-
-            // Get the correct scene material
-            let material = scene.material_or_background(&interaction.material);
-
-            // Query the material for the color at the given point
-            color += material.color(&interaction, root)
+            color += self.li(root, &ray, 0);
         }
 
         color * scene.supersampling.power
     }
+
+    /// Whitted colorization strategy
+    fn li(&self, root: &Accel, ray: &Ray, depth: u32) -> Color {
+        let mut interaction = SurfaceInteraction::default();
+        root.intersect(&ray, &mut interaction);
+
+        // Calculates the actual intersection point and normalizes.
+        // Required before getting p(), d(), etc.
+        interaction.commit(&ray);
+
+        // Return background if an intersection wasn't found
+        if interaction.material.is_none() {
+            return root.scene.background.li(&interaction, root)
+        }
+        let material = root.scene.material_or_background(&interaction.material);
+
+        // Compute emitted and reflected light at intersection point
+        // Initialize common vars
+        let n = interaction.n.to_vec();
+        let wo = -interaction.d(); // Outgoing direction
+        let p = interaction.p();
+
+        // Compute scattering functions
+        let bsdf = material.scattering(&interaction, root);
+
+        // Add contribution of each light source
+        // For each scene light, sample point lights from it
+        let output = root.scene.lights().iter().fold(Color::zero(), |output, light| {
+            // For each sampled point light, add its contribution to the the
+            // final colour output
+            light.iter_samples(root, p).fold(output, |output, light| {
+
+                // vector to light and its length (distance to the light from q)
+                let wi = light.position - p;
+                let d = wi.magnitude();
+
+                // Light attenuation over distance used to compute energy received at p
+                let f_att = light.falloff[0] + light.falloff[1]*d + light.falloff[2]*d*d;
+                if f_att == 0.0 { return output }; // No contribution
+
+                let wi = wi.normalize();
+                let wi_dot_n = wi.dot(n);
+
+                let f = bsdf.f(&wo, &wi);
+
+                output + ((f64::consts::PI * light.intensity).mul_element_wise(f) * wi_dot_n / f_att)
+            })
+        });
+
+        if depth + 1 < MAX_DEPTH {
+            // TODO: Trace rays for specular reflection and refraction
+        }
+        output + root.scene.ambient
+    }
 }
+
+// TODO: Parametrize
+const MAX_DEPTH: u32 = 3;

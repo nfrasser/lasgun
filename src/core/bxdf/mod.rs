@@ -15,6 +15,7 @@ pub type MicrofacetDistribution = microfacet::Distribution;
 
 bitflags! {
     pub struct BxDFType: u32 {
+        const NONE = 0;
         const REFLECTION = 1 << 0;
         const TRANSMISSION = 1 << 1;
         const DIFFUSE = 1 << 2;
@@ -30,6 +31,7 @@ bitflags! {
 }
 
 /// Used for Asymetric BSDFs (involving reflection/refraction)
+#[derive(Copy, Clone)]
 pub enum TransportMode { Radiance, Importance }
 
 /// Details about the sample for a BxDF integral in some direction
@@ -48,7 +50,10 @@ impl BxDFSample {
 /// Specifications for different kinds of generic Bidirectional
 /// Reflectance/Transmittance Distribution Functions, used in Material
 /// definitions.
+#[derive(Copy, Clone)]
 pub enum BxDF {
+    /// Where f always evaluates to the same thing. Used for backgrounds.
+    Constant(Color),
 
     /// With specular reflection. First parameter is reflection specturm and
     /// second is Fresnel light transport model.
@@ -61,6 +66,10 @@ pub enum BxDF {
     /// integrator.
     Specular(specular::Combined),
 
+    /// Less physically-accurate Lambertain diffuse, for when Oren-Nayar sigma
+    /// parameter is zero
+    QuickDiffuse(diffuse::Lambertian),
+
     /// Diffuse reflection, using more physically accurate OrenNayar model
     /// compared to Lambertian.
     Diffuse(diffuse::OrenNayar),
@@ -71,8 +80,8 @@ pub enum BxDF {
     /// Microfacet transmission with Trowbridge-Reitz distribution implementation.
     MicrofacetTransmission(microfacet::Transmission),
 
-    /// Function with scaled (partial) contribution, given by the color.
-    Scaled(Box<BxDF>, Color),
+    // Function with scaled (partial) contribution, given by the color.
+    // Scaled(Box<BxDF>, Color),
 }
 
 impl BxDF {
@@ -91,6 +100,14 @@ impl BxDF {
         BxDF::Specular(specular)
     }
 
+    pub fn quick_diffuse(r: Color) -> BxDF {
+        BxDF::QuickDiffuse(diffuse::Lambertian::new(r))
+    }
+
+    pub fn diffuse(r: Color, sigma: f64) -> BxDF {
+        BxDF::Diffuse(diffuse::OrenNayar::new(r, sigma))
+    }
+
     pub fn microfacet_reflection(r: Color, fresnel: Fresnel, distribution: microfacet::Distribution) -> BxDF {
         let reflection = microfacet::Reflection::new(r, fresnel, distribution);
         BxDF::MicrofacetReflection(reflection)
@@ -102,31 +119,40 @@ impl BxDF {
         BxDF::MicrofacetTransmission(transmission)
     }
 
-    pub fn scaled(bxdf: BxDF, spectrum: Color) -> BxDF {
-        BxDF::Scaled(Box::new(bxdf), spectrum)
-    }
+    // pub fn scaled(bxdf: BxDF, spectrum: Color) -> BxDF {
+    //     BxDF::Scaled(Box::new(bxdf), spectrum)
+    // }
 
     /// Type
     pub fn t(&self) -> BxDFType {
         match self {
+            BxDF::Constant(_) => BxDFType::NONE,
             BxDF::SpecularReflection(_) => BxDFType::REFLECTION | BxDFType::SPECULAR,
             BxDF::SpecularTransmission(_) => BxDFType::TRANSMISSION | BxDFType::SPECULAR,
             BxDF::Specular(_) => BxDFType::REFLECTION | BxDFType::TRANSMISSION | BxDFType::SPECULAR,
+            BxDF::QuickDiffuse(_) => BxDFType::REFLECTION | BxDFType::DIFFUSE,
             BxDF::Diffuse(_) => BxDFType::REFLECTION | BxDFType::DIFFUSE,
             BxDF::MicrofacetReflection(_) => BxDFType::REFLECTION | BxDFType::GLOSSY,
             BxDF::MicrofacetTransmission(_) => BxDFType::TRANSMISSION | BxDFType::GLOSSY,
-            BxDF::Scaled(bxdf, _) => bxdf.t(),
+            // BxDF::Scaled(bxdf, _) => bxdf.t(),
         }
+    }
+
+    pub fn matches(&self, flags: BxDFType) -> bool {
+        let t = self.t();
+        (t & flags) == t
     }
 
     /// Evaluate the distribution function for outgoing vector w0 and incident
     /// direction wi. Actual value, not a sample or estimate.
     pub fn f(&self, wo: &Vector, wi: &Vector) -> Color {
         match self {
+            BxDF::Constant(spectrum) => *spectrum,
+            BxDF::QuickDiffuse(d) => d.f(),
             BxDF::Diffuse(d) => d.f(wo, wi),
             BxDF::MicrofacetReflection(r) => r.f(wo, wi),
             BxDF::MicrofacetTransmission(t) => t.f(wo, wi),
-            BxDF::Scaled(bxdf, scale) => scale.mul_element_wise(bxdf.f(wo, wi)),
+            // BxDF::Scaled(bxdf, scale) => scale.mul_element_wise(bxdf.f(wo, wi)),
             _ => Color::zero(), // Specular has no scattering, only sampling
         }
     }

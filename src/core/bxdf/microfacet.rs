@@ -3,6 +3,7 @@ use crate::space::*;
 use super::{util::*, fresnel::Fresnel, TransportMode};
 
 /// Trowbridge-Reitz microfacet distribution model.
+#[derive(Copy, Clone)]
 pub struct Distribution {
     pub alphax: f64,
     pub alphay: f64
@@ -54,6 +55,7 @@ impl Distribution {
 
 /// Torrence-Sparrow Microfacet Reflection model, implementing the
 /// Trowbridge-Reitz microfacet distribution model.
+#[derive(Copy, Clone)]
 pub struct Reflection {
     /// Reflection specturm
     r: Color,
@@ -72,13 +74,13 @@ impl Reflection {
     pub fn f(&self, wo: &Vector, wi: &Vector) -> Color {
         let cos_theta_o = abs_cos_theta(wo);
         let cos_theta_i = abs_cos_theta(wi);
-        let mut wh = wi + wo;
+        let wh = wi + wo;
 
         // Handle degenerate cases for microfacet relection
         if cos_theta_i == 0.0 || cos_theta_o == 0.0 { return Color::zero() };
         if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 { return Color::zero() };
 
-        wh = wh.normalize();
+        let wh = wh.normalize();
         let spectrum = self.fresnel.evaluate(wi.dot(wh));
         (self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi))
             .mul_element_wise(spectrum)
@@ -88,6 +90,7 @@ impl Reflection {
 
 /// Torrence-Sparrow Microfacet Reflection model, implementing the
 /// Trowbridge-Reitz microfacet distribution model.
+#[derive(Copy, Clone)]
 pub struct Transmission {
     /// Transmission spectrum
     t: Color,

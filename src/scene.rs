@@ -2,7 +2,12 @@ use std::{io, path::Path, f64};
 
 use crate::space::*;
 use crate::light::{Light, point::PointLight};
-use crate::material::{Material, background::Background, phong::Phong};
+use crate::material::{
+    Material,
+    background::Background,
+    matte::Matte,
+    plastic::Plastic
+};
 use crate::shape::mesh::Mesh;
 
 /// Description of the world to render and how it should be rendered
@@ -169,8 +174,16 @@ impl Scene {
         })
     }
 
-    pub fn add_phong_material(&mut self, kd: [f64; 3], ks: [f64; 3], shininess: i32) -> MaterialRef {
-        let material: Phong = Phong::new(kd, ks, shininess);
+    pub fn add_matte_material(&mut self, kd: [f64; 3], sigma: f64) -> MaterialRef {
+        let kd = Color::new(kd[0], kd[1], kd[2]);
+        let material = Matte::new(kd, sigma);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_plastic_material(&mut self, kd: [f64; 3], ks: [f64; 3], roughness: f64) -> MaterialRef {
+        let kd = Color::new(kd[0], kd[1], kd[2]);
+        let ks = Color::new(ks[0], ks[1], ks[2]);
+        let material = Plastic::new(kd, ks, roughness);
         self.add_material(Box::new(material))
     }
 

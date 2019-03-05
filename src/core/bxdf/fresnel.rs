@@ -3,6 +3,7 @@ use crate::space::*;
 
 /// Physically-based models for determining the ratio of transmitted v.s.
 /// reflected light.
+#[derive(Copy, Clone)]
 pub enum Fresnel {
     /// Specifies refraction indeces for non-conductive materials; `eta_i`,
     /// `eta_t`.
@@ -51,10 +52,10 @@ fn dielectric(cos_theta_i: f64, eta_i: f64, eta_t: f64) -> f64 {
     let cos_theta_t = (1.0 - sin_theta_t * sin_theta_t).max(0.0).sqrt();
 
     let r_parl = ((eta_t * cos_theta_i) - (eta_i * cos_theta_t))
-        / ((eta_t * cos_theta_i) - (eta_i * cos_theta_t));
+        / ((eta_t * cos_theta_i) + (eta_i * cos_theta_t));
 
     let r_perp = ((eta_i * cos_theta_i) - (eta_t * cos_theta_t))
-        / ((eta_i * cos_theta_i) - (eta_t * cos_theta_t));
+        / ((eta_i * cos_theta_i) + (eta_t * cos_theta_t));
 
     // Refraction coefficient, I believe
     (r_parl * r_parl + r_perp + r_perp) * 0.5

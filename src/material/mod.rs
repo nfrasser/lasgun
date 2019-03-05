@@ -1,11 +1,13 @@
-use crate::{space::*, interaction::SurfaceInteraction, Accel};
+use crate::{space::*, interaction::{SurfaceInteraction, BSDF}, Accel};
 
 pub trait Material {
 
-    /// Get the colour of the material at the given point of interaction. Use
-    /// the scene root node for reference
-    fn color(&self, interaction: &SurfaceInteraction, root: &Accel) -> Color;
+    /// Computes the function for how light is handled at the material at the
+    /// given point of interaction. Use the scene root node for reference.
+    fn scattering(&self, interaction: &SurfaceInteraction, root: &Accel) -> BSDF;
 }
 
 pub mod background;
-pub mod phong;
+pub mod matte;
+pub mod plastic;
+// pub mod phong;

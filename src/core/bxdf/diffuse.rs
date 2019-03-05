@@ -3,7 +3,20 @@ use std::f64::consts::FRAC_1_PI;
 use crate::space::*;
 use super::util::*;
 
+/// Non-physically-based Lambertian diffuse reflection
+#[derive(Copy, Clone)]
+pub struct Lambertian {
+    r: Color
+}
+
+impl Lambertian {
+    pub fn new(r: Color) -> Lambertian { Lambertian { r } }
+    pub fn f(&self) -> Color { self.r * FRAC_1_PI }
+    pub fn rho(&self) -> Color { self.r }
+}
+
 /// Oren-Nayar diffuse reflection
+#[derive(Copy, Clone)]
 pub struct OrenNayar {
     /// Reflection specturm
     r: Color,
