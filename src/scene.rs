@@ -6,7 +6,8 @@ use crate::material::{
     Material,
     background::Background,
     matte::Matte,
-    plastic::Plastic
+    plastic::Plastic,
+    metal::Metal
 };
 use crate::shape::mesh::Mesh;
 
@@ -185,6 +186,13 @@ impl Scene {
         let kd = Color::new(kd[0], kd[1], kd[2]);
         let ks = Color::new(ks[0], ks[1], ks[2]);
         let material = Plastic::new(kd, ks, roughness);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_metal_material(&mut self, eta: [f64; 3], k: [f64; 3], u_roughness: f64, v_roughness: f64) -> MaterialRef {
+        let eta = Color::new(eta[0], eta[1], eta[2]);
+        let k = Color::new(k[0], k[1], k[2]);
+        let material = Metal::new_uv(eta, k, u_roughness, v_roughness);
         self.add_material(Box::new(material))
     }
 
