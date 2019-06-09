@@ -58,7 +58,7 @@ fn dielectric(cos_theta_i: f64, eta_i: f64, eta_t: f64) -> f64 {
         / ((eta_i * cos_theta_i) + (eta_t * cos_theta_t));
 
     // Refraction coefficient, I believe
-    (r_parl * r_parl + r_perp + r_perp) * 0.5
+    (r_parl * r_parl + r_perp * r_perp) * 0.5
 }
 
 

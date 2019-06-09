@@ -25,7 +25,7 @@ fn simplecows() -> Scene {
     // Materials
     let stone = scene.add_plastic_material([0.8, 0.7, 0.7], [0.0, 0.0, 0.0], 0.0);
     let grass = scene.add_plastic_material([0.1, 0.7, 0.1], [0.0, 0.0, 0.0], 0.0);
-    let hide = scene.add_plastic_material([0.84, 0.6, 0.53], [0.3, 0.3, 0.3], 20.0);
+    let hide = scene.add_plastic_material([0.84, 0.6, 0.53], [0.3, 0.3, 0.3], 0.1);
 
     // Meshes
     let planemesh = scene.add_mesh_at(meshes::path("plane").as_path()).unwrap();

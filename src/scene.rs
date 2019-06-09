@@ -34,10 +34,11 @@ pub struct Scene {
     /// Auxilary vectory, orthogonal to the up and view vectors
     pub aux: Vector,
 
-    /// Half the distance between two primrary ray intersection points on the focal plane.
-    /// Primary rays with supersampling enabled will sample points around the original ray / intersection.
-    /// The maximum distance of the sample ray interesection points on the focal plane from the
-    /// original point of intersection will be no larger than this number.
+    /// Half the distance between two primary ray intersection points on the
+    /// focal plane. Primary rays with supersampling enabled will sample points
+    /// around the original ray / intersection. The maximum distance of the
+    /// sample ray interesection points on the focal plane from the original
+    /// point of intersection will be no larger than this number.
     pub pixel_radius: f64,
 
     /// Precomputed supersampling options
@@ -139,7 +140,7 @@ impl Scene {
         // Total Number of samples to take
         let supersample_count = supersample_dim as usize * supersample_dim as usize;
 
-        // How much each supersample should could for
+        // How much each supersample should count for
         // computed once here so it doesn't have to be recomputed later
         let supersample_power = 1.0/(supersample_count as f64);
 
@@ -259,7 +260,7 @@ impl Scene {
     }
 }
 
-/// Convert a colour channel from between 0 and 1 to an interger between 0 and 255
+/// Convert a colour channel from between 0 and 1 to an integer between 0 and 255
 #[inline]
 fn from_pixel_bytes(bytes: [u8; 3]) -> Color {
     Color {

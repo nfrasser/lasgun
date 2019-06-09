@@ -22,10 +22,10 @@ fn simple() -> Scene {
     scene.set_radial_background([67, 198, 172], [25, 22, 84]);
 
     // Add materials to the scene
-    let mat0 = scene.add_plastic_material([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 10.0);
-    let mat1 = scene.add_plastic_material([0.5, 0.5, 0.5], [0.5, 0.7, 0.5], 10.0);
-    let mat2 = scene.add_plastic_material([1.0, 0.6, 0.1], [0.5, 0.7, 0.5], 10.0);
-    let mat3 = scene.add_plastic_material([0.7, 0.6, 1.0], [0.5, 0.4, 0.8], 10.0);
+    let mat0 = scene.add_plastic_material([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 0.25);
+    let mat1 = scene.add_plastic_material([0.5, 0.5, 0.5], [0.5, 0.7, 0.5], 0.25);
+    let mat2 = scene.add_plastic_material([1.0, 0.6, 0.1], [0.5, 0.7, 0.5], 0.25);
+    let mat3 = scene.add_plastic_material([0.7, 0.6, 1.0], [0.5, 0.4, 0.8], 0.25);
 
     // Instantiate meshes to be shown in the scene
     let smstdodeca = scene.add_mesh_at(meshes::path("smstdodeca").as_path()).unwrap();

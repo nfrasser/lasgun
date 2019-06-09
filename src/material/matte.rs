@@ -21,7 +21,7 @@ impl Matte {
 }
 
 impl Material for Matte {
-    fn scattering(&self, interaction: &SurfaceInteraction, root: &Accel) -> BSDF {
+    fn scattering(&self, interaction: &SurfaceInteraction, _root: &Accel) -> BSDF {
         BSDF::new(interaction, &[
             if self.sigma == 0.0 {
                 BxDF::quick_diffuse(self.kd)
