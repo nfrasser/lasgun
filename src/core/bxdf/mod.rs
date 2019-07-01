@@ -39,11 +39,17 @@ pub struct BxDFSample {
     pub spectrum: Color,
     pub wi: Vector,
     pub pdf: f64,
-    pub t: Option<BxDFType> // sampled type
+    // pub t: BxDFType // for future use?
 }
 impl BxDFSample {
-    fn new(spectrum: Color, wi: Vector) -> BxDFSample {
-        BxDFSample { spectrum, wi, pdf: 1.0, t: None }
+    #[inline]
+    pub fn new(spectrum: Color, wi: Vector, pdf: f64) -> BxDFSample {
+        BxDFSample { spectrum, wi, pdf }
+    }
+
+    #[inline]
+    pub fn zero() -> BxDFSample {
+        Self::new(Color::zero(), Vector::zero(), 0.0)
     }
 }
 
@@ -166,34 +172,37 @@ impl BxDF {
     /// Integration). Also returns the type of the resolved sample.
     pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
         match self {
-            BxDF::SpecularReflection(r) => { return r.sample_f(wo, sample) },
-            BxDF::SpecularTransmission(t) => { return t.sample_f(wo, sample) }
-            // BxDF::Specular(s) => { return s.sample_f(wo, sample) }
-            _ => {}
+            BxDF::SpecularReflection(r) => r.sample_f(wo, sample),
+            BxDF::SpecularTransmission(t) => t.sample_f(wo, sample),
+            BxDF::MicrofacetReflection(r) => r.sample_f(wo, sample),
+            BxDF::MicrofacetTransmission(t) => t.sample_f(wo, sample),
+            _ => {
+                // Cosine-sample the hemisphere, flipping the direction if necessary
+                let mut wi = sampling::cosine_sample_hemisphere(sample);
+                if wo.z < 0.0 { wi.z *= -1.0 };
+                let spectrum = self.f(wo, &wi);
+                let pdf = sampling::pdf(wo, &wi);
+                BxDFSample::new(spectrum, wi, pdf)
+            }
         }
-        // TODO
-        /*
-        // Cosine-sample the hemisphere, flipping the direction if necessary
-        let mut wi = cosine_sample_hemisphere(sample);
-        if (wo.z < 0.0) { wi.z *= -1 };
-        let spectrum = self.f(wo, &wi);
-        let mut sample = BxDFSample::new(spectrum, wi);
-        sample.pdf = if same_hemisphere(wo, wi) {
-            abs_cos_theta(wi) * FRAC_1_PI
-        } else { 0.0 };
-        sample
-        */
-        BxDFSample::new(Color::zero(), Vector::zero())
+    }
+
+    /// Probability density function for reflectance of light
+    pub fn pdf(&self, wo: &Vector, wi: &Vector) -> f64 {
+        match self {
+            BxDF::MicrofacetReflection(r) => r.pdf(wo, wi),
+            BxDF::MicrofacetTransmission(t) => t.pdf(wo, wi),
+            _ => sampling::pdf(wo, wi)
+        }
     }
 
     /// Hemispherical-Directional Reflectance funtion gives total reflection in
     /// a given direction due to constant illumination over the hemisphere
     /// (which happens to also be equivalent to reflection in all directions
     /// based in light from a single incoming direction).
-    pub fn rho_hd(&self, w0: &Vector, wi: &Vector, samples: &[Point2f]) -> Color {
+    pub fn rho_hd(&self, wo: &Vector, wi: &Vector, samples: &[Point2f]) -> Color {
         Color::zero()
     }
-
 
     /// Hemispherical-Hemispherical Reflectance funtion gives fraction of light
     /// reflected by a surface when incident light is the same from all

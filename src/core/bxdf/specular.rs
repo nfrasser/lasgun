@@ -20,7 +20,7 @@ impl Reflection {
         let wi = Vector::new(-wo.x, -wo.y, wo.z);
         let spectrum = self.fresnel.evaluate(cos_theta(&wi))
             .mul_element_wise(self.r) / abs_cos_theta(&wi);
-        BxDFSample::new(spectrum, wi)
+        BxDFSample::new(spectrum, wi, 1.0)
     }
 }
 
@@ -56,15 +56,15 @@ impl Transmission {
                 .mul_element_wise(Color::from_value(1.0) - self.fresnel.evaluate(cos_theta(&wi)))
                 / abs_cos_theta(&wi);
 
-            BxDFSample::new(spectrum, wi)
+            BxDFSample::new(spectrum, wi, 1.0)
         } else {
-            BxDFSample::new(Color::zero(), Vector::zero()) // No transmitted light from any direction
+            BxDFSample::zero() // No transmitted light from any direction
         }
     }
 }
 
 
-/// Combined specular reflection and transmission {parameters
+/// Combined specular reflection and transmission parameters
 #[derive(Copy, Clone)]
 pub struct Combined {
     r: Color,

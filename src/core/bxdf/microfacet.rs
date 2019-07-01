@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 use crate::space::*;
-use super::{util::*, fresnel::Fresnel, TransportMode};
+use super::{util::*, sampling::*, fresnel::Fresnel, TransportMode, BxDFSample};
 
 /// Trowbridge-Reitz microfacet distribution model.
 #[derive(Copy, Clone)]
@@ -51,6 +51,36 @@ impl Distribution {
         let alpha2_tan2_theta = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
         ((1.0 + alpha2_tan2_theta).sqrt() - 1.0) / 2.0
     }
+
+    /// Compute Probability distribution function
+    fn pdf(&self, _wo: &Vector, wh: &Vector) -> f64 {
+        self.d(wh) * abs_cos_theta(wh)
+    }
+
+    // Get sample reflected direction
+    fn sample_wh(&self, wo: &Vector, sample: &Point2f) -> Vector {
+        let mut cos_theta = 0.0;
+        let mut phi = (2.0 * PI) * sample.y;
+
+        if self.alphax == self.alphay {
+            let tan_theta2 = self.alphax * self.alphax * sample.x
+                / (1.0 - sample.x);
+            cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
+        } else {
+            phi = (self.alphay / self.alphax * (2.0 * PI * sample.y + 0.5 * PI).tan()).atan();
+            if sample.y > 0.5 { phi += PI };
+            let (sin_phi, cos_phi) = (phi.sin(), phi.cos());
+            let alphax2 = self.alphax * self.alphax;
+            let alphay2 = self.alphay * self.alphay;
+
+            let alpha2 = 1.0 / (cos_phi * cos_phi / alphax2 + sin_phi * sin_phi / alphay2);
+            let tan_theta2 = alpha2 * sample.x / (1.0 - sample.x);
+            cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
+        }
+        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+        let wh = spherical_direction(sin_theta, cos_theta, phi);
+        if same_hemisphere(wo, &wh) { wh } else { -wh }
+    }
 }
 
 /// Torrence-Sparrow Microfacet Reflection model, implementing the
@@ -86,6 +116,26 @@ impl Reflection {
             .mul_element_wise(spectrum)
             / ( 4.0 * cos_theta_i * cos_theta_o)
     }
+
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
+        // Sample microfacet orientation wh and reflected direction wi
+        if wo.z == 0.0 { return BxDFSample::zero() };
+        let wh = self.distribution.sample_wh(wo, sample);
+        let wi = reflect(wo, &wh);
+        if !same_hemisphere(wo, &wi) {
+            return BxDFSample::new(Color::zero(), wi, 0.0)
+        }
+
+        // Compute PDF of wi for microfacet reflection
+        let pdf = self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(wh));
+        BxDFSample::new(self.f(wo, &wi), wi, pdf)
+    }
+
+    pub fn pdf(&self, wo: &Vector, wi: &Vector) -> f64 {
+        if !same_hemisphere(wo, wi) { return 0.0 }
+        let wh = (wo + wi).normalize();
+        self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(wh))
+    }
 }
 
 /// Torrence-Sparrow Microfacet Reflection model, implementing the
@@ -115,13 +165,7 @@ impl Transmission {
         }
     }
     pub fn f(&self, wo: &Vector, wi: &Vector) -> Color {
-        let entering = cos_theta(wo) > 0.0;
-        let (eta_i, eta_t) = if entering {
-            (self.eta_a, self.eta_b)
-        } else {
-            (self.eta_b, self.eta_a)
-        };
-        let eta = eta_i / eta_t;
+        let eta = self.eta(wo);
         let wh = wo + eta * wi;
 
         let spectrum = self.fresnel.evaluate(cos_theta(wo));
@@ -129,5 +173,42 @@ impl Transmission {
             / (wo.dot(wh) + eta * wi.dot(wh)).powi(2)
             * (wi.dot(wh).abs() * wo.dot(wh).abs())
             / (cos_theta(wo) * cos_theta(wi))
+    }
+
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
+        if wo.z == 0.0 { return BxDFSample::zero() };
+        let wh = self.distribution.sample_wh(wo, sample);
+        let eta = self.eta(wo);
+
+        if let Some(wi) = refract(wo, &normal::Normal3(wh), eta) {
+            BxDFSample::new(self.f(wo, &wi), wi, self.pdf(wo, &wi))
+        } else {
+            BxDFSample::zero()
+        }
+    }
+
+    pub fn pdf(&self, wo: &Vector, wi: &Vector) -> f64 {
+        if same_hemisphere(wo, wi) { return 0.0 };
+
+        // Compute wh from wo and wi for microfacet transmission
+        let eta = self.eta(wo);
+        let wh = (wo + eta * wi).normalize();
+
+        // Compute change of variables dwh_dwi for microfacet transmission
+        let sqrt_denom = wo.dot(wh) + eta * wi.dot(wh);
+        let dwh_dwi = ((eta * eta * wi.dot(wh)) / (sqrt_denom * sqrt_denom)).abs();
+        self.distribution.pdf(wo, &wh) * dwh_dwi
+    }
+
+    /// Compute reflectance eta based on outgoing direction
+    #[inline]
+    fn eta(&self, wo: &Vector) -> f64 {
+        if cos_theta(wo) > 0.0 {
+            // Entering
+            self.eta_b / self.eta_a
+        } else {
+            // Exiting
+            self.eta_a / self.eta_b
+        }
     }
 }
