@@ -2,8 +2,10 @@ use std::f64;
 
 use crate::{
     space::*,
+    core::bxdf,
+    core::bxdf::BxDFType,
     primitive::Primitive,
-    interaction::SurfaceInteraction,
+    interaction::{BSDF, SurfaceInteraction},
     scene::Scene,
     Accel,
 };
@@ -101,7 +103,7 @@ impl PrimaryRay {
 
         // Add contribution of each light source
         // For each scene light, sample point lights from it
-        let output = root.scene.lights().iter().fold(Color::zero(), |output, light| {
+        root.scene.lights().iter().fold(Color::zero(), |output, light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
             light.iter_samples(root, p).fold(output, |output, light| {
@@ -121,12 +123,35 @@ impl PrimaryRay {
 
                 output + ((f64::consts::PI * light.intensity).mul_element_wise(f) * wi_dot_n / f_att)
             })
-        });
+        }) + if depth + 1 < MAX_DEPTH {
+            // Add reflection/transmission contribution
+            self.specular_reflect(root, ray, &interaction, &bsdf, depth)
+            // + self.specular_transmit(root, ray, &interaction, &bsdf, depth)
+        } else {
+            Color::zero()
+        } + root.scene.ambient
+    }
 
-        if depth + 1 < MAX_DEPTH {
-            // TODO: Trace rays for specular reflection and refraction
+    fn specular_reflect(&self, root: &Accel, ray: &Ray, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
+        // Compute specular reflection direction wi and BSDF value
+        let wo = -interaction.d();
+        let flags = BxDFType::REFLECTION | BxDFType::SPECULAR;
+
+        // TODO: Use actual sample point instead of (0.5, 0.5)
+        let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
+
+        // Return contribution of specular reflection
+        let ns = interaction.n.0;
+        if sample.pdf > 0.0
+        && sample.spectrum != Color::zero()
+        && sample.wi.dot(ns).abs() > 0.0 {
+            // Compute ray for specular reflection
+            let wr = bxdf::util::reflect(&wo, &ns);
+            let r = Ray::new(interaction.p(), wr);
+            sample.spectrum.mul_element_wise(self.li(root, &r, depth - 1))
+        } else {
+            Color::zero()
         }
-        output + root.scene.ambient
     }
 }
 
