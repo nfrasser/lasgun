@@ -1,4 +1,4 @@
-use crate::space::*;
+use crate::space::Color;
 use crate::{core::bxdf::BxDF, interaction::{SurfaceInteraction, BSDF}, Accel};
 use super::Material;
 

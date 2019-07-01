@@ -28,7 +28,6 @@ impl Material for Metal {
         let fresnel = Fresnel::Conductor(white, self.eta, self.k);
         let distribution = MicrofacetDistribution::new(self.u_roughness, self.v_roughness);
         bsdf.add(BxDF::microfacet_reflection(white, fresnel, distribution));
-
         bsdf
     }
 }

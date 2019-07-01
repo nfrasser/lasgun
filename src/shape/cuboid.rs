@@ -48,8 +48,7 @@ impl Primitive for Bounds {
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
-
-        let mut normal = Vector::zero();
+        let mut normali = 0;
 
         // i ranges from X to Z
         for i in 0..3 {
@@ -59,9 +58,7 @@ impl Primitive for Bounds {
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);
 
-            if tmin > tnear {
-                normal = Vector::new(CUBE_NORMALS[i][0], CUBE_NORMALS[i][1], CUBE_NORMALS[i][2]);
-            }
+            if tmin > tnear { normali = i }
 
             tnear = tnear.max(tmin);
             tfar = tfar.min(tmax);
@@ -76,7 +73,8 @@ impl Primitive for Bounds {
 
         interaction.t = t;
         // interaction.p = ray.origin + ray.d * t;
-        interaction.n = normal::Normal3(normal).face_forward(ray.d);
+        let normal = Normal::new(CUBE_NORMALS[normali][0], CUBE_NORMALS[normali][1], CUBE_NORMALS[normali][2]);
+        interaction.n = normal.face_forward(ray.d);
 
         Some(self)
     }

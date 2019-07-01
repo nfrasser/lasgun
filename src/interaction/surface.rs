@@ -1,6 +1,5 @@
 use cgmath::{prelude::*, Point3, Vector3, BaseFloat };
 use crate::{space::normal::Normal3, ray::Ray3, scene::MaterialRef};
-use super::bsdf::BSDF;
 
 /// Surface interaction retrived by casting a specific ray through a scene. The
 /// `t` parameter is specified to compare previous parametric ray intersection
@@ -62,7 +61,7 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
         // geometric primitive).
         let err = N::epsilon() * (N::one() + N::one()).powi(16);
         self.p = ray.origin + ray.d*self.t
-            + self.n.to_vec() * err;
+            + self.n.0 * err;
 
         self.d = ray.d.normalize();
     }
