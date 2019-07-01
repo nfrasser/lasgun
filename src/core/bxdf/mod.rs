@@ -143,7 +143,11 @@ impl BxDF {
         (t & flags) == t
     }
 
-    /// Evaluate the distribution function for outgoing vector w0 and incident
+    pub fn has_t(&self, flags: BxDFType) -> bool {
+        self.t() & flags != BxDFType::NONE
+    }
+
+    /// Evaluate the distribution function for outgoing vector wo and incident
     /// direction wi. Actual value, not a sample or estimate.
     pub fn f(&self, wo: &Vector, wi: &Vector) -> Color {
         match self {
@@ -241,8 +245,8 @@ pub mod util {
         result.max(-1.0).min(1.0)
     }
 
-    #[inline] pub fn reflect(w0: &Vector, n: &Vector) -> Vector {
-        -1.0 * w0 + 2.0 * w0.dot(*n) * n
+    #[inline] pub fn reflect(wo: &Vector, n: &Vector) -> Vector {
+        -1.0 * wo + 2.0 * wo.dot(*n) * n
     }
 
     /// Refract the given incident direction vector into a medium with the
@@ -260,5 +264,48 @@ pub mod util {
 
         let cos_theta_t = (1.0 - sin2_theta_t).sqrt();
         Some(eta * -1.0 * wi + (eta * cos_theta_i - cos_theta_t) * n)
+    }
+}
+
+// Private sampling utilities used to determine light distribution
+mod sampling {
+    use super::util::*;
+    use crate::space::*;
+    use std::f64::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4};
+
+    /// Default PDF given incoming vector for BxDFs
+    #[inline] pub fn pdf(wo: &Vector, wi: &Vector) -> f64 {
+        if same_hemisphere(wo, wi) { abs_cos_theta(wi) * FRAC_1_PI } else { 0.0 }
+    }
+
+    #[inline] pub fn same_hemisphere(w: &Vector, wp: &Vector) -> bool { w.z * wp.z > 0.0 }
+
+    #[inline] pub fn spherical_direction(sin_theta: f64, cos_theta: f64, phi: f64) -> Vector {
+        Vector::new(sin_theta * phi.cos(), sin_theta * phi.sin(), cos_theta)
+    }
+
+    #[inline] pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector {
+        let d = concentric_sample_disk(u);
+        let z = (1.0 - d.x * d.x - d.y * d.y).max(0.0).sqrt();
+        Vector::new(d.x, d.y, z)
+    }
+
+    fn concentric_sample_disk(u: &Point2f) -> Point2f {
+        // Map uniform random numbers to $[-1,1]^2$
+        let u_offset = 2.0 * u - Vector2f::new(1.0, 1.0);
+
+        // Handle degeneracy at the origin
+        if u_offset.x == 0.0 && u_offset.y == 0.0 {
+            return Point2f::new(0.0, 0.0);
+        }
+
+        // Apply concentric mapping to point
+        let (r, theta) = if u_offset.x.abs() > u_offset.y.abs() {
+            (u_offset.x, FRAC_PI_4 * (u_offset.y / u_offset.x))
+        } else {
+            (u_offset.y, FRAC_PI_2 - FRAC_PI_4 * (u_offset.x / u_offset.y))
+        };
+
+        r * Point2f::new(theta.cos(), theta.sin())
     }
 }
