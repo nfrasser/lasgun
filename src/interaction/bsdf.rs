@@ -1,6 +1,6 @@
 use std::mem;
 use crate::space::*;
-use crate::core::bxdf::{BxDFType, BxDF};
+use crate::core::bxdf::{BxDFType, BxDF, BxDFSample};
 use super::SurfaceInteraction;
 
 /// Collection of BRDF and BTDF, allowing system to work with composite BxDFs.
@@ -64,13 +64,97 @@ impl BSDF {
         self.num_bxdfs += 1;
     }
 
+    #[inline]
     pub fn num_components(&self) -> usize {
         self.num_bxdfs
     }
 
+    #[inline]
+    pub fn num_matching_components(&self, flags: BxDFType) -> usize {
+        self.iter().filter(|bxdf| bxdf.matches(flags)).count()
+    }
+
+    pub fn f(&self, wo: &Vector, wi: &Vector/*, flags: BxDFType*/) -> Color {
+        // Whether reflection occurs
+        let reflect = wi.dot(self.ng.0) * wo.dot(self.ng.0) > 0.0;
+
+        // Convert to local coordinates
+        let wo_local = self.to_local(wo);
+        let wi_local = self.to_local(wi);
+
+        // Calculate result of all the BxDFs
+        self.iter().fold(Color::zero(), |f, bxdf| {
+            if (reflect && bxdf.has_t(BxDFType::REFLECTION))
+            || (!reflect && bxdf.has_t(BxDFType::TRANSMISSION)) {
+                f + bxdf.f(&wo_local, &wi_local)
+            } else {
+                f
+            }
+        })
+    }
+
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f, flags: BxDFType) -> BxDFSample {
+        let matching_comps = self.num_matching_components(flags);
+        if matching_comps == 0 { return BxDFSample::zero() }
+
+        let comp = ((sample.x * matching_comps as f64)
+            .floor() as usize)
+            .min(matching_comps - 1);
+
+        // Get BxDF reference for chosen component
+        let bxdf = self.iter().filter(|bxdf| bxdf.matches(flags)).nth(comp);
+        debug_assert!(bxdf.is_some()); let bxdf = bxdf.unwrap();
+
+        // Remap BxDF sample to [0,1)^2
+        let sample = Point2f::new(
+            ONE_MINUS_EPSILON.min(sample.x * matching_comps as f64 - comp as f64),
+            sample.y);
+
+        // Sample chosen BxDF
+        let wo_local = self.to_local(wo);
+        if wo_local.z == 0.0 { return BxDFSample::zero() }; // No contribution
+        let f_sample = bxdf.sample_f(&wo_local, &sample);
+        if f_sample.pdf == 0.0 { return f_sample } // No contribution from this sample
+
+        // Determine incident sample vector in world coordinates
+        let wi_local = f_sample.wi;
+        let wi = self.to_world(&wi_local);
+
+        // Compute value of BSDF for sampled direction
+        let spectrum = if bxdf.has_t(BxDFType::SPECULAR) {
+            f_sample.spectrum
+        } else {
+            // Add contribution from each matching component
+            let reflect = wi.dot(self.ng.0) * wo.dot(self.ng.0) > 0.0;
+            self.iter().filter(|bxdf| bxdf.matches(flags))
+            .filter(|bxdf| //
+                (reflect && bxdf.has_t(BxDFType::REFLECTION)) ||
+                (!reflect && bxdf.has_t(BxDFType::TRANSMISSION))
+            )
+            .fold(Color::zero(), |f, bxdf| f + bxdf.f(&wo_local, &wi_local))
+        };
+
+        // Compute overall PDF with all _other_ matching BxDFs
+        let pdf = if !bxdf.has_t(BxDFType::SPECULAR) && matching_comps > 1 {
+            self.iter().filter(|bxdf| bxdf.matches(flags))
+            .filter(|f| *f as *const BxDF != bxdf as *const BxDF)
+            .fold(f_sample.pdf, |pdf, bxdf| pdf + bxdf.pdf(&wo_local, &wi_local))
+        } else {
+            f_sample.pdf
+        } / matching_comps as f64; // Scale by contribution of each comp
+
+        BxDFSample::new(spectrum, wi, pdf)
+    }
+
+    #[inline]
+    fn iter(&self) -> impl Iterator<Item = &BxDF> {
+        self.bxdfs[0..self.num_bxdfs].iter()
+    }
+
     /// Compute the local-coordinates of the given vector, such that the normal
     /// is equivalent to [0, 0, 1] in the new coordinates.
-    pub fn to_local(&self, v: &Vector) -> Vector {
+    #[inline]
+    fn to_local(&self, v: &Vector) -> Vector {
         Vector {
             x: v.dot(self.ss),
             y: v.dot(self.ts),
@@ -79,36 +163,15 @@ impl BSDF {
     }
 
     /// Inverse of `to_local`
-    pub fn to_world(&self, v: &Vector) -> Vector {
+    #[inline]
+    fn to_world(&self, v: &Vector) -> Vector {
         Vector {
             x: self.ss.x * v.x + self.ts.x * v.y + self.ns.0.x * v.z,
             y: self.ss.y * v.x + self.ts.y * v.y + self.ns.0.y * v.z,
             z: self.ss.z * v.x + self.ts.z * v.y + self.ns.0.z * v.z
         }
     }
-
-    pub fn f(&self, wo: &Vector, wi: &Vector/*, flags: BxDFType*/) -> Color {
-        // Whether reflection occurs
-        let reflect = wi.dot(self.ng.0) * wo.dot(self.ng.0) > 0.0;
-
-        // Convert to local coordinates
-        let wo = self.to_local(wo);
-        let wi = self.to_local(wi);
-
-        let mut f = Color::from_value(0.0);
-
-        // Calculate result of all the BxDFs
-        for i in 0..self.num_bxdfs {
-            let bxdf = &self.bxdfs[i];
-            let t = bxdf.t();
-            if ((reflect && (t & BxDFType::REFLECTION) != BxDFType::NONE)) ||
-            ((reflect && (t & BxDFType::TRANSMISSION) != BxDFType::NONE)) {
-                f += bxdf.f(&wo, &wi);
-            }
-        }
-
-        f
-    }
 }
 
 const MAX_BXDFS: usize = 8;
+const ONE_MINUS_EPSILON: f64 = 1.0 - std::f64::EPSILON;
