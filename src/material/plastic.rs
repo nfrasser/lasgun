@@ -32,7 +32,12 @@ impl Material for Plastic {
             let rough = self.roughness;
             let fresnel = Fresnel::Dielectric(1.0, 1.5);
             let distribution = MicrofacetDistribution::new(rough, rough);
-            bsdf.add(BxDF::microfacet_reflection(self.ks, fresnel, distribution))
+            bsdf.add(BxDF::microfacet_reflection(self.ks, fresnel, distribution));
+
+            // Example - add specular reflection to plastic.
+            // FIXME: The edges look wrong, find out why or make a new
+            // non-broken material
+            bsdf.add(BxDF::specular_reflection(self.ks, fresnel));
         };
 
         bsdf
