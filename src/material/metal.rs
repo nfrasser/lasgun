@@ -20,7 +20,7 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scattering(&self, interaction: &SurfaceInteraction, root: &Accel) -> BSDF {
+    fn scattering(&self, interaction: &SurfaceInteraction, _root: &Accel) -> BSDF {
         let mut bsdf = BSDF::empty(interaction);
 
         // Microfacet conductor component

@@ -7,7 +7,8 @@ use crate::material::{
     background::Background,
     matte::Matte,
     plastic::Plastic,
-    metal::Metal
+    metal::Metal,
+    mirror::Mirror
 };
 use crate::shape::mesh::Mesh;
 
@@ -193,6 +194,12 @@ impl Scene {
         let eta = Color::new(eta[0], eta[1], eta[2]);
         let k = Color::new(k[0], k[1], k[2]);
         let material = Metal::new_uv(eta, k, u_roughness, v_roughness);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_mirror_material(&mut self, kr: [f64; 3]) -> MaterialRef {
+        let kr = Color::new(kr[0], kr[1], kr[2]);
+        let material = Mirror::new(kr);
         self.add_material(Box::new(material))
     }
 
