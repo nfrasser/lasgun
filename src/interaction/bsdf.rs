@@ -32,8 +32,9 @@ impl BSDF {
 
         // TODO: Generate these from shading parameters
         let n = si.n.as_vec();
-        let v = if n.x < n.y { if n.x < n.z { Vector::unit_x() } else { Vector::unit_z() } }
-            else { if n.y < n.z { Vector::unit_y() } else { Vector::unit_z() } };
+        let nabs = abs(n);
+        let v = if nabs.x < nabs.y { if nabs.x < nabs.z { Vector::unit_x() } else { Vector::unit_z() } }
+            else { if nabs.y < nabs.z { Vector::unit_y() } else { Vector::unit_z() } };
 
         let ss = n.cross(v);
         let ts = n.cross(ss);
@@ -132,7 +133,7 @@ impl BSDF {
                 (!reflect && bxdf.has_t(BxDFType::TRANSMISSION))
             )
             .fold(Color::zero(), |f, bxdf| f + bxdf.f(&wo_local, &wi_local))
-        };
+        }.map(|i| i.min(0.0).max(1.0)); // Clamp
 
         // Compute overall PDF with all _other_ matching BxDFs
         let pdf = if !bxdf.has_t(BxDFType::SPECULAR) && matching_comps > 1 {
