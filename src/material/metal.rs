@@ -1,5 +1,5 @@
 use crate::space::*;
-use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}, Accel};
+use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}};
 use super::Material;
 
 pub struct Metal {
@@ -20,7 +20,7 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scattering(&self, interaction: &SurfaceInteraction, _root: &Accel) -> BSDF {
+    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
         let mut bsdf = BSDF::empty(interaction);
 
         // Microfacet conductor component

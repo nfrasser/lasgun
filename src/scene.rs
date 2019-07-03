@@ -157,7 +157,7 @@ impl Scene {
                 radius: pixel_radius * supersample_scale,
                 power: supersample_power
             },
-            background: Background::solid(Color::zero()),
+            background: Background::solid(Color::zero(), view, options.fov),
             lights: vec![], materials: vec![], meshes: vec![],
         }
     }
@@ -261,11 +261,11 @@ impl Scene {
     }
 
     pub fn set_solid_background(&mut self, color: [u8; 3]) {
-        self.background = Background::solid(from_pixel_bytes(color))
+        self.background = Background::solid(from_pixel_bytes(color), self.view, self.options.fov)
     }
 
     pub fn set_radial_background(&mut self, inner: [u8; 3], outer: [u8; 3]) {
-        self.background = Background::radial(from_pixel_bytes(inner), from_pixel_bytes(outer))
+        self.background = Background::radial(from_pixel_bytes(inner), from_pixel_bytes(outer), self.view, self.options.fov)
     }
 
     fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {

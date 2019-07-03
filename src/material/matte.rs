@@ -1,5 +1,5 @@
 use crate::space::Color;
-use crate::{core::bxdf::BxDF, interaction::{SurfaceInteraction, BSDF}, Accel};
+use crate::{core::bxdf::BxDF, interaction::{SurfaceInteraction, BSDF}};
 use super::Material;
 
 pub struct Matte {
@@ -21,7 +21,7 @@ impl Matte {
 }
 
 impl Material for Matte {
-    fn scattering(&self, interaction: &SurfaceInteraction, _root: &Accel) -> BSDF {
+    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
         BSDF::new(interaction, &[
             if self.sigma == 0.0 {
                 BxDF::quick_diffuse(self.kd)

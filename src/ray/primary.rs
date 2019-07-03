@@ -88,7 +88,7 @@ impl PrimaryRay {
 
         // Return background if an intersection wasn't found
         if interaction.material.is_none() {
-            return root.scene.background.li(&interaction, root)
+            return root.scene.background.li(&interaction)
         }
         let material = root.scene.material_or_background(&interaction.material);
 
@@ -99,7 +99,7 @@ impl PrimaryRay {
         let p = interaction.p();
 
         // Compute scattering functions
-        let bsdf = material.scattering(&interaction, root);
+        let bsdf = material.scattering(&interaction);
 
         // Add contribution of each light source
         // For each scene light, sample point lights from it

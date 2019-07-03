@@ -19,7 +19,7 @@ impl Plastic {
 }
 
 impl Material for Plastic {
-    fn scattering(&self, interaction: &SurfaceInteraction, root: &Accel) -> BSDF {
+    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
         let mut bsdf = BSDF::empty(interaction);
 
         // Diffuse component
