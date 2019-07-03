@@ -13,6 +13,10 @@ impl<S: BaseNum> Normal3<S> {
     #[inline]
     pub fn new(x: S, y: S, z: S) -> Normal3<S> { Normal3(Vector3::new(x, y, z)) }
 
+    /// Create a new normal from the given vector
+    #[inline]
+    pub fn zero() -> Normal3<S> { Normal3(Vector3::new(S::zero(), S::zero(), S::zero())) }
+
     /// Get a reference to the underlying vector
     #[inline]
     pub fn as_vec(&self) -> &Vector3<S> { &self.0 }

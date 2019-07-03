@@ -18,6 +18,11 @@ pub struct SurfaceInteraction<N: BaseFloat> {
     /// Point of interaction in world coordinates
     p: Point3<N>,
 
+    /// A small vector used to offset floating-point error from the point of
+    /// interaction. Used to avoid speckling during the lighting/integration
+    /// step. Parallel to the normal vector n.
+    p_err: Vector3<N>,
+
     /// Incident direction vector at point of interaction based on ray
     /// definition
     d: Vector3<N>,
@@ -32,7 +37,8 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
         SurfaceInteraction {
             t, n, material,
             p: Point3::from_value(N::zero()),
-            d: Vector3::from_value(N::zero())
+            p_err: Vector3::zero(),
+            d: Vector3::zero()
         }
     }
 
@@ -41,10 +47,11 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     pub fn default() -> SurfaceInteraction<N> {
         SurfaceInteraction {
             t: N::infinity(),
-            n: Normal3::new(N::zero(), N::zero(), N::zero()),
+            n: Normal3::zero(),
             material: None,
-            d: Vector3::zero(),
-            p: Point3::from_value(N::zero())
+            p: Point3::from_value(N::zero()),
+            p_err: Vector3::zero(),
+            d: Vector3::zero()
         }
     }
 
@@ -60,8 +67,8 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
         // floating point errors (the calculated point ends up inside the
         // geometric primitive).
         let err = N::epsilon() * (N::one() + N::one()).powi(16);
-        self.p = ray.origin + ray.d*self.t
-            + self.n.0 * err;
+        self.p = ray.origin + ray.d*self.t;
+        self.p_err = self.n.0 * err;
 
         self.d = ray.d.normalize();
     }
@@ -81,6 +88,13 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     pub fn p(&self) -> Point3<N> {
         debug_assert!(self.valid());
         self.p
+    }
+
+    /// Floating point error offset from the intersection point p, parallel to
+    /// normal n.
+    pub fn p_err(&self) -> Vector3<N> {
+        debug_assert!(self.valid());
+        self.p_err
     }
 
     /// Whether this is a valid surface interaction (i.e., has been committed

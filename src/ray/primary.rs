@@ -96,7 +96,7 @@ impl PrimaryRay {
         // Initialize common vars
         let n = interaction.n.to_vec();
         let wo = -interaction.d(); // Outgoing direction
-        let p = interaction.p();
+        let p = interaction.p() + interaction.p_err();
 
         // Compute scattering functions
         let bsdf = material.scattering(&interaction);
