@@ -11,4 +11,5 @@ pub mod background;
 pub mod matte;
 pub mod plastic;
 pub mod metal;
+pub mod glass;
 pub mod mirror;
