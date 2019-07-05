@@ -31,13 +31,10 @@ impl BSDF {
         debug_assert!(funcs.len() < MAX_BXDFS);
 
         // TODO: Generate these from shading parameters
-        let n = si.n.as_vec();
-        let nabs = abs(n);
-        let v = if nabs.x < nabs.y { if nabs.x < nabs.z { Vector::unit_x() } else { Vector::unit_z() } }
-            else { if nabs.y < nabs.z { Vector::unit_y() } else { Vector::unit_z() } };
-
-        let ss = n.cross(v);
+        let n = si.n();
+        let ss = si.dpdu;
         let ts = n.cross(ss);
+        let n = normal::Normal3(n);
 
         // Allocate initial scattering functions
         let mut num_bxdfs = 0;
@@ -47,7 +44,7 @@ impl BSDF {
             num_bxdfs += 1;
         }
 
-        BSDF { eta, ns: si.n, ng: si.n, ss, ts, bxdfs, num_bxdfs }
+        BSDF { eta, ns: n, ng: n, ss, ts, bxdfs, num_bxdfs }
     }
 
     /// Simple in that it doesn't include eta
@@ -133,7 +130,7 @@ impl BSDF {
                 (!reflect && bxdf.has_t(BxDFType::TRANSMISSION))
             )
             .fold(Color::zero(), |f, bxdf| f + bxdf.f(&wo_local, &wi_local))
-        }.map(|i| i.min(0.0).max(1.0)); // Clamp
+        }.map(|i| i.max(0.0).min(1.0)); // Clamp
 
         // Compute overall PDF with all _other_ matching BxDFs
         let pdf = if !bxdf.has_t(BxDFType::SPECULAR) && matching_comps > 1 {

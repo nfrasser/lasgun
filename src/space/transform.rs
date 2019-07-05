@@ -2,7 +2,7 @@ use cgmath::{
     Matrix, Transform,
     Vector3, Point3, Matrix4, Vector4,
     BaseFloat, Deg,
-    InnerSpace
+    InnerSpace, num_traits::identities::Zero
 };
 use super::{normal::Normal3, bounds::Bounds3};
 use crate::{ray::Ray3, interaction::surface::SurfaceInteraction};
@@ -243,8 +243,9 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     #[inline]
     fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
     -> SurfaceInteraction<N> {
-        let n = self.transform_normal(interaction.n);
-        SurfaceInteraction::new(interaction.t, n, interaction.material)
+        let dpdu = self.transform_vector(interaction.dpdu);
+        let dpdv = self.transform_vector(interaction.dpdv);
+        SurfaceInteraction::new(interaction.t, dpdu, dpdv, interaction.material)
     }
 
     #[inline]
@@ -269,8 +270,9 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     #[inline]
     fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
     -> SurfaceInteraction<N> {
-        let n = self.inverse_transform_normal(interaction.n);
-        SurfaceInteraction::new(interaction.t, n, interaction.material)
+        let dpdu = self.inverse_transform_vector(interaction.dpdu).unwrap_or(Vector3::zero());
+        let dpdv = self.inverse_transform_vector(interaction.dpdv).unwrap_or(Vector3::zero());
+        SurfaceInteraction::new(interaction.t, dpdu, dpdv, interaction.material)
     }
 
 }

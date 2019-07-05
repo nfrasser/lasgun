@@ -9,11 +9,17 @@ pub struct SurfaceInteraction<N: BaseFloat> {
     /// Parametric distance to point of interaction based on ray origin
     pub t: N,
 
-    /// Normal at interaction surface
-    pub n: Normal3<N>,
+    /// Parametric differential ∂p/∂u at point of interaction
+    pub dpdu: Vector3<N>,
+
+    /// Parametric differential ∂p/∂v at point of interaction
+    pub dpdv: Vector3<N>,
 
     // Index-based reference to a material definition in the scene settings
     pub material: Option<MaterialRef>,
+
+    /// Normal at interaction surface
+    n: Normal3<N>,
 
     /// Point of interaction in world coordinates
     p: Point3<N>,
@@ -33,9 +39,10 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// Initialize a basic new surface interaction. Note that this interaction
     /// is not valid until commit is called with a `Ray` instance (`p()` and
     /// `d()` methods return zero-values)
-    pub fn new(t: N, n: Normal3<N>, material: Option<MaterialRef>) -> SurfaceInteraction<N> {
+    pub fn new(t: N, dpdu: Vector3<N>, dpdv: Vector3<N>, material: Option<MaterialRef>) -> SurfaceInteraction<N> {
         SurfaceInteraction {
-            t, n, material,
+            t, dpdu, dpdv, material,
+            n: Normal3::zero(),
             p: Point3::from_value(N::zero()),
             p_err: Vector3::zero(),
             d: Vector3::zero()
@@ -47,8 +54,10 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     pub fn default() -> SurfaceInteraction<N> {
         SurfaceInteraction {
             t: N::infinity(),
-            n: Normal3::zero(),
+            dpdu: Vector3::zero(),
+            dpdv: Vector3::zero(),
             material: None,
+            n: Normal3::zero(),
             p: Point3::from_value(N::zero()),
             p_err: Vector3::zero(),
             d: Vector3::zero()
@@ -61,7 +70,9 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// interaction is valid once this method is called. Also normalizes
     /// everything.
     pub fn commit(&mut self, ray: &Ray3<N>) {
-        self.n.normalize();
+        self.dpdu = self.dpdu.normalize();
+        self.dpdv = self.dpdv.normalize();
+        self.n = Normal3(self.dpdu.cross(self.dpdv)).face_forward(ray.d);
 
         // Add a small fraction of the normal to avoid speckling due to
         // floating point errors (the calculated point ends up inside the
@@ -76,6 +87,12 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// Has in interaction been successfully found
     pub fn exists(&self) -> bool {
         return self.material.is_some()
+    }
+
+    /// Normal at point of intersection. Must be committed
+    pub fn n(&self) -> Vector3<N> {
+        debug_assert!(self.valid());
+        self.n.0
     }
 
     /// Incident direction vector. self must be committed
@@ -100,6 +117,6 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// Whether this is a valid surface interaction (i.e., has been committed
     /// with a ray)
     fn valid(&self) -> bool {
-        self.d != Vector3::zero()
+        self.n.0 != Vector3::zero()
     }
 }

@@ -503,8 +503,7 @@ impl<'s> Primitive for BVHAccel<'s> {
 
         // Transform normal before sending it back
         if let Some(_) = hit {
-            interaction.t = isect.t;
-            interaction.n = self.transform.transform_normal(isect.n);
+            *interaction = self.transform.transform_surface_interaction(&isect);
 
             // If the uniform node material is available (i.e., for triangle
             // meshes where every triangle uses the same material), assign that

@@ -48,7 +48,7 @@ impl Primitive for Bounds {
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
-        let mut normali = 0;
+        let mut dpduv = &CUBE_DIFFERENTIALS[0];
 
         // i ranges from X to Z
         for i in 0..3 {
@@ -58,7 +58,10 @@ impl Primitive for Bounds {
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);
 
-            if tmin > tnear { normali = i }
+            if tmin > tnear {
+                // Better intersection was found, get correct differentials
+                dpduv = &CUBE_DIFFERENTIALS[i]
+            }
 
             tnear = tnear.max(tmin);
             tfar = tfar.min(tmax);
@@ -67,14 +70,15 @@ impl Primitive for Bounds {
         // Check if out of bounds
         if tnear > tfar || tfar <= 0.0 { return None }
 
-        // Intersection, check if it happens behind the ray and set t accordingly
-        let t = if tnear < 0.0 { tfar } else { tnear };
+        // Intersection, check if it happens behind the ray and set t and
+        // differentials accordingly
+        let t = if tnear <= 0.0 { tfar } else { tnear };
+
         if t >= interaction.t { return None }
 
         interaction.t = t;
-        // interaction.p = ray.origin + ray.d * t;
-        let normal = Normal::new(CUBE_NORMALS[normali][0], CUBE_NORMALS[normali][1], CUBE_NORMALS[normali][2]);
-        interaction.n = normal.face_forward(ray.d);
+        interaction.dpdu = dpduv.0;
+        interaction.dpdv = dpduv.1;
 
         Some(self)
     }
@@ -101,11 +105,12 @@ impl Primitive for Bounds {
 
 impl Shape for Bounds {}
 
-// Vectors representing the cube normals
-const CUBE_NORMALS: [[f64; 3]; 3] = [
-    [1.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0],
-    [0.0, 0.0, 1.0]
+// Vectors representing parametric differentials ∂p/∂u and ∂p/∂v for cube
+// intersections on the x, y and z slabs, respectively
+const CUBE_DIFFERENTIALS: [(Vector, Vector); 3] = [
+    (Vector { x: 0.0, y: 1.0, z: 0.0 }, Vector { x: 0.0, y: 0.0, z: 1.0 }),
+    (Vector { x: 1.0, y: 0.0, z: 0.0 }, Vector { x: 0.0, y: 0.0, z: 1.0 }),
+    (Vector { x: 1.0, y: 0.0, z: 0.0 }, Vector { x: 0.0, y: 1.0, z: 0.0 })
 ];
 
 #[cfg(test)]

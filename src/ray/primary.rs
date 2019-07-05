@@ -71,7 +71,7 @@ impl PrimaryRay {
             // New point at which the ray intersects the focal plane given this direction
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
             let ray = Ray::new(self.origin, d);
-            color += self.li(root, &ray, 0);
+            color += self.li(root, &ray, 0) + root.scene.ambient;
         }
 
         color * scene.supersampling.power
@@ -94,7 +94,7 @@ impl PrimaryRay {
 
         // Compute emitted and reflected light at intersection point
         // Initialize common vars
-        let n = interaction.n.to_vec();
+        let n = interaction.n();
         let wo = -interaction.d(); // Outgoing direction
         let p = interaction.p() + interaction.p_err();
 
@@ -129,10 +129,10 @@ impl PrimaryRay {
             // + self.specular_transmit(root, ray, &interaction, &bsdf, depth)
         } else {
             Color::zero()
-        } + root.scene.ambient
+        }
     }
 
-    fn specular_reflect(&self, root: &Accel, ray: &Ray, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
+    fn specular_reflect(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
         // Compute specular reflection direction wi and BSDF value
         let wo = -interaction.d();
         let flags = BxDFType::REFLECTION | BxDFType::SPECULAR;
@@ -141,7 +141,7 @@ impl PrimaryRay {
         let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
 
         // Return contribution of specular reflection
-        let ns = interaction.n.0;
+        let ns = interaction.n();
         if sample.pdf > 0.0
         && sample.spectrum != Color::zero()
         && sample.wi.dot(ns).abs() > 0.0 {

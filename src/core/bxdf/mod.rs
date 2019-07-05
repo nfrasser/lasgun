@@ -263,7 +263,7 @@ pub mod util {
     /// Internal Reflection.
     #[inline] pub fn refract(wi: &Vector, n: &Normal, eta: f64) -> Option<Vector> {
         // Compute cos_theta_t w/ Snell's law
-        let n = n.as_vec();
+        let n = n.0;
         let cos_theta_i = n.dot(*wi);
         let sin2_theta_i = (1.0 - cos_theta_i * cos_theta_i).max(0.0);
         let sin2_theta_t = eta * eta * sin2_theta_i;
