@@ -14,7 +14,7 @@ impl Reflection {
         Reflection { r, fresnel }
     }
 
-    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector, _sample: &Point2f) -> BxDFSample {
         // Compute perfect specular reflection direction with normalized shading
         // coordinate axis.
         let wi = Vector::new(-wo.x, -wo.y, wo.z);

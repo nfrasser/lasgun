@@ -23,7 +23,7 @@ pub fn quad_roots(a: f64, b: f64, c: f64) -> ([f64; 2], u8) {
             let q_over_a = q / a;
             ([
                 q_over_a,
-                if q == 0.0 { q_over_a} else { c / q }
+                if q == 0.0 { q_over_a } else { c / q }
             ], 2) // Two roots
         }
     }

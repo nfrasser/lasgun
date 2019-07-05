@@ -423,8 +423,7 @@ impl<'s> BVHAccel<'s> {
     }
 
     // a is the lifetime of the arena as usual
-    // v is the lifetime of the parent LinearBVHNode vec
-    fn flatten_bvh_tree<'a, 'v>(
+    fn flatten_bvh_tree<'a>(
         &mut self,
         node: &'a BVHBuildNode<'a>,
         offset: &mut usize
