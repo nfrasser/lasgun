@@ -140,7 +140,8 @@ f 1 4 3
             triangle.intersect(&ray, &mut interaction);
         }
 
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n.0.normalize(), Vector::unit_y());
+        assert_eq!(interaction.n(), Vector::unit_y());
     }
 }

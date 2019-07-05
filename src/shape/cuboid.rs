@@ -124,8 +124,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 
     #[test]
@@ -135,8 +136,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 
     #[test]
@@ -146,8 +148,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 
     #[test]
@@ -157,7 +160,8 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 }
