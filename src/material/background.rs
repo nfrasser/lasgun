@@ -10,7 +10,7 @@ pub struct Background {
 
 impl Background {
     pub fn radial(inner: Color, outer: Color, view: Vector, fov: f64) -> Background {
-        Background { inner, outer, view, fov }
+        Background { inner, outer, view: view.normalize(), fov }
     }
 
     pub fn solid(color: Color, view: Vector, fov: f64) -> Background {
