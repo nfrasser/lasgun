@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::{f64::consts::PI, ops::Neg};
 use crate::space::*;
 use super::{util::*, sampling::*, fresnel::Fresnel, TransportMode, BxDFSample};
 
@@ -10,6 +10,19 @@ pub struct Distribution {
 }
 
 impl Distribution {
+    #[inline]
+    pub fn roughness_to_alpha(roughness: f64) -> f64 {
+        // Thanks PBRT <3
+        // https://github.com/mmp/pbrt-v3/blob/9f717d847a807793fa966cf0eaa366852efef167/src/core/microfacet.h#L122-L128
+        let roughness = roughness.max(1e-3 as f64);
+        let x = roughness.ln();
+        1.62142 + 0.819955 * x +
+            0.1734 * x * x +
+            0.0171201 * x * x * x +
+            0.000640711 * x * x * x * x
+    }
+
+    #[inline]
     pub fn new(alphax: f64, alphay: f64) -> Distribution {
         Distribution { alphax, alphay }
     }
