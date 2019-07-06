@@ -103,7 +103,7 @@ impl PrimaryRay {
 
         // Add contribution of each light source
         // For each scene light, sample point lights from it
-        root.scene.lights().iter().fold(Color::zero(), |output, light| {
+        let output = root.scene.lights().iter().fold(Color::zero(), |output, light| {
             // For each sampled point light, add its contribution to the the
             // final colour output
             light.iter_samples(root, p).fold(output, |output, light| {
@@ -123,13 +123,19 @@ impl PrimaryRay {
 
                 output + ((f64::consts::PI * light.intensity).mul_element_wise(f) * wi_dot_n / f_att)
             })
-        }) + if depth + 1 < MAX_DEPTH {
+        });
+
+        let (refracted, reflected) = if depth + 1 < MAX_DEPTH {
             // Add reflection/transmission contribution
-            self.specular_reflect(root, &interaction, &bsdf, depth)
-            + self.specular_transmit(root, &interaction, &bsdf, depth)
+            (
+                self.specular_transmit(root, &interaction, &bsdf, depth),
+                self.specular_reflect(root, &interaction, &bsdf, depth)
+            )
         } else {
-            Color::zero()
-        }
+            (Color::zero(), Color::zero())
+        };
+
+        output + reflected + refracted
     }
 
     fn specular_reflect(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
@@ -142,16 +148,19 @@ impl PrimaryRay {
 
         // Return contribution of specular reflection
         let ns = interaction.n();
-        if sample.pdf > 0.0
-        && sample.spectrum != Color::zero()
-        && sample.wi.dot(ns).abs() > 0.0 {
-            // Compute ray for specular reflection
-            let wr = bxdf::util::reflect(&wo, &ns);
-            let r = Ray::new(interaction.p() + interaction.p_err(), wr);
-            sample.spectrum.mul_element_wise(self.li(root, &r, depth + 1))
-        } else {
-            Color::zero()
-        }
+
+        // Zero checks to avoid unnecessary computation
+        if sample.pdf <= 0.0
+        || sample.spectrum == Color::zero()
+        || sample.wi.dot(ns) <= 0.0 { return Color::zero() };
+
+        // Compute ray for specular reflection
+        let wr = bxdf::util::reflect(&wo, &ns);
+        let r = Ray::new(interaction.p() + interaction.p_err(), wr);
+        let li = self.li(root, &r, depth + 1);
+        let output = sample.spectrum.mul_element_wise(li);
+
+        output
     }
 
     fn specular_transmit(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
@@ -161,19 +170,23 @@ impl PrimaryRay {
 
         // TODO: Use actual sample point instead of (0.5, 0.5)
         let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
+        let (spectrum, wi, pdf) = (sample.spectrum, sample.wi, sample.pdf);
 
-        // Return contribution of specular reflection
         let ns = interaction.n();
-        if sample.pdf > 0.0
-        && sample.spectrum != Color::zero()
-        && sample.wi.dot(ns).abs() != 0.0 {
-            // Compute ray for specular refraction
-            let r = Ray::new(interaction.p() - interaction.p_err(), sample.wi);
-            sample.spectrum.mul_element_wise(self.li(root, &r, depth + 1))
-            * sample.wi.dot(ns) / sample.pdf
-        } else {
-            Color::zero()
+
+        // Zero checks to avoid unnecessary computation
+        if pdf <= 0.0
+        || spectrum == Color::zero()
+        || wi.dot(ns).abs() == 0.0 {
+            return Color::zero()
         }
+
+        // Compute ray for specular refraction
+        let r = Ray::new(interaction.p() - interaction.p_err(), wi);
+        let li = self.li(root, &r, depth + 1);
+        let output = spectrum.mul_element_wise(li) * wi.dot(ns).abs() / sample.pdf;
+
+        output
     }
 }
 

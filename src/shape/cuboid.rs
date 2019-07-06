@@ -48,7 +48,10 @@ impl Primitive for Bounds {
     fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
-        let mut dpduv = &CUBE_DIFFERENTIALS[0];
+
+        // The axis of the near and far planes
+        let mut near_axis = 0;
+        let mut far_axis = 0;
 
         // i ranges from X to Z
         for i in 0..3 {
@@ -58,10 +61,9 @@ impl Primitive for Bounds {
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);
 
-            if tmin > tnear {
-                // Better intersection was found, get correct differentials
-                dpduv = &CUBE_DIFFERENTIALS[i]
-            }
+            // Check for better intersection axes
+            if tmin > tnear { near_axis = i }
+            if tmax < tfar { far_axis = i }
 
             tnear = tnear.max(tmin);
             tfar = tfar.min(tmax);
@@ -72,13 +74,17 @@ impl Primitive for Bounds {
 
         // Intersection, check if it happens behind the ray and set t and
         // differentials accordingly
-        let t = if tnear <= 0.0 { tfar } else { tnear };
+        let (t, axis) = if tnear <= 0.0 {
+            (tfar, far_axis)
+        } else {
+            (tnear, near_axis)
+        };
 
         if t >= interaction.t { return None }
 
         interaction.t = t;
-        interaction.dpdu = dpduv.0;
-        interaction.dpdv = dpduv.1;
+        interaction.dpdu = CUBE_DIFFERENTIALS[axis].0;
+        interaction.dpdv = CUBE_DIFFERENTIALS[axis].1;
 
         Some(self)
     }
