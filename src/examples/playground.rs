@@ -17,8 +17,7 @@ fn playground() -> Scene {
 
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new(options);
-    let mat0 = scene.add_plastic_material([1.0, 0.5, 1.0], [0.5, 0.5, 0.5], 25.0);
-    // let mat0 = scene.add_metal_material([0.9, 0.1, 0.9], [0.7, 1.0, 0.7], 0.2, 0.5);
+    let mat0 = scene.add_metal_material([0.9, 0.1, 0.9], [0.7, 1.0, 0.7], 0.2, 0.5);
 
     let bunny = scene.add_mesh_at(meshes::path("bunny").as_path()).unwrap();
 

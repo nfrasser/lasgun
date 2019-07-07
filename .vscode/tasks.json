@@ -46,6 +46,19 @@
         },
         {
             "type": "shell",
+            "label": "cargo build example cornell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--example",
+                "cornell"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "type": "shell",
             "label": "cargo build example playground",
             "command": "cargo",
             "args": [

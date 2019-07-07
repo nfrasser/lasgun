@@ -37,6 +37,16 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Cornell Example",
+            "program": "${workspaceFolder}/target/debug/examples/cornell",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build example cornell"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug tests in lasgun",
             "program": "${workspaceFolder}/target/debug/deps/${workspaceRootFolderName}-55c75722ef79820f",
             "args": [],
