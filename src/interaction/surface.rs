@@ -72,7 +72,7 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     pub fn commit(&mut self, ray: &Ray3<N>) {
         self.dpdu = self.dpdu.normalize();
         self.dpdv = self.dpdv.normalize();
-        self.n = Normal3(self.dpdu.cross(self.dpdv)).face_forward(ray.d);
+        self.n = Normal3(self.dpdu.cross(self.dpdv).normalize()).face_forward(ray.d);
 
         // Add a small fraction of the normal to avoid speckling due to
         // floating point errors (the calculated point ends up inside the
