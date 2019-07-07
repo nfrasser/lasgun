@@ -30,9 +30,9 @@ impl Material for Plastic {
         // Don't add ks if it doesn't contrinbute
         if self.ks != Color::zero() {
             let rough = self.roughness;
-            let fresnel = Fresnel::Dielectric(1.0, 1.5);
+            let substance = Substance::Dielectric(1.0, 1.5);
             let distribution = MicrofacetDistribution::new(rough, rough);
-            bsdf.add(BxDF::microfacet_reflection(self.ks, fresnel, distribution));
+            bsdf.add(BxDF::microfacet_reflection(self.ks, substance, distribution));
         };
 
         bsdf

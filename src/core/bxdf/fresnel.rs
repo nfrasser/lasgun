@@ -4,7 +4,7 @@ use crate::space::*;
 /// Physically-based models for determining the ratio of transmitted v.s.
 /// reflected light.
 #[derive(Copy, Clone)]
-pub enum Fresnel {
+pub enum Substance {
     /// Specifies refraction indeces for non-conductive materials; `eta_i`,
     /// `eta_t`.
     Dielectric(f64, f64),
@@ -16,12 +16,14 @@ pub enum Fresnel {
     NoOp
 }
 
-impl Fresnel {
+impl Substance {
+    /// Get the spectrum emitted by the substance with the given cosine of the
+    /// incident angle.
     pub fn evaluate(&self, cos_theta_i: f64) -> Color {
         match self {
-            Fresnel::Dielectric(eta_i, eta_t) =>
+            Substance::Dielectric(eta_i, eta_t) =>
                 Color::from_value(dielectric(cos_theta_i, *eta_i, *eta_t)), // Assuming isotropic material
-            Fresnel::Conductor(eta_i, eta_t, k) =>
+            Substance::Conductor(eta_i, eta_t, k) =>
                 conductor(cos_theta_i, eta_i, eta_t, k),
             _ => Color::from_value(1.0)
         }

@@ -9,7 +9,7 @@ mod specular;
 mod diffuse;
 mod microfacet;
 
-pub use self::fresnel::Fresnel;
+pub use self::fresnel::Substance;
 
 pub type MicrofacetDistribution = microfacet::Distribution;
 
@@ -62,7 +62,7 @@ pub enum BxDF {
     Constant(Color),
 
     /// With specular reflection. First parameter is reflection specturm and
-    /// second is Fresnel light transport model.
+    /// second is Substance light transport model.
     SpecularReflection(specular::Reflection),
 
     /// With specular transmission.
@@ -91,8 +91,8 @@ pub enum BxDF {
 }
 
 impl BxDF {
-    pub fn specular_reflection(r: Color, fresnel: Fresnel) -> BxDF {
-        let reflection = specular::Reflection::new(r, fresnel);
+    pub fn specular_reflection(r: Color, substance: Substance) -> BxDF {
+        let reflection = specular::Reflection::new(r, substance);
         BxDF::SpecularReflection(reflection)
     }
 
@@ -114,8 +114,8 @@ impl BxDF {
         BxDF::Diffuse(diffuse::OrenNayar::new(r, sigma))
     }
 
-    pub fn microfacet_reflection(r: Color, fresnel: Fresnel, distribution: microfacet::Distribution) -> BxDF {
-        let reflection = microfacet::Reflection::new(r, fresnel, distribution);
+    pub fn microfacet_reflection(r: Color, substance: Substance, distribution: microfacet::Distribution) -> BxDF {
+        let reflection = microfacet::Reflection::new(r, substance, distribution);
         BxDF::MicrofacetReflection(reflection)
     }
 

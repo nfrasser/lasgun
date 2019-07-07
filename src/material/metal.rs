@@ -25,9 +25,9 @@ impl Material for Metal {
 
         // Microfacet conductor component
         let white = Color::from_value(1.0);
-        let fresnel = Fresnel::Conductor(white, self.eta, self.k);
+        let substance = Substance::Conductor(white, self.eta, self.k);
         let distribution = MicrofacetDistribution::new(self.u_roughness, self.v_roughness);
-        bsdf.add(BxDF::microfacet_reflection(white, fresnel, distribution));
+        bsdf.add(BxDF::microfacet_reflection(white, substance, distribution));
         bsdf
     }
 }

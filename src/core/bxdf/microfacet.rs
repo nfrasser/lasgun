@@ -1,6 +1,6 @@
 use std::{f64::consts::PI, ops::Neg};
 use crate::space::*;
-use super::{util::*, sampling::*, fresnel::Fresnel, TransportMode, BxDFSample};
+use super::{util::*, sampling::*, fresnel::Substance, TransportMode, BxDFSample};
 
 /// Trowbridge-Reitz microfacet distribution model.
 #[derive(Copy, Clone)]
@@ -104,14 +104,14 @@ pub struct Reflection {
     r: Color,
 
     /// Surface reflection model
-    fresnel: Fresnel,
+    substance: Substance,
 
     /// Common Trowbridge-Reitz model code
     distribution: Distribution,
 }
 impl Reflection {
-    pub fn new(r: Color, fresnel: Fresnel, distribution: Distribution) -> Reflection {
-        Reflection { r, fresnel, distribution }
+    pub fn new(r: Color, substance: Substance, distribution: Distribution) -> Reflection {
+        Reflection { r, substance, distribution }
     }
 
     pub fn f(&self, wo: &Vector, wi: &Vector) -> Color {
@@ -124,7 +124,7 @@ impl Reflection {
         if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 { return Color::zero() };
 
         let wh = wh.normalize();
-        let spectrum = self.fresnel.evaluate(wi.dot(wh));
+        let spectrum = self.substance.evaluate(wi.dot(wh));
         (self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi))
             .mul_element_wise(spectrum)
             / ( 4.0 * cos_theta_i * cos_theta_o)
@@ -163,7 +163,7 @@ pub struct Transmission {
     mode: TransportMode,
 
     /// Surface reflection model
-    fresnel: Fresnel,
+    substance: Substance,
 
     /// Common Trowbridge-Reitz model code
     distribution: Distribution,
@@ -173,7 +173,7 @@ impl Transmission {
     -> Transmission {
         Transmission {
             t, eta_a, eta_b, mode,
-            fresnel: Fresnel::Dielectric(eta_a, eta_b),
+            substance: Substance::Dielectric(eta_a, eta_b),
             distribution
         }
     }
@@ -181,7 +181,7 @@ impl Transmission {
         let eta = self.eta(wo);
         let wh = wo + eta * wi;
 
-        let spectrum = self.fresnel.evaluate(cos_theta(wo));
+        let spectrum = self.substance.evaluate(cos_theta(wo));
         (eta * eta * self.distribution.d(&wh) * self.distribution.g(wo, wi) * (Color::from_value(1.0) - spectrum))
             / (wo.dot(wh) + eta * wi.dot(wh)).powi(2)
             * (wi.dot(wh).abs() * wo.dot(wh).abs())

@@ -39,11 +39,11 @@ impl Material for Glass {
         let mut bsdf = BSDF::empty(interaction);
 
         if self.kr != Color::zero() {
-            let fresnel = Fresnel::Dielectric(1.0, self.eta);
+            let substance = Substance::Dielectric(1.0, self.eta);
             let bxdf = if let Some(distribution) = self.distribution {
-                BxDF::microfacet_reflection(self.kr, fresnel, distribution)
+                BxDF::microfacet_reflection(self.kr, substance, distribution)
             } else {
-                BxDF::specular_reflection(self.kr, fresnel)
+                BxDF::specular_reflection(self.kr, substance)
             };
             bsdf.add(bxdf)
         };

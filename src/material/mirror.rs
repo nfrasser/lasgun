@@ -15,6 +15,6 @@ impl Mirror {
 
 impl Material for Mirror {
     fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
-        BSDF::new(interaction, &[BxDF::specular_reflection(self.kr, Fresnel::NoOp)])
+        BSDF::new(interaction, &[BxDF::specular_reflection(self.kr, Substance::NoOp)])
     }
 }
