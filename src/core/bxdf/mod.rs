@@ -192,6 +192,8 @@ impl BxDF {
         match self {
             BxDF::MicrofacetReflection(r) => r.pdf(wo, wi),
             BxDF::MicrofacetTransmission(t) => t.pdf(wo, wi),
+            BxDF::SpecularReflection(_) => 0.0,
+            BxDF::SpecularTransmission(_) => 0.0,
             _ => sampling::pdf(wo, wi)
         }
     }
