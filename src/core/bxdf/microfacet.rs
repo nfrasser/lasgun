@@ -66,33 +66,17 @@ impl Distribution {
     }
 
     /// Compute Probability distribution function
-    fn pdf(&self, _wo: &Vector, wh: &Vector) -> f64 {
-        self.d(wh) * abs_cos_theta(wh)
+    fn pdf(&self, wo: &Vector, wh: &Vector) -> f64 {
+        self.d(wh) * self.g1(wo) * wo.dot(*wh).abs() / abs_cos_theta(wh)
     }
 
     // Get sample reflected direction
     fn sample_wh(&self, wo: &Vector, sample: &Point2f) -> Vector {
-        let mut cos_theta = 0.0;
-        let mut phi = (2.0 * PI) * sample.y;
+        let flip = wo.z < 0.0;
+        let wo = if flip { wo.neg() } else { *wo };
 
-        if self.alphax == self.alphay {
-            let tan_theta2 = self.alphax * self.alphax * sample.x
-                / (1.0 - sample.x);
-            cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
-        } else {
-            phi = (self.alphay / self.alphax * (2.0 * PI * sample.y + 0.5 * PI).tan()).atan();
-            if sample.y > 0.5 { phi += PI };
-            let (sin_phi, cos_phi) = (phi.sin(), phi.cos());
-            let alphax2 = self.alphax * self.alphax;
-            let alphay2 = self.alphay * self.alphay;
-
-            let alpha2 = 1.0 / (cos_phi * cos_phi / alphax2 + sin_phi * sin_phi / alphay2);
-            let tan_theta2 = alpha2 * sample.x / (1.0 - sample.x);
-            cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
-        }
-        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
-        let wh = spherical_direction(sin_theta, cos_theta, phi);
-        if same_hemisphere(wo, &wh) { wh } else { -wh }
+        let wh = trowbridge_reitz_sample(&wo, self.alphax, self.alphay, sample.x, sample.y);
+        if flip { -wh } else { wh }
     }
 }
 
@@ -178,14 +162,27 @@ impl Transmission {
         }
     }
     pub fn f(&self, wo: &Vector, wi: &Vector) -> Color {
-        let eta = self.eta(wo);
-        let wh = wo + eta * wi;
+        // Ensure not in same hemisphere (not trasmission)
+        if same_hemisphere(wo, wi) { return Color::zero() };
 
-        let spectrum = self.substance.evaluate(cos_theta(wo));
-        (eta * eta * self.distribution.d(&wh) * self.distribution.g(wo, wi) * (Color::from_value(1.0) - spectrum))
-            / (wo.dot(wh) + eta * wi.dot(wh)).powi(2)
-            * (wi.dot(wh).abs() * wo.dot(wh).abs())
-            / (cos_theta(wo) * cos_theta(wi))
+        // Capture from microfacet transmission
+        let cos_theta_o = cos_theta(wo);
+        let cos_theta_i = cos_theta(wi);
+        if cos_theta_o == 0.0 || cos_theta_i == 0.0 { return Color::zero() };
+
+        let eta = self.eta(wo);
+        let mut wh = (wo + wi * eta).normalize();
+        if wh.z < 0.0 { wh = -wh };
+
+        let f = self.substance.evaluate(wo.dot(wh));
+        let sqrt_denom = wo.dot(wh) + eta * wi.dot(wh);
+        let factor = if self.mode == TransportMode::Radiance { 1.0 / eta } else { 1.0 };
+
+        (Color::from_value(1.0) - f).mul_element_wise(self.t) * (
+            self.distribution.d(&wh) * self.distribution.g(wo, wi) * eta * eta *
+            wi.dot(wh).abs() * wo.dot(wh).abs() * factor * factor /
+            (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom)
+        ).abs()
     }
 
     pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
@@ -224,4 +221,75 @@ impl Transmission {
             self.eta_a / self.eta_b
         }
     }
+}
+
+/// Trowbridge-Reitz Sample strategy
+fn trowbridge_reitz_sample(wi: &Vector, alphax: f64, alphay: f64, u1: f64, u2: f64) -> Vector {
+    // 1. stretch wi
+    let wi = Vector::new(alphax * wi.x, alphay * wi.y, wi.z).normalize();
+
+    // 2. simulate P22_{wi}(x_slope, y_slope, 1, 1)
+    let (mut slope_x, mut slope_y) =
+        trowbridge_reitz_sample_11(cos_theta(&wi), u1, u2);
+
+    // 3. rotate
+    let tmp = cos_phi(&wi) * slope_x - sin_phi(&wi) * slope_y;
+    slope_y = sin_phi(&wi) * slope_x + cos_phi(&wi) * slope_y;
+    slope_x = tmp;
+
+    // 4. unstretch
+    slope_x = alphax * slope_x;
+    slope_y = alphay * slope_y;
+
+    // 5. compute normal
+    Vector::new(-slope_x, -slope_y, 1.0).normalize()
+}
+
+
+/// Returns (slope_x, slope_y)
+fn trowbridge_reitz_sample_11(cos_theta: f64, u1: f64, u2: f64) -> (f64, f64) {
+    // special case (normal incidence)
+    if cos_theta > 0.9999 {
+        let r = (u1 / (1.0 - u1)).sqrt();
+        let phi = 6.28318530718 * u2;
+        return (r * phi.cos(), r * phi.sin());
+    }
+
+    let sin_theta = (0.0 as f64).max(1.0 - cos_theta * cos_theta).sqrt();
+    let tan_theta = sin_theta / cos_theta;
+    let a = 1.0 / tan_theta;
+    let g1 = 2.0 / (1.0 + (1.0 + 1.0 / (a * a)).sqrt());
+
+    // sample slope_x
+    let a = 2.0 * u1 / g1 - 1.0;
+    let mut tmp = 1.0 / (a * a - 1.0);
+    if tmp > 1e10 { tmp = 1e10 };
+    let b = tan_theta;
+    let d = (b * b * tmp * tmp - (a * a - b * b) * tmp).max(0.0).sqrt();
+    let slope_x_1 = b * tmp - d;
+    let slope_x_2 = b * tmp + d;
+
+    let slope_x = if a < 0.0 || slope_x_2 > 1.0 / tan_theta {
+        slope_x_1
+    } else {
+        slope_x_2
+    };
+
+    // sample slope_y
+    let (s, u2) = if u2 > 0.5 {
+        (1.0, 2.0 * (u2 - 0.5))
+    } else {
+        (-1.0, 2.0 * (0.5 - u2))
+    };
+
+    let z =
+        (u2 * (u2 * (u2 * 0.27385 - 0.73369) + 0.46341)) /
+        (u2 * (u2 * (u2 * 0.093073 + 0.309420) - 1.000000) + 0.597999);
+
+    let slope_y = s * z * (1.0 + slope_x * slope_x).sqrt();
+
+    debug_assert!(!slope_y.is_infinite());
+    debug_assert!(!slope_y.is_nan());
+
+    (slope_x, slope_y)
 }
