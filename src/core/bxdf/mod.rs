@@ -31,7 +31,7 @@ bitflags! {
 }
 
 /// Used for Asymetric BSDFs (involving reflection/refraction)
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum TransportMode { Radiance, Importance }
 
 /// Details about the sample for a BxDF integral in some direction
@@ -198,6 +198,7 @@ impl BxDF {
         }
     }
 
+    /*
     /// Hemispherical-Directional Reflectance funtion gives total reflection in
     /// a given direction due to constant illumination over the hemisphere
     /// (which happens to also be equivalent to reflection in all directions
@@ -212,6 +213,7 @@ impl BxDF {
     pub fn rho_hh(&self, samples1: &[Point2f], samples2: &[Point2f]) -> Color {
         Color::zero()
     }
+    */
 }
 
 /// Utility functions
@@ -249,12 +251,14 @@ pub mod util {
     #[inline] pub fn cos2_phi(w: &Vector) -> f64 { cos_phi(w) * cos_phi(w) }
     #[inline] pub fn sin2_phi(w: &Vector) -> f64 { sin_phi(w) * sin_phi(w) }
 
+    /*
     // Delta Phi, between two vectors in shading coordinate system
     #[inline] pub fn cos_d_phi(wa: &Vector, wb: &Vector) -> f64 {
         let result = (wa.x * wb.x + wa.y * wb.y)
             / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)).sqrt();
         result.max(-1.0).min(1.0)
     }
+    */
 
     #[inline] pub fn reflect(wo: &Vector, n: &Vector) -> Vector {
         -1.0 * wo + 2.0 * wo.dot(*n) * n
@@ -291,9 +295,11 @@ mod sampling {
 
     #[inline] pub fn same_hemisphere(w: &Vector, wp: &Vector) -> bool { w.z * wp.z > 0.0 }
 
+    /*
     #[inline] pub fn spherical_direction(sin_theta: f64, cos_theta: f64, phi: f64) -> Vector {
         Vector::new(sin_theta * phi.cos(), sin_theta * phi.sin(), cos_theta)
     }
+    */
 
     #[inline] pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector {
         let d = concentric_sample_disk(u);

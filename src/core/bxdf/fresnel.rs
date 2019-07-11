@@ -67,7 +67,7 @@ fn dielectric(cos_theta_i: f64, eta_i: f64, eta_t: f64) -> f64 {
 /// Computes 3D Fresnel reflection for conducting materials
 /// Adapted from https://github.com/mmp/pbrt-v3/blob/4c1f452f6882a5c45a5ae86f865e376619c73296/src/core/reflection.cpp#L71
 fn conductor(cos_theta_i: f64, eta_i: &Color, eta_t: &Color, k: &Color) -> Color {
-    let mut cos_theta_i = cos_theta_i.max(-1.0).min(1.0); // Clamp
+    let cos_theta_i = cos_theta_i.max(-1.0).min(1.0); // Clamp
     let eta = eta_t.div_element_wise(*eta_i);
     let etak = k.div_element_wise(*eta_i);
 
