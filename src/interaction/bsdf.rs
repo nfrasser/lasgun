@@ -80,6 +80,8 @@ impl BSDF {
         let wo_local = self.to_local(wo);
         let wi_local = self.to_local(wi);
 
+        if wo_local.z == 0.0 { return Color::zero() };
+
         // Calculate result of all the BxDFs
         self.iter().fold(Color::zero(), |f, bxdf| {
             if (reflect && bxdf.has_t(BxDFType::REFLECTION))
