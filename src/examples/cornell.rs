@@ -21,13 +21,12 @@ fn cornell() -> Scene {
     let mut scene = Scene::new(options);
 
     // Add materials to the scene
-    let mat0 = scene.add_plastic_material([0.7, 0.0, 0.7], [0.5, 0.7, 0.5], 0.25);
-    let white = scene.add_plastic_material([1.0, 1.0, 1.0], [0.5, 0.7, 0.5], 0.25);
+    let white = scene.add_plastic_material([0.9, 0.9, 0.9], [0.5, 0.7, 0.5], 0.25);
     let r = scene.add_plastic_material([1.0, 0.0, 0.0], [0.5, 0.7, 0.5], 0.25);
     let g = scene.add_plastic_material([0.0, 1.0, 0.0], [0.5, 0.7, 0.5], 0.25);
     // let b = scene.add_plastic_material([0.0, 0.0, 1.0], [0.5, 0.4, 0.8], 0.25);
     // let glass = scene.add_mirror_material([0.0, 0.0, 0.0]);
-    let glass = scene.add_rough_glass_material([1.0, 0.7, 1.0], [0.7, 1.0, 0.7], 1.25, 0.0, 0.0);
+    let glass = scene.add_glass_material([1.0, 0.7, 1.0], [0.7, 1.0, 0.7], 1.25);
 
     // Instantiate meshes to be shown in the scene
     let plane = scene.add_mesh_at(meshes::path("plane").as_path()).unwrap();
