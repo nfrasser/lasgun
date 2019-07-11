@@ -67,10 +67,16 @@ let scene = lasgun.scene({
     fov: 45.0
 })
 
-let mat = scene.add_phong_material({
+scene.add_point_light({
+    position: [100, 200, 400],
+    intensity: [0.8, 0.8, 0.8],
+    falloff: [1, 0, 0]
+})
+
+let mat = scene.add_plastic_material({
     kd: [0.7, 1.0, 0.7],
     ks: [0.5, 0.7, 0.5],
-    shininess: 25
+    roughness: 0.25
 })
 
 let node = lasgun.group()
