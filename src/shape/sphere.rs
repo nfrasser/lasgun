@@ -1,5 +1,5 @@
-use std::f64;
-use crate::math;
+use std::f64::{NEG_INFINITY, consts::PI};
+use crate::core::math;
 use crate::space::*;
 use crate::ray::Ray;
 use crate::primitive::{Primitive, OptionalPrimitive};
@@ -22,19 +22,13 @@ impl Sphere {
             radius
         }
     }
-}
 
-impl Primitive for Sphere {
-    fn bound(&self) -> Bounds {
-        Bounds::new(
-            self.origin - Vector::from_value(self.radius),
-            self.origin + Vector::from_value(self.radius))
-    }
-
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
-        let d = &ray.d;
-        let rad = &self.radius;
-        let cen = &self.origin;
+    /// Returns the parametric t at the point of intersection. Negative values
+    /// mean no intersection.
+    fn intersect_t(&self, ray: &Ray) -> f64 {
+        let d = ray.d;
+        let rad = self.radius;
+        let cen = self.origin;
 
         // Based on the equation of a sphere:
         // (x - x0)^2 + (y - y0)^2 + (z - z0)^2 = R^2
@@ -48,10 +42,10 @@ impl Primitive for Sphere {
         // At^2 + Bt + C = 0
 
         // Vector from the eye to the centre of the sphere
-        let l: Vector = ray.origin - cen;
+        let l = ray.origin - cen;
 
         // A, B, and C expand to the following:
-        let a = d.dot(*d);
+        let a = d.dot(d);
         let b = 2.0 * d.dot(l);
         let c = l.dot(l) - rad*rad;
 
@@ -59,39 +53,70 @@ impl Primitive for Sphere {
         let (roots, numroots) = math::quad_roots(a, b, c);
 
         // Find the closest point of intersection, it available
-        let (t, normal) = if numroots == 2 {
+        if numroots == 2 {
             // Ray goes through the sphere twice
             let (t0, t1) = (roots[0].min(roots[1]), roots[0].max(roots[1]));
 
-            // Check relative intersection distances
-            if t1 < 0.0 {
-                // Intersection occurs behind the ray
-                (-1.0, None)
-            } else if t0 < 0.0 {
-                // Intersects in front and behind, eye is inside the sphere!
-                let normal = normal::Normal3(cen - (ray.origin + t1*d));
-                (t1, Some(normal))
-            } else {
-                // Eye is outside the sphere, use closest root
-                let normal = normal::Normal3(ray.origin + t0*d - cen);
-                (t0, Some(normal))
-            }
-        } else if numroots == 1 && roots[0] > 0.0 {
-            let normal = normal::Normal3(ray.origin + roots[0]*d - cen);
-            (roots[0], Some(normal))
+            // Check if ray origin is inside the sphere
+            if t0 < 0.0 { t1 } else { t0 }
+        } else if numroots == 1 {
+            roots[0]
         } else {
-            (-1.0, None)
+            NEG_INFINITY
+        }
+    }
+}
+
+impl Primitive for Sphere {
+    fn bound(&self) -> Bounds {
+        Bounds::new(
+            self.origin - Vector::from_value(self.radius),
+            self.origin + Vector::from_value(self.radius))
+    }
+
+    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
+        let t = self.intersect_t(ray);
+
+        // Intersection behind the ray, do nothing
+        if t < 0.0 { return None; }
+
+        // A better intersection was already found, continue
+        if t >= interaction.t { return None }
+
+        // The ray definitely intersects with the sphere, calcuate shading
+        // parameters.
+        interaction.t = t;
+
+        // Subtract the origin to find intersection from the centre
+        let mut p = ray.origin + ray.d * t - self.origin;
+
+        // Account for intersection right at the top
+        if p.x == 0.0 && p.y == 0.0 { p.x = 1e-5 * self.radius }
+
+        // A sphere can be parametrized by 2D parameters (ϕ, θ) with
+        // ϕ ∈ [0, 2π] and θ ∈ [0, π]
+        let mut phi = p.y.atan2(p.x);
+        if phi < 0.0 { phi += 2.0 * PI };
+        let theta = (p.z / self.radius).max(-1.0).min(1.0).acos();
+
+        // Derived by taking the partial derivatives of u and v
+        interaction.dpdu = Vector {
+            x: -2.0 * PI * p.y,
+            y: 2.0 * PI * p.x,
+            z: 0.0
         };
 
-        if let Some(normal) = normal {
-            if t >= interaction.t { return None }
-            // A nearby interaction exists
-            interaction.t = t;
-            interaction.n = normal.face_forward(ray.d);
-            Some(self)
-        } else {
-            None
-        }
+        interaction.dpdv = PI * Vector {
+            x: p.z * phi.cos(),
+            y: p.z * phi.sin(),
+            z: -self.radius * theta.sin()
+        };
+
+        Some(self)
+    }
+
+    fn intersects(&self, ray: &Ray) -> bool {
+        self.intersect_t(ray) >= 0.0
     }
 }
 
@@ -109,8 +134,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(sphere.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, 1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, 1.0));
     }
 
     #[test]
@@ -120,7 +146,8 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(sphere.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 }

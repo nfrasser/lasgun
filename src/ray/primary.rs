@@ -2,8 +2,10 @@ use std::f64;
 
 use crate::{
     space::*,
+    core::bxdf,
+    core::bxdf::BxDFType,
     primitive::Primitive,
-    interaction::SurfaceInteraction,
+    interaction::{BSDF, SurfaceInteraction},
     scene::Scene,
     Accel,
 };
@@ -31,7 +33,7 @@ impl PrimaryRay {
 
     /// Create a new primary ray casting into the given scene at film
     /// coordinates x/y
-    pub fn at(scene: &Scene, x: usize, y: usize) -> PrimaryRay {
+    pub fn at(scene: &Scene, x: u32, y: u32) -> PrimaryRay {
         let (width, height) = (scene.options.width, scene.options.height);
         let up = scene.up;
         let aux = scene.aux;
@@ -69,21 +71,124 @@ impl PrimaryRay {
             // New point at which the ray intersects the focal plane given this direction
             let d = self.d + (upoffset * scene.up) + (auxoffset * scene.aux);
             let ray = Ray::new(self.origin, d);
-
-            let mut interaction = SurfaceInteraction::default();
-            root.intersect(&ray, &mut interaction);
-
-            // Calculates the actual intersection point and normalizes.
-            // Required before getting p(), d(), etc.
-            interaction.commit(&ray);
-
-            // Get the correct scene material
-            let material = scene.material_or_background(&interaction.material);
-
-            // Query the material for the color at the given point
-            color += material.color(&interaction, root)
+            color += self.li(root, &ray, 0) + root.scene.ambient;
         }
 
         color * scene.supersampling.power
     }
+
+    /// Whitted colorization strategy
+    fn li(&self, root: &Accel, ray: &Ray, depth: u32) -> Color {
+        let mut interaction = SurfaceInteraction::default();
+        root.intersect(&ray, &mut interaction);
+
+        // Calculates the actual intersection point and normalizes.
+        // Required before getting p(), d(), etc.
+        interaction.commit(&ray);
+
+        // Return background if an intersection wasn't found
+        if interaction.material.is_none() {
+            return root.scene.background.li(&interaction)
+        }
+        let material = root.scene.material_or_background(&interaction.material);
+
+        // Compute emitted and reflected light at intersection point
+        // Initialize common vars
+        let n = interaction.n();
+        let wo = -interaction.d(); // Outgoing direction
+        let p = interaction.p() + interaction.p_err();
+
+        // Compute scattering functions
+        let bsdf = material.scattering(&interaction);
+
+        // Add contribution of each light source
+        // For each scene light, sample point lights from it
+        let output = root.scene.lights().iter().fold(Color::zero(), |output, light| {
+            // For each sampled point light, add its contribution to the the
+            // final colour output
+            light.iter_samples(root, p).fold(output, |output, light| {
+
+                // vector to light and its length (distance to the light from q)
+                let wi = light.position - p;
+                let d = wi.magnitude();
+
+                // Light attenuation over distance used to compute energy received at p
+                let f_att = light.falloff[0] + light.falloff[1]*d + light.falloff[2]*d*d;
+                if f_att == 0.0 { return output }; // No contribution
+
+                let wi = wi.normalize();
+                let wi_dot_n = wi.dot(n);
+
+                let f = bsdf.f(&wo, &wi);
+
+                output + ((f64::consts::PI * light.intensity).mul_element_wise(f) * wi_dot_n / f_att)
+            })
+        });
+
+        let (refracted, reflected) = if depth + 1 < MAX_DEPTH {
+            // Add reflection/transmission contribution
+            (
+                self.specular_transmit(root, &interaction, &bsdf, depth),
+                self.specular_reflect(root, &interaction, &bsdf, depth)
+            )
+        } else {
+            (Color::zero(), Color::zero())
+        };
+
+        output + reflected + refracted
+    }
+
+    fn specular_reflect(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
+        // Compute specular reflection direction wi and BSDF value
+        let wo = -interaction.d();
+        let flags = BxDFType::REFLECTION | BxDFType::SPECULAR;
+
+        // TODO: Use actual sample point instead of (0.5, 0.5)
+        let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
+
+        // Return contribution of specular reflection
+        let ns = interaction.n();
+
+        // Zero checks to avoid unnecessary computation
+        if sample.pdf <= 0.0
+        || sample.spectrum == Color::zero()
+        || sample.wi.dot(ns) <= 0.0 { return Color::zero() };
+
+        // Compute ray for specular reflection
+        let wr = bxdf::util::reflect(&wo, &ns);
+        let r = Ray::new(interaction.p() + interaction.p_err(), wr);
+        let li = self.li(root, &r, depth + 1);
+        let output = sample.spectrum.mul_element_wise(li);
+
+        output
+    }
+
+    fn specular_transmit(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
+        // Compute specular reflection direction wi and BSDF value
+        let wo = -interaction.d();
+        let flags = BxDFType::TRANSMISSION | BxDFType::SPECULAR;
+
+        // TODO: Use actual sample point instead of (0.5, 0.5)
+        let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
+        let (spectrum, wi, pdf) = (sample.spectrum, sample.wi, sample.pdf);
+
+        let ns = interaction.n();
+
+        // Zero checks to avoid unnecessary computation
+        if pdf <= 0.0
+        || spectrum == Color::zero()
+        || wi.dot(ns).abs() == 0.0 {
+            return Color::zero()
+        }
+
+        // Compute ray for specular refraction
+        let r = Ray::new(interaction.p() - interaction.p_err(), wi);
+        let li = self.li(root, &r, depth + 1);
+        let output = spectrum.mul_element_wise(li) * wi.dot(ns).abs() / sample.pdf;
+
+        output
+    }
 }
+
+// TODO: Parametrize
+const MAX_DEPTH: u32 = 3;

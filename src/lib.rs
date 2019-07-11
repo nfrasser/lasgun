@@ -2,8 +2,11 @@
 use num_cpus;
 
 #[macro_use]
+extern crate bitflags;
+
+#[macro_use]
 pub(crate) mod macros;
-pub(crate) mod math;
+pub(crate) mod core;
 pub(crate) mod ray;
 pub(crate) mod img;
 pub(crate) mod space;

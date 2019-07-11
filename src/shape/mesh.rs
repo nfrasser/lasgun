@@ -9,7 +9,6 @@ pub struct Mesh {
 
 /// Container representing a triangle mesh.
 /// You can iterate over all of a mesh's triangles by calling the into_iter method
-
 impl Mesh {
     pub fn new(obj: Obj) -> Mesh {
         Mesh { obj }
@@ -141,7 +140,8 @@ f 1 4 3
             triangle.intersect(&ray, &mut interaction);
         }
 
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n.0.normalize(), Vector::unit_y());
+        assert_eq!(interaction.n(), Vector::unit_y());
     }
 }

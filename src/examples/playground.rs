@@ -7,7 +7,7 @@ fn playground() -> Scene {
         eye:  [0.0, 1.0, 4.0],
         view: [-0.1, 0.0, -1.0],
         up: [0.0, 1.0, 0.0],
-        ambient: [0.3, 0.3, 0.3],
+        ambient: [0.1, 0.1, 0.1],
         width: 512,
         height: 512,
         fov: 60.0,
@@ -17,7 +17,7 @@ fn playground() -> Scene {
 
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new(options);
-    let mat0 = scene.add_phong_material([1.0, 0.5, 1.0], [0.5, 0.5, 0.5], 25);
+    let mat0 = scene.add_metal_material([0.9, 0.1, 0.9], [0.7, 1.0, 0.7], 0.2, 0.5);
 
     let bunny = scene.add_mesh_at(meshes::path("bunny").as_path()).unwrap();
 

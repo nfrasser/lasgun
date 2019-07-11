@@ -2,7 +2,15 @@ use std::{io, path::Path, f64};
 
 use crate::space::*;
 use crate::light::{Light, point::PointLight};
-use crate::material::{Material, background::Background, phong::Phong};
+use crate::material::{
+    Material,
+    background::Background,
+    matte::Matte,
+    plastic::Plastic,
+    metal::Metal,
+    glass::Glass,
+    mirror::Mirror
+};
 use crate::shape::mesh::Mesh;
 
 /// Description of the world to render and how it should be rendered
@@ -29,10 +37,11 @@ pub struct Scene {
     /// Auxilary vectory, orthogonal to the up and view vectors
     pub aux: Vector,
 
-    /// Half the distance between two primrary ray intersection points on the focal plane.
-    /// Primary rays with supersampling enabled will sample points around the original ray / intersection.
-    /// The maximum distance of the sample ray interesection points on the focal plane from the
-    /// original point of intersection will be no larger than this number.
+    /// Half the distance between two primary ray intersection points on the
+    /// focal plane. Primary rays with supersampling enabled will sample points
+    /// around the original ray / intersection. The maximum distance of the
+    /// sample ray interesection points on the focal plane from the original
+    /// point of intersection will be no larger than this number.
     pub pixel_radius: f64,
 
     /// Precomputed supersampling options
@@ -134,7 +143,7 @@ impl Scene {
         // Total Number of samples to take
         let supersample_count = supersample_dim as usize * supersample_dim as usize;
 
-        // How much each supersample should could for
+        // How much each supersample should count for
         // computed once here so it doesn't have to be recomputed later
         let supersample_power = 1.0/(supersample_count as f64);
 
@@ -149,7 +158,7 @@ impl Scene {
                 radius: pixel_radius * supersample_scale,
                 power: supersample_power
             },
-            background: Background::solid(Color::zero()),
+            background: Background::solid(Color::zero(), view, options.fov),
             lights: vec![], materials: vec![], meshes: vec![],
         }
     }
@@ -169,8 +178,37 @@ impl Scene {
         })
     }
 
-    pub fn add_phong_material(&mut self, kd: [f64; 3], ks: [f64; 3], shininess: i32) -> MaterialRef {
-        let material: Phong = Phong::new(kd, ks, shininess);
+    pub fn add_matte_material(&mut self, kd: [f64; 3], sigma: f64) -> MaterialRef {
+        let kd = Color::new(kd[0], kd[1], kd[2]);
+        let material = Matte::new(kd, sigma);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_plastic_material(&mut self, kd: [f64; 3], ks: [f64; 3], roughness: f64) -> MaterialRef {
+        let kd = Color::new(kd[0], kd[1], kd[2]);
+        let ks = Color::new(ks[0], ks[1], ks[2]);
+        let material = Plastic::new(kd, ks, roughness);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_metal_material(&mut self, eta: [f64; 3], k: [f64; 3], u_roughness: f64, v_roughness: f64) -> MaterialRef {
+        let eta = Color::new(eta[0], eta[1], eta[2]);
+        let k = Color::new(k[0], k[1], k[2]);
+        let material = Metal::new(eta, k, u_roughness, v_roughness);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_mirror_material(&mut self, kr: [f64; 3]) -> MaterialRef {
+        let kr = Color::new(kr[0], kr[1], kr[2]);
+        let material = Mirror::new(kr);
+        self.add_material(Box::new(material))
+    }
+
+    pub fn add_glass_material(&mut self, kr: [f64; 3], kt: [f64; 3], eta: f64) -> MaterialRef {
+        let kr = Color::new(kr[0], kr[1], kr[2]);
+        let kt = Color::new(kt[0], kt[1], kt[2]);
+        // TODO: Roughness isn't working
+        let material = Glass::new(kr, kt, eta, 0.0, 0.0);
         self.add_material(Box::new(material))
     }
 
@@ -178,7 +216,6 @@ impl Scene {
         let light = PointLight::new(position, intensity, falloff);
         self.lights.push(Box::new(light))
     }
-
 
     pub fn add_mesh(&mut self, mesh: Mesh) -> ObjRef {
         let reference = ObjRef(self.meshes.len());
@@ -232,11 +269,11 @@ impl Scene {
     }
 
     pub fn set_solid_background(&mut self, color: [u8; 3]) {
-        self.background = Background::solid(from_pixel_bytes(color))
+        self.background = Background::solid(from_pixel_bytes(color), self.view, self.options.fov)
     }
 
     pub fn set_radial_background(&mut self, inner: [u8; 3], outer: [u8; 3]) {
-        self.background = Background::radial(from_pixel_bytes(inner), from_pixel_bytes(outer))
+        self.background = Background::radial(from_pixel_bytes(inner), from_pixel_bytes(outer), self.view, self.options.fov)
     }
 
     fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
@@ -246,7 +283,7 @@ impl Scene {
     }
 }
 
-/// Convert a colour channel from between 0 and 1 to an interger between 0 and 255
+/// Convert a colour channel from between 0 and 1 to an integer between 0 and 255
 #[inline]
 fn from_pixel_bytes(bytes: [u8; 3]) -> Color {
     Color {

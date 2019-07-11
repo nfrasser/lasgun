@@ -49,7 +49,9 @@ impl Primitive for Bounds {
         let mut tnear = f64::NEG_INFINITY;
         let mut tfar = f64::INFINITY;
 
-        let mut normal = Vector::zero();
+        // The axis of the near and far planes
+        let mut near_axis = 0;
+        let mut far_axis = 0;
 
         // i ranges from X to Z
         for i in 0..3 {
@@ -59,9 +61,9 @@ impl Primitive for Bounds {
             let tmin = t1.min(t2);
             let tmax = t1.max(t2);
 
-            if tmin > tnear {
-                normal = Vector::new(CUBE_NORMALS[i][0], CUBE_NORMALS[i][1], CUBE_NORMALS[i][2]);
-            }
+            // Check for better intersection axes
+            if tmin > tnear { near_axis = i }
+            if tmax < tfar { far_axis = i }
 
             tnear = tnear.max(tmin);
             tfar = tfar.min(tmax);
@@ -70,13 +72,19 @@ impl Primitive for Bounds {
         // Check if out of bounds
         if tnear > tfar || tfar <= 0.0 { return None }
 
-        // Intersection, check if it happens behind the ray and set t accordingly
-        let t = if tnear < 0.0 { tfar } else { tnear };
+        // Intersection, check if it happens behind the ray and set t and
+        // differentials accordingly
+        let (t, axis) = if tnear <= 0.0 {
+            (tfar, far_axis)
+        } else {
+            (tnear, near_axis)
+        };
+
         if t >= interaction.t { return None }
 
         interaction.t = t;
-        // interaction.p = ray.origin + ray.d * t;
-        interaction.n = normal::Normal3(normal).face_forward(ray.d);
+        interaction.dpdu = CUBE_DIFFERENTIALS[axis].0;
+        interaction.dpdv = CUBE_DIFFERENTIALS[axis].1;
 
         Some(self)
     }
@@ -103,11 +111,12 @@ impl Primitive for Bounds {
 
 impl Shape for Bounds {}
 
-// Vectors representing the cube normals
-const CUBE_NORMALS: [[f64; 3]; 3] = [
-    [1.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0],
-    [0.0, 0.0, 1.0]
+// Vectors representing parametric differentials ∂p/∂u and ∂p/∂v for cube
+// intersections on the x, y and z slabs, respectively
+const CUBE_DIFFERENTIALS: [(Vector, Vector); 3] = [
+    (Vector { x: 0.0, y: 1.0, z: 0.0 }, Vector { x: 0.0, y: 0.0, z: 1.0 }),
+    (Vector { x: 1.0, y: 0.0, z: 0.0 }, Vector { x: 0.0, y: 0.0, z: 1.0 }),
+    (Vector { x: 1.0, y: 0.0, z: 0.0 }, Vector { x: 0.0, y: 1.0, z: 0.0 })
 ];
 
 #[cfg(test)]
@@ -121,8 +130,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 
     #[test]
@@ -132,8 +142,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 
     #[test]
@@ -143,8 +154,9 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 
     #[test]
@@ -154,7 +166,8 @@ mod test {
         let mut interaction = SurfaceInteraction::default();
 
         assert!(cube.intersect(&ray, &mut interaction).is_some());
+        interaction.commit(&ray);
         assert_eq!(interaction.t, 1.0);
-        assert_eq!(interaction.n, Normal::new(0.0, 0.0, -1.0));
+        assert_eq!(interaction.n(), Vector::new(0.0, 0.0, -1.0));
     }
 }

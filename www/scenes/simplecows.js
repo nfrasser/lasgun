@@ -5,7 +5,7 @@ const scene = lasgun.scene({
     eye: [0.0, 2.0, 30.0],
     view: [0.0, 0.0, -1.0],
     up: [0.0, 1.0, 0.0],
-    ambient: [0.4, 0.4, 0.4],
+    ambient: [0.2, 0.2, 0.2],
     width: 512,
     height: 512,
     fov: 50.0,
@@ -21,9 +21,9 @@ scene.add_point_light({
     falloff: [1.0, 0.0, 0.0]
 })
 
-let stone = scene.add_phong_material({ kd: [0.8, 0.7, 0.7], ks: [0.0, 0.0, 0.0], shininess: 0 })
-let grass = scene.add_phong_material({ kd: [0.1, 0.7, 0.1], ks: [0.0, 0.0, 0.0], shininess: 0 })
-let hide = scene.add_phong_material({ kd: [0.84, 0.6, 0.53], ks: [0.3, 0.3, 0.3], shininess: 20 })
+let stone = scene.add_metal_material({ eta: [0.01, 0.01, 0.01], k: [0.7, 0.7, 0.7], roughness: 0.5 })
+let grass = scene.add_plastic_material({ kd: [0.1, 0.7, 0.1], ks: [0.0, 0.0, 0.0], roughness: 0.75 })
+let hide = scene.add_plastic_material({ kd: [0.84, 0.6, 0.53], ks: [0.3, 0.3, 0.3], roughness: 0.05 })
 
 let planemesh = scene.add_obj(await lasgun.mesh('./meshes/plane.obj'))
 let buckyballmesh = scene.add_obj(await lasgun.mesh('./meshes/buckyball.obj'))

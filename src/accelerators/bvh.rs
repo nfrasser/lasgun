@@ -423,8 +423,7 @@ impl<'s> BVHAccel<'s> {
     }
 
     // a is the lifetime of the arena as usual
-    // v is the lifetime of the parent LinearBVHNode vec
-    fn flatten_bvh_tree<'a, 'v>(
+    fn flatten_bvh_tree<'a>(
         &mut self,
         node: &'a BVHBuildNode<'a>,
         offset: &mut usize
@@ -504,8 +503,7 @@ impl<'s> Primitive for BVHAccel<'s> {
 
         // Transform normal before sending it back
         if let Some(_) = hit {
-            interaction.t = isect.t;
-            interaction.n = self.transform.transform_normal(isect.n);
+            *interaction = self.transform.transform_surface_interaction(&isect);
 
             // If the uniform node material is available (i.e., for triangle
             // meshes where every triangle uses the same material), assign that

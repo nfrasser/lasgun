@@ -9,18 +9,29 @@ pub struct SurfaceInteraction<N: BaseFloat> {
     /// Parametric distance to point of interaction based on ray origin
     pub t: N,
 
-    /// Normal at interaction surface
-    pub n: Normal3<N>,
+    /// Parametric differential ∂p/∂u at point of interaction
+    pub dpdu: Vector3<N>,
+
+    /// Parametric differential ∂p/∂v at point of interaction
+    pub dpdv: Vector3<N>,
 
     // Index-based reference to a material definition in the scene settings
     pub material: Option<MaterialRef>,
 
+    /// Normal at interaction surface
+    n: Normal3<N>,
+
     /// Point of interaction in world coordinates
     p: Point3<N>,
 
+    /// A small vector used to offset floating-point error from the point of
+    /// interaction. Used to avoid speckling during the lighting/integration
+    /// step. Parallel to the normal vector n.
+    p_err: Vector3<N>,
+
     /// Incident direction vector at point of interaction based on ray
     /// definition
-    d: Vector3<N>
+    d: Vector3<N>,
 }
 
 impl<N: BaseFloat> SurfaceInteraction<N> {
@@ -28,11 +39,13 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// Initialize a basic new surface interaction. Note that this interaction
     /// is not valid until commit is called with a `Ray` instance (`p()` and
     /// `d()` methods return zero-values)
-    pub fn new(t: N, n: Normal3<N>, material: Option<MaterialRef>) -> SurfaceInteraction<N> {
+    pub fn new(t: N, dpdu: Vector3<N>, dpdv: Vector3<N>, material: Option<MaterialRef>) -> SurfaceInteraction<N> {
         SurfaceInteraction {
-            t, n, material,
+            t, dpdu, dpdv, material,
+            n: Normal3::zero(),
             p: Point3::from_value(N::zero()),
-            d: Vector3::from_value(N::zero())
+            p_err: Vector3::zero(),
+            d: Vector3::zero()
         }
     }
 
@@ -41,10 +54,13 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     pub fn default() -> SurfaceInteraction<N> {
         SurfaceInteraction {
             t: N::infinity(),
-            n: Normal3::new(N::zero(), N::zero(), N::zero()),
+            dpdu: Vector3::zero(),
+            dpdv: Vector3::zero(),
             material: None,
-            d: Vector3::zero(),
-            p: Point3::from_value(N::zero())
+            n: Normal3::zero(),
+            p: Point3::from_value(N::zero()),
+            p_err: Vector3::zero(),
+            d: Vector3::zero()
         }
     }
 
@@ -54,14 +70,16 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// interaction is valid once this method is called. Also normalizes
     /// everything.
     pub fn commit(&mut self, ray: &Ray3<N>) {
-        self.n.normalize();
+        self.dpdu = self.dpdu.normalize();
+        self.dpdv = self.dpdv.normalize();
+        self.n = Normal3(self.dpdu.cross(self.dpdv).normalize()).face_forward(ray.d);
 
         // Add a small fraction of the normal to avoid speckling due to
         // floating point errors (the calculated point ends up inside the
         // geometric primitive).
         let err = N::epsilon() * (N::one() + N::one()).powi(16);
-        self.p = ray.origin + ray.d*self.t
-            + self.n.to_vec() * err;
+        self.p = ray.origin + ray.d*self.t;
+        self.p_err = self.n.0 * err;
 
         self.d = ray.d.normalize();
     }
@@ -69,6 +87,12 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
     /// Has in interaction been successfully found
     pub fn exists(&self) -> bool {
         return self.material.is_some()
+    }
+
+    /// Normal at point of intersection. Must be committed
+    pub fn n(&self) -> Vector3<N> {
+        debug_assert!(self.valid());
+        self.n.0
     }
 
     /// Incident direction vector. self must be committed
@@ -83,9 +107,16 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
         self.p
     }
 
+    /// Floating point error offset from the intersection point p, parallel to
+    /// normal n.
+    pub fn p_err(&self) -> Vector3<N> {
+        debug_assert!(self.valid());
+        self.p_err
+    }
+
     /// Whether this is a valid surface interaction (i.e., has been committed
     /// with a ray)
     fn valid(&self) -> bool {
-        self.d != Vector3::zero()
+        self.n.0 != Vector3::zero()
     }
 }

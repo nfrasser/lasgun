@@ -5,7 +5,7 @@ const scene = lasgun.scene({
   eye: [0.0, 0.0, 800.0],
   view: [0.0, 0.0, -800.0],
   up: [0.0, 1.0, 0.0],
-  ambient: [0.3, 0.3, 0.3],
+  ambient: [0.2, 0.2, 0.2],
   width: 512,
   height: 512,
   fov: 50.0,
@@ -13,10 +13,10 @@ const scene = lasgun.scene({
 })
 
 // Available Materials
-let mat0 = scene.add_phong_material({ kd: [0.7, 1.0, 0.7], ks: [0.5, 0.7, 0.5], shininess: 25 })
-let mat1 = scene.add_phong_material({ kd: [0.5, 0.5, 0.5], ks: [0.5, 0.7, 0.5], shininess: 25 })
-let mat2 = scene.add_phong_material({ kd: [1.0, 0.6, 0.1], ks: [0.5, 0.7, 0.5], shininess: 25 })
-let mat3 = scene.add_phong_material({ kd: [0.7, 0.6, 1.0], ks: [0.5, 0.4, 0.8], shininess: 25 })
+let mat0 = scene.add_plastic_material({ kd: [0.7, 1.0, 0.7], ks: [0.5, 0.7, 0.5], roughness: 0.5 })
+let mat1 = scene.add_plastic_material({ kd: [0.5, 0.5, 0.5], ks: [0.5, 0.7, 0.5], roughness: 0.5 })
+let mat2 = scene.add_plastic_material({ kd: [1.0, 0.6, 0.1], ks: [0.5, 0.7, 0.5], roughness: 0.5 })
+let mat3 = scene.add_plastic_material({ kd: [0.7, 0.6, 1.0], ks: [0.5, 0.4, 0.8], roughness: 0.5 })
 
 let smstdodeca = scene.add_obj(await lasgun.mesh("./meshes/smstdodeca.obj"))
 
