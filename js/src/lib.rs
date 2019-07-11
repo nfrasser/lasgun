@@ -51,20 +51,77 @@ extern {
     #[wasm_bindgen(method, getter, structural)]
     pub fn threads(this: &Settings) -> Option<u8>;
 
-    /// Duck-type Phong material settings
+    /// Duck-type Plastic material settings
     /// For JavaScript objects that have the form
     /// {
     ///     kd: [number, number, number],
     ///     ks: [number, number, number],
-    ///     shininess: number // (i32)
+    ///     roughness?: number // f64, with range [0, 1], defaults to 0
     /// }
-    pub type Phong;
+    pub type Plastic;
     #[wasm_bindgen(method, getter, structural)]
-    pub fn kd(this: &Phong) -> Box<[JsValue]>; // Vector
+    pub fn kd(this: &Plastic) -> Box<[JsValue]>; // Vector
     #[wasm_bindgen(method, getter, structural)]
-    pub fn ks(this: &Phong) -> Box<[JsValue]>; // Vector
+    pub fn ks(this: &Plastic) -> Box<[JsValue]>; // Vector
     #[wasm_bindgen(method, getter, structural)]
-    pub fn shininess(this: &Phong) -> i32;
+    pub fn roughness(this: &Plastic) -> Option<f64>;
+
+    /// Duck-type Matte material settings
+    /// For JavaScript objects that have the form
+    /// {
+    ///     kd: [number, number, number],
+    ///     sigma?: number // f64 with range [0, 1]
+    /// }
+    pub type Matte;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn kd(this: &Matte) -> Box<[JsValue]>; // Vector
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn sigma(this: &Matte) -> Option<f64>;
+
+    /// Duck-type Metal material settings
+    /// For JavaScript objects that have the form
+    /// {
+    ///     eta: [number, number, number],
+    ///     k: [number, number, number],
+    ///     roughness?: number // (f64, with range [0, 1])
+    ///     u_roughness?: number // (f64, with range [0, 1])
+    ///     v_roughness?: number // (f64, with range [0, 1])
+    /// }
+    pub type Metal;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn eta(this: &Metal) -> Box<[JsValue]>; // Vector
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn k(this: &Metal) -> Box<[JsValue]>; // Vector
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn roughness(this: &Metal) -> Option<f64>;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn u_roughness(this: &Metal) -> Option<f64>;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn v_roughness(this: &Metal) -> Option<f64>;
+
+    /// Duck-type Mirror material settings
+    /// For JavaScript objects that have the form
+    /// {
+    ///     kr?: [number, number, number], (defaults to [1, 1, 1])
+    /// }
+    pub type Mirror;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn kr(this: &Mirror) -> Option<Box<[JsValue]>>; // Vector
+
+    /// Duck-type Glass material settings
+    /// For JavaScript objects that have the form
+    /// {
+    ///     kr?: [number, number, number], // defaults to [1, 1, 1]
+    ///     kt?: [number, number, number], // defaults to [1, 1, 1]
+    ///     eta?: number // f64, with range [0, 1], defaults to 1.5
+    /// }
+    pub type Glass;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn kr(this: &Plastic) -> Option<Box<[JsValue]>>; // Vector
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn kt(this: &Plastic) -> Option<Box<[JsValue]>>; // Vector
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn eta(this: &Plastic) -> Option<f64>;
 
     /// Duck-type Point Light settings
     /// For JavaScript objects that have the form
@@ -250,11 +307,50 @@ impl Scene {
         self.data.set_radial_background(inner, outer)
     }
 
-    pub fn add_phong_material(&mut self, settings: &Phong) -> MaterialRef {
+    pub fn add_plastic_material(&mut self, settings: &Plastic) -> MaterialRef {
         let kd = utils::to_vec3f(settings.kd());
         let ks = utils::to_vec3f(settings.ks());
-        let shininess = settings.shininess();
-        MaterialRef(self.data.add_phong_material(kd, ks, shininess))
+        let roughness = settings.roughness().unwrap_or(0.0);
+        MaterialRef(self.data.add_plastic_material(kd, ks, roughness))
+    }
+
+    pub fn add_matte_material(&mut self, settings: &Matte) -> MaterialRef {
+        let kd = utils::to_vec3f(settings.kd());
+        let sigma = settings.sigma().unwrap_or(0.0);
+        MaterialRef(self.data.add_matte_material(kd, sigma))
+    }
+
+    pub fn add_metal_material(&mut self, settings: &Metal) -> MaterialRef {
+        let eta = utils::to_vec3f(settings.eta());
+        let k = utils::to_vec3f(settings.k());
+        let (mut u_roughness, mut v_roughness) = (0.0, 0.0);
+        if let Some(roughness) = settings.roughness() {
+            u_roughness = roughness;
+            v_roughness = roughness;
+        }
+
+        if let Some(u) = settings.u_roughness() { u_roughness = u }
+        if let Some(v) = settings.v_roughness() { v_roughness = v }
+
+        MaterialRef(self.data.add_metal_material(eta, k, u_roughness, v_roughness))
+    }
+
+    pub fn add_mirror_material(&mut self, settings: &Mirror) -> MaterialRef {
+        let kr = if let Some(value) = settings.kr() {
+            utils::to_vec3f(value)
+        } else {
+            [1.0, 1.0, 1.0]
+        };
+        MaterialRef(self.data.add_mirror_material(kr))
+    }
+
+    pub fn add_glass_material(&mut self, settings: &Plastic) -> MaterialRef {
+        let kr = if let Some(val) = settings.kr()
+            { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
+        let kt = if let Some(val) = settings.kt()
+            { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
+        let eta = if let Some(val) = settings.eta() { val } else { 1.5 };
+        MaterialRef(self.data.add_glass_material(kr, kt, eta))
     }
 
     pub fn add_obj(&mut self, obj: &str) -> ObjRef {
