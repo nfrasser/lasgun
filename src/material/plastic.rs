@@ -1,5 +1,5 @@
 use crate::space::*;
-use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}, Accel};
+use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}};
 use super::Material;
 
 pub struct Plastic {

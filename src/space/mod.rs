@@ -33,12 +33,6 @@ pub fn max_dimension(v: &Vector) -> usize {
 }
 
 #[inline]
-pub fn min_dimension(v: &Vector) -> usize {
-    if v.x < v.y { if v.x < v.z { 0 } else { 2 } }
-    else { if v.y < v.z { 1 } else { 2 } }
-}
-
-#[inline]
 pub fn coordinate_system(v1: &Vector) -> (Vector, Vector) {
     let v2 = if v1.x.abs() > v1.y.abs() {
         Vector::new(-v1.z, 0.0, v1.x) / (v1.x * v1.x + v1.z * v1.z).sqrt()

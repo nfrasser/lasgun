@@ -209,10 +209,11 @@ impl<'a> Primitive for Triangle<'a> {
 
         // TODO: ensure that computed triangle t is conservatively greater than 0
 
+        // TODO: shading normals
         // 3. Compute triangle partial derivatives
-        let duv02 = (-1.0, -1.0); let duv12 = (0.0, -1.0);
-        let dp02 = p0 - p2; let dp12 = p1 - p2;
-        let determinant = duv02.0 * duv12.1 - duv02.1 * duv12.0;
+        // let duv02 = (-1.0, -1.0); let duv12 = (0.0, -1.0);
+        // let dp02 = p0 - p2; let dp12 = p1 - p2;
+        // let determinant = duv02.0 * duv12.1 - duv02.1 * duv12.0;
         let (dpdu, dpdv) = coordinate_system(&(p2 - p1).cross(p1 - p0));
         // let (dpdu, dpdv) = if determinant == 0.0 {
         //     coordinate_system(&(p2 - p1).cross(p1 - p0))

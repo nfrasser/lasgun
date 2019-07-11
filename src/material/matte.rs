@@ -14,10 +14,6 @@ impl Matte {
     pub fn new(kd: Color, sigma: f64) -> Matte {
         Matte { kd, sigma: sigma.max(0.0).min(90.0) }
     }
-
-    pub fn quick(kd: Color) -> Matte {
-        Matte::new(kd, 0.0)
-    }
 }
 
 impl Material for Matte {

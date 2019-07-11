@@ -10,11 +10,7 @@ pub struct Metal {
 }
 
 impl Metal {
-    pub fn new(eta: Color, k: Color, roughness: f64) -> Metal {
-        Metal { eta, k, u_roughness: roughness, v_roughness: roughness }
-    }
-
-    pub fn new_uv(eta: Color, k: Color, u_roughness: f64, v_roughness: f64) -> Metal {
+    pub fn new(eta: Color, k: Color, u_roughness: f64, v_roughness: f64) -> Metal {
         Metal { eta, k, u_roughness, v_roughness }
     }
 }

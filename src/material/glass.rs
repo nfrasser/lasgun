@@ -13,15 +13,12 @@ pub struct Glass {
     eta: f64,
 
     /// Optional microfacet distribution depending on given roughness parameters
+    /// TODO: This isn't working
     distribution: Option<MicrofacetDistribution>
 }
 
 impl Glass {
-    pub fn new(kr: Color, kt: Color, eta: f64, roughness: f64) -> Glass {
-        Self::new_uv(kr, kt, eta, roughness, roughness)
-    }
-
-    pub fn new_uv(kr: Color, kt: Color, eta: f64, u_roughness: f64, v_roughness: f64) -> Glass {
+    pub fn new(kr: Color, kt: Color, eta: f64, u_roughness: f64, v_roughness: f64) -> Glass {
         let distribution = if u_roughness == 0.0 && v_roughness == 0.0 {
             None
         } else {
@@ -52,7 +49,7 @@ impl Material for Glass {
             let bxdf = if let Some(distribution) = self.distribution {
                 BxDF::microfacet_transmission(self.kt, 1.0, self.eta, TransportMode::Importance, distribution)
             } else {
-                BxDF::specular_transmission(self.kt, 1.0, self.eta, TransportMode::Importance)
+                BxDF::specular_transmission(self.kt, 1.0, self.eta)
             };
             bsdf.add(bxdf)
         };

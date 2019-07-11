@@ -68,9 +68,12 @@ pub enum BxDF {
     /// With specular transmission.
     SpecularTransmission(specular::Transmission),
 
+    /*
     /// Combined specular reflection and transmission, used with Monte-Carlo
     /// integrator.
+    /// TODO
     Specular(specular::Combined),
+    */
 
     /// Less physically-accurate Lambertain diffuse, for when Oren-Nayar sigma
     /// parameter is zero
@@ -96,15 +99,18 @@ impl BxDF {
         BxDF::SpecularReflection(reflection)
     }
 
-    pub fn specular_transmission(t: Color, eta_a: f64, eta_b: f64, mode: TransportMode) -> BxDF {
-        let transmission = specular::Transmission::new(t, eta_a, eta_b, mode);
+    pub fn specular_transmission(t: Color, eta_a: f64, eta_b: f64) -> BxDF {
+        let transmission = specular::Transmission::new(t, eta_a, eta_b);
         BxDF::SpecularTransmission(transmission)
     }
 
+    /*
+    /// TODO
     pub fn specular(r: Color, t: Color, eta_a: f64, eta_b: f64, mode: TransportMode) -> BxDF {
         let specular = specular::Combined::new(r, t, eta_a, eta_b, mode);
         BxDF::Specular(specular)
     }
+    */
 
     pub fn quick_diffuse(r: Color) -> BxDF {
         BxDF::QuickDiffuse(diffuse::Lambertian::new(r))
@@ -135,7 +141,7 @@ impl BxDF {
             BxDF::Constant(_) => BxDFType::NONE,
             BxDF::SpecularReflection(_) => BxDFType::REFLECTION | BxDFType::SPECULAR,
             BxDF::SpecularTransmission(_) => BxDFType::TRANSMISSION | BxDFType::SPECULAR,
-            BxDF::Specular(_) => BxDFType::REFLECTION | BxDFType::TRANSMISSION | BxDFType::SPECULAR,
+            // BxDF::Specular(_) => BxDFType::REFLECTION | BxDFType::TRANSMISSION | BxDFType::SPECULAR,
             BxDF::QuickDiffuse(_) => BxDFType::REFLECTION | BxDFType::DIFFUSE,
             BxDF::Diffuse(_) => BxDFType::REFLECTION | BxDFType::DIFFUSE,
             BxDF::MicrofacetReflection(_) => BxDFType::REFLECTION | BxDFType::GLOSSY,

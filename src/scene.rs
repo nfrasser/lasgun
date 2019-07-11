@@ -194,7 +194,7 @@ impl Scene {
     pub fn add_metal_material(&mut self, eta: [f64; 3], k: [f64; 3], u_roughness: f64, v_roughness: f64) -> MaterialRef {
         let eta = Color::new(eta[0], eta[1], eta[2]);
         let k = Color::new(k[0], k[1], k[2]);
-        let material = Metal::new_uv(eta, k, u_roughness, v_roughness);
+        let material = Metal::new(eta, k, u_roughness, v_roughness);
         self.add_material(Box::new(material))
     }
 
@@ -205,13 +205,10 @@ impl Scene {
     }
 
     pub fn add_glass_material(&mut self, kr: [f64; 3], kt: [f64; 3], eta: f64) -> MaterialRef {
-        self.add_rough_glass_material(kr, kt, eta, 0.0, 0.0)
-    }
-
-    pub fn add_rough_glass_material(&mut self, kr: [f64; 3], kt: [f64; 3], eta: f64, u_roughness: f64, v_roughness: f64) -> MaterialRef {
         let kr = Color::new(kr[0], kr[1], kr[2]);
         let kt = Color::new(kt[0], kt[1], kt[2]);
-        let material = Glass::new_uv(kr, kt, eta, u_roughness, v_roughness);
+        // TODO: Roughness isn't working
+        let material = Glass::new(kr, kt, eta, 0.0, 0.0);
         self.add_material(Box::new(material))
     }
 
@@ -219,7 +216,6 @@ impl Scene {
         let light = PointLight::new(position, intensity, falloff);
         self.lights.push(Box::new(light))
     }
-
 
     pub fn add_mesh(&mut self, mesh: Mesh) -> ObjRef {
         let reference = ObjRef(self.meshes.len());

@@ -1,5 +1,5 @@
 use crate::space::*;
-use super::{util::*, fresnel::Substance, TransportMode, BxDFSample};
+use super::{util::*, fresnel::Substance, BxDFSample};
 
 /// Describes physically plausible specular reflection with the Substance model to
 /// compute fraction of light that is reflected.
@@ -29,18 +29,18 @@ pub struct Transmission {
     t: Color,
     eta_a: f64,
     eta_b: f64,
-    mode: TransportMode,
+    // mode: TransportMode, // TODO
     substance: Substance
 }
 impl Transmission {
-    pub fn new(t: Color, eta_a: f64, eta_b: f64, mode: TransportMode) -> Transmission {
+    pub fn new(t: Color, eta_a: f64, eta_b: f64) -> Transmission {
         Transmission {
-            t, eta_a, eta_b, mode,
+            t, eta_a, eta_b,
             substance: Substance::Dielectric(eta_a, eta_b)
         }
     }
 
-    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector, _sample: &Point2f) -> BxDFSample {
         // Determine which eta is incident and which is transmitted
         let entering = cos_theta(wo) > 0.0;
         let (eta_i, eta_t) = if entering {
@@ -64,7 +64,9 @@ impl Transmission {
 }
 
 
+/*
 /// Combined specular reflection and transmission parameters
+/// TODO
 #[derive(Copy, Clone)]
 pub struct Combined {
     r: Color,
@@ -83,3 +85,4 @@ impl Combined {
     }
     // TODO: BxDFSample F
 }
+*/
