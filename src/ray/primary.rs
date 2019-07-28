@@ -5,7 +5,7 @@ use crate::{
     core::bxdf,
     core::bxdf::BxDFType,
     primitive::Primitive,
-    interaction::{BSDF, SurfaceInteraction},
+    interaction::{BSDF, SurfaceInteraction, RayIntersection},
     scene::Scene,
     Accel,
 };
@@ -79,24 +79,23 @@ impl PrimaryRay {
 
     /// Whitted colorization strategy
     fn li(&self, root: &Accel, ray: &Ray, depth: u32) -> Color {
-        let mut interaction = SurfaceInteraction::default();
-        root.intersect(&ray, &mut interaction);
+        let mut isect = RayIntersection::default();
+        let shape = root.intersect(&ray, &mut isect);
+        if shape.is_none() {
+            return root.scene.background.bg(&ray.d.normalize())
+        }
+        let shape = shape.unwrap();
+        let material = shape.material().unwrap_or(isect.material);
 
         // Calculates the actual intersection point and normalizes.
         // Required before getting p(), d(), etc.
-        interaction.commit(&ray);
-
-        // Return background if an intersection wasn't found
-        if interaction.material.is_none() {
-            return root.scene.background.li(&interaction)
-        }
-        let material = root.scene.material_or_background(&interaction.material);
+        let interaction = SurfaceInteraction::from(ray, &isect);
 
         // Compute emitted and reflected light at intersection point
         // Initialize common vars
-        let n = interaction.n();
-        let wo = -interaction.d(); // Outgoing direction
-        let p = interaction.p() + interaction.p_err();
+        let n = interaction.ng.0; // Geometric shading normal vector
+        let wo = interaction.wo; // Outgoing direction
+        let p = interaction.p + interaction.p_err;
 
         // Compute scattering functions
         let bsdf = material.scattering(&interaction);
@@ -140,23 +139,24 @@ impl PrimaryRay {
 
     fn specular_reflect(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
         // Compute specular reflection direction wi and BSDF value
-        let wo = -interaction.d();
+        let wo = interaction.wo;
         let flags = BxDFType::REFLECTION | BxDFType::SPECULAR;
 
         // TODO: Use actual sample point instead of (0.5, 0.5)
         let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
 
         // Return contribution of specular reflection
-        let ns = interaction.n();
+        let ns = interaction.ns.0;
 
         // Zero checks to avoid unnecessary computation
         if sample.pdf <= 0.0
         || sample.spectrum == Color::zero()
-        || sample.wi.dot(ns) <= 0.0 { return Color::zero() };
+        || sample.wi.dot(ns) <= 0.0
+        { return Color::zero() };
 
         // Compute ray for specular reflection
         let wr = bxdf::util::reflect(&wo, &ns);
-        let r = Ray::new(interaction.p() + interaction.p_err(), wr);
+        let r = Ray::new(interaction.p + interaction.p_err, wr);
         let li = self.li(root, &r, depth + 1);
         let output = sample.spectrum.mul_element_wise(li);
 
@@ -165,14 +165,14 @@ impl PrimaryRay {
 
     fn specular_transmit(&self, root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF, depth: u32) -> Color {
         // Compute specular reflection direction wi and BSDF value
-        let wo = -interaction.d();
+        let wo = interaction.wo;
         let flags = BxDFType::TRANSMISSION | BxDFType::SPECULAR;
 
         // TODO: Use actual sample point instead of (0.5, 0.5)
         let sample = bsdf.sample_f(&wo, &Point2f::new(0.5, 0.5), flags);
         let (spectrum, wi, pdf) = (sample.spectrum, sample.wi, sample.pdf);
 
-        let ns = interaction.n();
+        let ns = interaction.ns.0;
 
         // Zero checks to avoid unnecessary computation
         if pdf <= 0.0
@@ -182,7 +182,7 @@ impl PrimaryRay {
         }
 
         // Compute ray for specular refraction
-        let r = Ray::new(interaction.p() - interaction.p_err(), wi);
+        let r = Ray::new(interaction.p - interaction.p_err, wi);
         let li = self.li(root, &r, depth + 1);
         let output = spectrum.mul_element_wise(li) * wi.dot(ns).abs() / sample.pdf;
 
@@ -191,4 +191,4 @@ impl PrimaryRay {
 }
 
 // TODO: Parametrize
-const MAX_DEPTH: u32 = 3;
+const MAX_DEPTH: u32 = 4;

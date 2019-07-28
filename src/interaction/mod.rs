@@ -21,4 +21,5 @@ impl Interaction {
 pub mod surface;
 pub mod bsdf;
 pub type SurfaceInteraction = surface::SurfaceInteraction<f64>;
+pub type RayIntersection = surface::RayIntersection<f64>;
 pub use self::bsdf::BSDF;

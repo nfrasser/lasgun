@@ -3,7 +3,7 @@ use crate::space::*;
 use super::{util::*, sampling::*, fresnel::Substance, TransportMode, BxDFSample};
 
 /// Trowbridge-Reitz microfacet distribution model.
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Distribution {
     pub alphax: f64,
     pub alphay: f64

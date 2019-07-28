@@ -1,15 +1,14 @@
 // use std::ops::Index;
-use std::f64;
+use std::{f64, path::Path, io::{self, BufRead, BufReader}, fs::File};
 use obj;
 
 use crate::{
     space::*,
     ray::Ray,
     primitive::{Primitive, OptionalPrimitive},
-    interaction::SurfaceInteraction,
+    interaction::RayIntersection,
+    Material
 };
-
-use super::Shape;
 
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
@@ -17,9 +16,11 @@ pub type Obj = obj::Obj<'static, TriangleIndex>;
 #[derive(Debug, Copy, Clone)]
 pub struct TriangleIndex(pub u32, pub u32, pub u32);
 
-/// A triangle references its parent mesh and the index within the faces array. The triangle's
-/// lifetime depends on the mesh it references. This implementation ensures the smallest possible
-/// triangle implementation when storing large triangle meshes in memory.
+/// A triangle references its parent mesh and the index within the faces array.
+/// The triangle's lifetime depends on the mesh it references.
+///
+/// This implementation ensures the smallest possible triangle implementation
+/// when storing large triangle meshes in memory (16 bytes on 64 bit systems)
 #[derive(Copy, Clone)]
 pub struct Triangle<'a> {
 
@@ -70,6 +71,48 @@ impl<'a> Triangle<'a> {
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
+    #[inline]
+    pub fn n0(&self) -> Normal {
+        debug_assert!(self.has_n());
+        let n = self.obj.normal[self.poly().0 as usize];
+        Normal::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    #[inline]
+    pub fn n1(&self) -> Normal {
+        debug_assert!(self.has_n());
+        let n = self.obj.normal[self.poly().1 as usize];
+        Normal::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    #[inline]
+    pub fn n2(&self) -> Normal {
+        debug_assert!(self.has_n());
+        let n = self.obj.normal[self.poly().2 as usize];
+        Normal::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    #[inline]
+    pub fn uv0(&self) -> Point2f {
+        debug_assert!(self.has_uv());
+        let uv = self.obj.texture[self.poly().0 as usize];
+        Point2f::new(uv[0].into(), uv[1].into())
+    }
+
+    #[inline]
+    pub fn uv1(&self) -> Point2f {
+        debug_assert!(self.has_uv());
+        let uv = self.obj.texture[self.poly().1 as usize];
+        Point2f::new(uv[0].into(), uv[1].into())
+    }
+
+    #[inline]
+    pub fn uv2(&self) -> Point2f {
+        debug_assert!(self.has_uv());
+        let uv = self.obj.texture[self.poly().2 as usize];
+        Point2f::new(uv[0].into(), uv[1].into())
+    }
+
     /// Get the point at the given index
     #[inline]
     pub fn p(&self, i: usize) -> Point {
@@ -80,6 +123,18 @@ impl<'a> Triangle<'a> {
             2 => self.p2(),
             _ => Point::from_value(f64::NAN)
         }
+    }
+
+    // Whether this mesh has normals mapped
+    #[inline]
+    pub fn has_n(&self) -> bool {
+        self.obj.normal.len() > 0
+    }
+
+    // Whether this mesh has UV texture coordinates mapped
+    #[inline]
+    pub fn has_uv(&self) -> bool {
+        self.obj.texture.len() > 0
     }
 
     #[inline]
@@ -115,7 +170,7 @@ impl<'a> Primitive for Triangle<'a> {
         Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
+    fn intersect(&self, ray: &Ray, isect: &mut RayIntersection) -> OptionalPrimitive {
         // 1. Get triangle vertices
         let (p0, p1, p2) = (self.p0(), self.p1(), self.p2());
 
@@ -205,7 +260,7 @@ impl<'a> Primitive for Triangle<'a> {
         // let b1 = e1 * invdet;
         // let b2 = e2 * invdet;
         let t = tscaled * invdet;
-        if t >= interaction.t { return None };
+        if t >= isect.t { return None };
 
         // TODO: ensure that computed triangle t is conservatively greater than 0
 
@@ -231,11 +286,154 @@ impl<'a> Primitive for Triangle<'a> {
 
         // 7. fill in Intersection from triangle hit
         // There is for sure an intersection at this point, compute the normal from original points
-        interaction.t = t;
-        interaction.dpdu = dpdu;
-        interaction.dpdv = dpdv;
+        *isect = RayIntersection::new(t, Point2f::new(0.0, 0.0), dpdu, dpdv);
         Some(self)
+    }
+
+    // TODO: Grab a material from the loaded Mtl libraries if one is available
+    fn material(&self) -> Option<Material> { None }
+}
+
+/// Structure that allows using a obj as an iterator
+/// Each item in the iterator is a triangle that references the parent obj
+pub struct TriangleIterator<'a> {
+    obj: &'a Obj,
+    // Current iteration indeces
+    size_hint: usize,
+    object_index: usize,
+    group_index: usize,
+    poly_index: usize
+}
+
+impl<'a> TriangleIterator<'a> {
+    pub fn new(obj: &'a Obj) -> TriangleIterator<'a> {
+        TriangleIterator {
+            obj,
+            size_hint: face_count(obj),
+            object_index: 0,
+            group_index: 0,
+            poly_index: 0,
+        }
     }
 }
 
-impl<'a> Shape for Triangle<'a> {}
+impl<'a> Iterator for TriangleIterator<'a> {
+    type Item = Triangle<'a>;
+
+    fn next(&mut self) -> Option<Triangle<'a>> {
+        if self.size_hint == 0 { return None };
+        let triangle = Triangle::new(
+            &self.obj,
+            self.object_index as u16,
+            self.group_index as u16,
+            self.poly_index as u32);
+
+        self.poly_index += 1;
+
+        if self.poly_index == self.obj.objects[self.object_index].groups[self.group_index].polys.len() {
+            self.poly_index = 0;
+            self.group_index += 1;
+        }
+
+        if self.group_index == self.obj.objects[self.object_index].groups.len() {
+            self.group_index = 0;
+            self.object_index += 1;
+        }
+
+        if self.object_index == self.obj.objects.len() {
+            self.size_hint = 0;
+        } else {
+            self.size_hint -= 1;
+        }
+
+        return Some(triangle)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.size_hint, Some(self.size_hint))
+    }
+}
+
+/// Load from an object file at the given path
+#[inline]
+pub fn load_obj(path: &Path) -> io::Result<Obj> {
+    let f = File::open(path)?;
+    let mut obj = Obj::load_buf(&mut BufReader::new(f))?;
+    // unwrap is safe as we've read this file before
+    obj.path = path.parent().unwrap().to_owned();
+    Ok(obj)
+}
+
+/// Parse the string contents of a .obj file into a `Obj` instance.
+#[inline]
+pub fn parse_obj(slice: &str) -> io::Result<Obj> {
+    let mut buf = io::Cursor::new(slice);
+    obj_from_buf(&mut buf)
+}
+
+/// Parse the given readable buffer of a .obj file into a `Obj` instance.
+#[inline]
+pub fn obj_from_buf<B>(input: &mut B) -> io::Result<Obj> where B: BufRead {
+    let obj = Obj::load_buf(input)?;
+    Ok(obj)
+}
+
+/// Number of faces on this obj
+pub fn face_count(obj: &Obj) -> usize {
+    obj.objects.iter().fold(0, |size, object| {
+        object.groups.iter().fold(size, |size, group| {
+            size + group.polys.len()
+        })
+    })
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn plane_intersection() {
+        let plane = parse_obj(r#"o plane
+v -1 0 -1
+v 1 0 -1
+v 1 0 1
+v -1 0 1
+
+f 1 2 3
+f 1 3 4
+"#
+        ).unwrap();
+
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
+        let mut isect = RayIntersection::default();
+        for triangle in TriangleIterator::new(&plane) {
+            triangle.intersect(&ray, &mut isect);
+        }
+
+        assert_eq!(isect.t, 1.0);
+        assert_eq!(isect.ng(), Vector::unit_y());
+    }
+
+    #[test]
+    fn plane_intersection_with_normals_and_texture() {
+        let plane = parse_obj(r#"o plane
+v -1 0 -1
+v 1 0 -1
+v 1 0 1
+v -1 0 1
+
+f 1 2 3
+f 1 3 4
+"#
+        ).unwrap();
+
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
+        let mut isect = RayIntersection::default();
+        for triangle in TriangleIterator::new(&plane) {
+            triangle.intersect(&ray, &mut isect);
+        }
+
+        assert_eq!(isect.t, 1.0);
+        assert_eq!(isect.ng(), Vector::unit_y());
+    }
+}

@@ -1,4 +1,4 @@
-use ::lasgun::{ scene::{Scene, Options}, output };
+use ::lasgun::{ scene::{Scene, Options}, Material, output };
 
 mod meshes;
 
@@ -17,15 +17,15 @@ fn playground() -> Scene {
 
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new(options);
-    let mat0 = scene.add_metal_material([0.9, 0.1, 0.9], [0.7, 1.0, 0.7], 0.2, 0.5);
+    let mat0 = Material::metal([0.9, 0.1, 0.9], [0.7, 1.0, 0.7], 0.2, 0.5);
 
-    let bunny = scene.add_mesh_at(meshes::path("bunny").as_path()).unwrap();
+    let bunny = scene.load_obj(meshes::path("bunny").as_path()).unwrap();
 
     scene.add_point_light([0.0, 2.0, 3.0], [0.9, 0.9, 0.9], [1.0, 0.0, 0.0]);
-    scene.set_radial_background([237, 222, 93], [240, 152, 25]);
+    scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1]);
 
     // scene.contents.add_sphere([0.0, 0.0, 0.0], 1.0, mat0);
-    scene.root.add_mesh(bunny, mat0);
+    scene.root.add_obj_of(bunny, mat0);
 
     scene
 }

@@ -1,7 +1,7 @@
 use crate::space::*;
 use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}};
-use super::Material;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Plastic {
     /// Diffuse coefficient
     kd: Color,
@@ -16,10 +16,8 @@ impl Plastic {
     pub fn new(kd: Color, ks: Color, roughness: f64) -> Plastic {
         Plastic { kd, ks, roughness }
     }
-}
 
-impl Material for Plastic {
-    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
+    pub fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
         let mut bsdf = BSDF::empty(interaction);
 
         // Diffuse component

@@ -31,11 +31,11 @@ impl<S: BaseNum> Normal3<S> {
 }
 
 impl<S: BaseFloat> Normal3<S> {
-    /// Ensure the normal is facing toward the given d vector
+    /// Ensure the normal is facing the same hemisphere as `v`
     #[inline]
-    pub fn face_forward(self, d: Vector3<S>) -> Normal3<S> {
+    pub fn face_forward(self, v: Vector3<S>) -> Normal3<S> {
         let zero = S::zero();
-        Normal3(if self.0.dot(d) > zero { -self.0 } else { self.0 })
+        Normal3(if self.0.dot(v) < zero { -self.0 } else { self.0 })
     }
 
     /// Normalize the inner vector

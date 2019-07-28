@@ -1,7 +1,7 @@
 use crate::space::*;
 use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}};
-use super::Material;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Glass {
     /// Reflection coefficient
     kr: Color,
@@ -29,10 +29,8 @@ impl Glass {
 
         Glass { kr, kt, eta, distribution }
     }
-}
 
-impl Material for Glass {
-    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
+    pub fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
         let mut bsdf = BSDF::empty(interaction);
 
         if self.kr != Color::zero() {

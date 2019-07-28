@@ -1,14 +1,14 @@
 // This module contains structures for providing a simple representation of the
 // contents of a scene. The elements here are later used to build up a full scene
 use cgmath::{prelude::*, Deg};
-use crate::{space::*};
-use super::{ObjRef as Obj, MaterialRef as Material};
+use crate::{space::*, Material};
+use super::{ObjRef as Obj};
 
 pub enum SceneNode {
-    /// A geometric shape and a material
+    /// A geometric shape its material
     Geometry(Shape, Material),
-    /// Triangle mesh
-    Mesh(Obj, Material),
+    /// Reference to a triangle mesh loaded in the scene
+    Mesh(Obj, Option<Material>),
     /// A collection of multiple scene nodes
     Group(Aggregate)
 }
@@ -19,22 +19,29 @@ pub enum Shape {
     /// Cube with origin and dimensions from that origin
     Cube([f64; 3], f64),
     /// Similar to cube: a rectagular prism with start and end corners
-    Cuboid([f64; 3], [f64; 3])
+    Cuboid([f64; 3], [f64; 3]),
 }
 
 pub struct Aggregate {
     pub contents: Vec<SceneNode>,
-    pub transform: Transformation
+    pub transform: Transformation,
+
+    /// If true, reverses orientation of normal shading vectors for all
+    /// children. Useful for capturing the inside or backface of a shape/mesh.
+    /// Also known as "swap handedness".
+    pub swap_backface: bool
 }
 
 impl Aggregate {
      pub fn new() -> Aggregate {
         Aggregate {
             contents: vec![],
-            transform: Transformation::identity()
+            transform: Transformation::identity(),
+            swap_backface: false
         }
     }
 
+    #[inline]
     pub fn add(&mut self, node: SceneNode) {
         self.contents.push(node)
     }
@@ -58,8 +65,20 @@ impl Aggregate {
         self.add(SceneNode::Geometry(shape, material))
     }
 
-    pub fn add_mesh(&mut self, mesh: Obj, material: Material) {
-        self.add(SceneNode::Mesh(mesh, material))
+    /// Add a simple mesh that provides its own material properties (or defaults
+    /// to a simple material provided by Material::default())
+    pub fn add_obj(&mut self, mesh: Obj) {
+        self.add(SceneNode::Mesh(mesh, None))
+    }
+
+    /// Add a simple mesh that's made of a single material
+    pub fn add_obj_of(&mut self, mesh: Obj, material: Material) {
+        self.add(SceneNode::Mesh(mesh, Some(material)))
+    }
+
+    #[inline]
+    pub fn swap_backface(&mut self) {
+        self.swap_backface = !self.swap_backface
     }
 
     #[inline]

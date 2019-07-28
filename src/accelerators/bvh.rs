@@ -4,10 +4,11 @@ use partition::partition;
 use crate::{
     space::*,
     shape::*,
+    Material,
     ray::Ray,
-    primitive::{Primitive, OptionalPrimitive, geometry::Geometry},
-    interaction::SurfaceInteraction,
-    scene::{Scene, MaterialRef, ObjRef, node::{self, SceneNode}}
+    primitive::{Primitive, OptionalPrimitive},
+    interaction::RayIntersection,
+    scene::{Scene, ObjRef, node::{self, SceneNode}}
 };
 
 // Hiding my ugly dynamic dispatch type.
@@ -53,17 +54,20 @@ pub struct BVHAccel<'s> {
     /// Transform matrix reference
     transform: &'s Transformation,
 
-    // Used if all the primitives share the same material
-    // This is generally for triangle meshes
-    material: Option<MaterialRef>,
-
     // The order in which primitives are accessed following BVH construction.
     // Each element is an index into the primitives vec. The offset indeces on
     // each nodes member referes to an index into this vec.
     order: Vec<BVHPrimNumber>,
 
+    // The default material shared by all nodes in the tree that don't provide
+    // their own via the `Material` method
+    material: Option<Material>,
+
     // Limit to how many primitives there may be per node tree
-    max_prims_per_node: u8
+    max_prims_per_node: u8,
+
+    /// Reverses orientation of normal shading vectors for all children.
+    swap_backface: bool
 }
 
 /// Deterministic sorting construct for objects in 3D space
@@ -135,36 +139,36 @@ impl<'s> BVHAccel<'s> {
 
     /// Create a new BVH structure from the given triangle mesh
     /// This structure will be composed entirely of Triangles
-    fn from_mesh(scene: &'s Scene, mesh: &ObjRef, material: &MaterialRef)
-    -> BVHAccel<'s> {
-        let triangles: Vec<PrimBox<'s>> = scene.mesh(mesh).unwrap()
-            .into_iter()
+    fn from_mesh(scene: &'s Scene, mesh: ObjRef, material: Option<Material>) -> BVHAccel<'s> {
+        let obj = scene.obj(mesh).unwrap();
+        let triangles: Vec<PrimBox<'s>> = TriangleIterator::new(&obj)
             .map(|t| -> PrimBox<'s> { Box::new(t) })
             .collect();
         let per_node = triangles.len();
-        BVHAccel::new(scene, triangles, &transform::ID, Some(*material), per_node)
+        BVHAccel::new(scene, triangles, &transform::ID, material, per_node, false)
     }
 
     fn from_aggregate(scene: &'s Scene, aggregate: &'s node::Aggregate) -> BVHAccel<'s> {
         let primitives: Vec<PrimBox<'s>> = aggregate.contents.iter()
         .map(|node| match node {
             SceneNode::Geometry(shape, mat) =>
-                geometry(shape, mat),
+                geometry(shape, *mat),
             SceneNode::Mesh(obj, mat) =>
-                Box::new(BVHAccel::from_mesh(scene, obj, mat)),
+                Box::new(BVHAccel::from_mesh(scene, *obj, *mat)),
             SceneNode::Group(aggregate) =>
                 Box::new(BVHAccel::from_aggregate(scene, aggregate))
         }).collect();
         let per_node = primitives.len();
-        BVHAccel::new(scene, primitives, &aggregate.transform, None, per_node)
+        BVHAccel::new(scene, primitives, &aggregate.transform, None, per_node, aggregate.swap_backface)
     }
 
     fn new(
         scene: &'s Scene,
         primitives: Vec<PrimBox<'s>>,
         transform: &'s Transformation,
-        material: Option<MaterialRef>,
-        max_prims_per_node: usize
+        material: Option<Material>,
+        max_prims_per_node: usize,
+        swap_backface: bool
     ) -> BVHAccel<'s> {
 
         let arena = Arena::with_capacity(1024 * 1024);
@@ -181,7 +185,8 @@ impl<'s> BVHAccel<'s> {
             order: vec![std::usize::MAX; nprims], // Fill with dummy values
             transform,
             material,
-            max_prims_per_node: max_prims_per_node.min(255) as u8
+            max_prims_per_node: max_prims_per_node.min(255) as u8,
+            swap_backface
         };
 
         let mut total_nodes = 0;
@@ -454,10 +459,10 @@ impl<'s> Primitive for BVHAccel<'s> {
         self.transform.transform_bounds(self.nodes[0].bounds)
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
+    fn intersect(&self, ray: &Ray, isect: &mut RayIntersection) -> OptionalPrimitive {
         let ray = self.transform.inverse_transform_ray(*ray);
         let dir_is_neg = [ray.dinv.x < 0.0, ray.dinv.y < 0.0, ray.dinv.z < 0.0];
-        let mut isect = self.transform.inverse_transform_surface_interaction(interaction);
+        let mut isect_inv = self.transform.inverse_transform_ray_intersection(isect);
 
         let mut hit = None;
         let mut to_visit_offset = 0;
@@ -478,7 +483,7 @@ impl<'s> Primitive for BVHAccel<'s> {
                     // intersect with primitives in leaf node
                     for i in 0..(nprims as u32) {
                         let prim_index = self.order[(prim_offset + i) as usize];
-                        if let Some(primitive) = self.primitives[prim_index].intersect(&ray, &mut isect) {
+                        if let Some(primitive) = self.primitives[prim_index].intersect(&ray, &mut isect_inv) {
                             hit = Some(primitive);
                         }
                     }
@@ -502,18 +507,16 @@ impl<'s> Primitive for BVHAccel<'s> {
         }
 
         // Transform normal before sending it back
-        if let Some(_) = hit {
-            *interaction = self.transform.transform_surface_interaction(&isect);
+        if hit.is_some() {
+            *isect = self.transform.transform_ray_intersection(&isect_inv);
 
-            // If the uniform node material is available (i.e., for triangle
-            // meshes where every triangle uses the same material), assign that
-            // material
+            // Default material, for use when the shape doesn't provide one
             if let Some(material) = self.material {
-                interaction.material = Some(material);
-                hit = Some(self);
-            } else {
-                interaction.material = isect.material;
+                isect.set_material(material);
             }
+
+            // Swap backfaces, if applicable
+            if self.swap_backface { isect.swap_backface() }
         }
 
         hit
@@ -558,14 +561,14 @@ impl<'a> BVHBuildNode<'a> {
     }
 }
 
-fn geometry<'s>(shape: &node::Shape, mat: &MaterialRef) -> PrimBox<'s> {
+fn geometry<'s>(shape: &node::Shape, material: Material) -> PrimBox<'s> {
     match shape {
         node::Shape::Sphere(o, r) =>
-            Box::new(Geometry { shape: Sphere::new(*o, *r), material: *mat }),
+            Box::new(Sphere::new(*o, *r, material)),
         node::Shape::Cube(o, d) =>
-            Box::new(Geometry { shape: Cuboid::cube(*o, *d), material: *mat }),
+            Box::new(Cuboid::cube(*o, *d, material)),
         node::Shape::Cuboid(c0, c1) =>
-            Box::new(Geometry { shape: Cuboid::new(*c0, *c1), material: *mat }),
+            Box::new(Cuboid::new(*c0, *c1, material)),
     }
 }
 
