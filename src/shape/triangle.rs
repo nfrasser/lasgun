@@ -1,5 +1,5 @@
 // use std::ops::Index;
-use std::{f64, path::Path, io::{self, BufRead, BufReader}, fs::File};
+use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
 use obj;
 
 use crate::{
@@ -13,12 +13,17 @@ use crate::{
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
 
-// Similar to the obj::IndexTuple but without optionals
-// #[derive(Debug, Copy, Clone)]
-// pub struct IndexTuple(pub usize, pub usize, pub usize);
+/// Similar to the obj::IndexTuple but without optionals The first item is the
+/// vertex index, the second is the texture coordinate (uv) index, and the third
+/// is the normal index.
+///
+/// If not specified in the .obj file, the second and third items default to the
+/// value of the first.
+#[derive(Debug, Copy, Clone)]
+pub struct IndexTuple(pub usize, pub usize, pub usize);
 
 #[derive(Debug, Copy, Clone)]
-pub struct TriangleIndex(pub obj::IndexTuple, pub obj::IndexTuple, pub obj::IndexTuple);
+pub struct TriangleIndex(pub IndexTuple, pub IndexTuple, pub IndexTuple);
 
 /// A triangle references its parent mesh and the index within the faces array.
 /// The triangle's lifetime depends on the mesh it references.
@@ -42,11 +47,21 @@ pub struct Triangle<'a> {
     obj: &'a Obj,
 }
 
+impl IndexTuple {
+    /// From the IndexTuple provided by the obj crate
+    fn from_native(tuple: &obj::IndexTuple) -> IndexTuple {
+        IndexTuple(tuple.0, tuple.1.unwrap_or(tuple.0), tuple.2.unwrap_or(tuple.0))
+    }
+}
 
 impl obj::GenPolygon for TriangleIndex {
     fn new(data: obj::SimplePolygon) -> Self {
         match data.len() {
-            3 => TriangleIndex(data[0], data[1], data[2]),
+            3 => TriangleIndex(
+                IndexTuple::from_native(&data[0]),
+                IndexTuple::from_native(&data[1]),
+                IndexTuple::from_native(&data[2])
+            ),
             _ => panic!("Not a triangle mesh!")
         }
     }
@@ -78,27 +93,24 @@ impl<'a> Triangle<'a> {
     #[inline]
     pub fn n0(&self) -> Vector {
         debug_assert!(self.has_n());
-        let index_tuple = self.poly().0;
-        debug_assert!(index_tuple.2.is_some());
-        let n = self.obj.normal[index_tuple.2.unwrap()];
+        let tuple = self.poly().0;
+        let n = self.obj.normal[tuple.2];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
     pub fn n1(&self) -> Vector {
         debug_assert!(self.has_n());
-        let index_tuple = self.poly().1;
-        debug_assert!(index_tuple.2.is_some());
-        let n = self.obj.normal[index_tuple.2.unwrap()];
+        let tuple = self.poly().1;
+        let n = self.obj.normal[tuple.2];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
     pub fn n2(&self) -> Vector {
         debug_assert!(self.has_n());
-        let index_tuple = self.poly().2;
-        debug_assert!(index_tuple.2.is_some());
-        let n = self.obj.normal[index_tuple.2.unwrap()];
+        let tuple = self.poly().2;
+        let n = self.obj.normal[tuple.2];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
@@ -119,40 +131,25 @@ impl<'a> Triangle<'a> {
     #[inline]
     pub fn uv0(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let index_tuple = self.poly().0;
-        debug_assert!(index_tuple.1.is_some());
-        let uv = self.obj.texture[index_tuple.1.unwrap()];
+        let tuple = self.poly().0;
+        let uv = self.obj.texture[tuple.1];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     #[inline]
     pub fn uv1(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let index_tuple = self.poly().1;
-        debug_assert!(index_tuple.1.is_some());
-        let uv = self.obj.texture[index_tuple.1.unwrap()];
+        let tuple = self.poly().1;
+        let uv = self.obj.texture[tuple.1];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     #[inline]
     pub fn uv2(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let index_tuple = self.poly().2;
-        debug_assert!(index_tuple.1.is_some());
-        let uv = self.obj.texture[index_tuple.1.unwrap()];
+        let tuple = self.poly().2;
+        let uv = self.obj.texture[tuple.1];
         Point2f::new(uv[0].into(), uv[1].into())
-    }
-
-    /// Get the point at the given index
-    #[inline]
-    pub fn p(&self, i: usize) -> Point {
-        debug_assert!(i < 3);
-        match i {
-            0 => self.p0(),
-            1 => self.p1(),
-            2 => self.p2(),
-            _ => Point::from_value(f64::NAN)
-        }
     }
 
     // Whether this mesh has normals mapped
