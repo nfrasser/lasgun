@@ -13,8 +13,12 @@ use crate::{
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
 
+// Similar to the obj::IndexTuple but without optionals
+// #[derive(Debug, Copy, Clone)]
+// pub struct IndexTuple(pub usize, pub usize, pub usize);
+
 #[derive(Debug, Copy, Clone)]
-pub struct TriangleIndex(pub u32, pub u32, pub u32);
+pub struct TriangleIndex(pub obj::IndexTuple, pub obj::IndexTuple, pub obj::IndexTuple);
 
 /// A triangle references its parent mesh and the index within the faces array.
 /// The triangle's lifetime depends on the mesh it references.
@@ -42,7 +46,7 @@ pub struct Triangle<'a> {
 impl obj::GenPolygon for TriangleIndex {
     fn new(data: obj::SimplePolygon) -> Self {
         match data.len() {
-            3 => TriangleIndex(data[0].0 as u32, data[1].0 as u32, data[2].0 as u32),
+            3 => TriangleIndex(data[0], data[1], data[2]),
             _ => panic!("Not a triangle mesh!")
         }
     }
@@ -55,40 +59,46 @@ impl<'a> Triangle<'a> {
 
     #[inline]
     pub fn p0(&self) -> Point {
-        let v = self.obj.position[self.poly().0 as usize];
+        let v = self.obj.position[(self.poly().0).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn p1(&self) -> Point {
-        let v = self.obj.position[self.poly().1 as usize];
+        let v = self.obj.position[(self.poly().1).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn p2(&self) -> Point {
-        let v = self.obj.position[self.poly().2 as usize];
+        let v = self.obj.position[(self.poly().2).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn n0(&self) -> Vector {
         debug_assert!(self.has_n());
-        let n = self.obj.normal[self.poly().0 as usize];
+        let index_tuple = self.poly().0;
+        debug_assert!(index_tuple.2.is_some());
+        let n = self.obj.normal[index_tuple.2.unwrap()];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
     pub fn n1(&self) -> Vector {
         debug_assert!(self.has_n());
-        let n = self.obj.normal[self.poly().1 as usize];
+        let index_tuple = self.poly().1;
+        debug_assert!(index_tuple.2.is_some());
+        let n = self.obj.normal[index_tuple.2.unwrap()];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
     pub fn n2(&self) -> Vector {
         debug_assert!(self.has_n());
-        let n = self.obj.normal[self.poly().2 as usize];
+        let index_tuple = self.poly().2;
+        debug_assert!(index_tuple.2.is_some());
+        let n = self.obj.normal[index_tuple.2.unwrap()];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
@@ -109,21 +119,27 @@ impl<'a> Triangle<'a> {
     #[inline]
     pub fn uv0(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let uv = self.obj.texture[self.poly().0 as usize];
+        let index_tuple = self.poly().0;
+        debug_assert!(index_tuple.1.is_some());
+        let uv = self.obj.texture[index_tuple.1.unwrap()];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     #[inline]
     pub fn uv1(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let uv = self.obj.texture[self.poly().1 as usize];
+        let index_tuple = self.poly().1;
+        debug_assert!(index_tuple.1.is_some());
+        let uv = self.obj.texture[index_tuple.1.unwrap()];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     #[inline]
     pub fn uv2(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let uv = self.obj.texture[self.poly().2 as usize];
+        let index_tuple = self.poly().2;
+        debug_assert!(index_tuple.1.is_some());
+        let uv = self.obj.texture[index_tuple.1.unwrap()];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
@@ -314,7 +330,7 @@ impl<'a> Primitive for Triangle<'a> {
 
             // Compute shading normal ns, surface tangent ss for triangle
             let ns = b0 * self.n0() + b1 * self.n1() + b2 * self.n2();
-            let ss = isect.geometry.dpdu;
+            let ss = -isect.geometry.dpdu;
 
             // Compute shading tangent ss for triangle
             let ts = ns.cross(ss);
