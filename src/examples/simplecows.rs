@@ -15,6 +15,7 @@ fn simplecows() -> Scene {
         ambient: [0.2, 0.2, 0.2],
         width: 512,
         height: 512,
+        smoothing: false,
         supersampling: 2,
         threads: 0
     });

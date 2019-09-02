@@ -15,6 +15,7 @@ fn spooky() -> Scene {
         height: 768,
 
         fov: 50.0,
+        smoothing: true,
         supersampling: 2,
         threads: 0
     };

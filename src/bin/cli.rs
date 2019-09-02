@@ -12,6 +12,7 @@ fn main() {
         view: [0.0; 3],
         up: [0.0; 3],
         fov: 50.0,
+        smoothing: false,
         supersampling: 1,
         threads: 1
     };

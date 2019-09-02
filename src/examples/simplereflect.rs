@@ -13,6 +13,7 @@ fn simple() -> Scene {
         width: 512,
         height: 512,
         fov: 45.0,
+        smoothing: false,
         supersampling: 2,
         threads: 0
     };

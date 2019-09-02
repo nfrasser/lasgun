@@ -13,6 +13,7 @@ fn cornell() -> Scene {
         width: 512,
         height: 512,
         fov: 60.0,
+        smoothing: false,
         supersampling: 2,
         threads: 0
     };

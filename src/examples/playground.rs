@@ -11,8 +11,9 @@ fn playground() -> Scene {
         width: 512,
         height: 512,
         fov: 60.0,
+        smoothing: true,
         supersampling: 0,
-        threads: 1
+        threads: 0
     };
 
     // Initialize a new empty scene with the given options

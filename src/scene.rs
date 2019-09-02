@@ -69,6 +69,9 @@ pub struct Options {
     /// Field of View angle
     pub fov: f64,
 
+    /// Enable normal smoothing for triangle meshes that support it
+    pub smoothing: bool,
+
     /// Represents the number of times a pixel will be divided for supersampling
     /// operations. e.g., 0 means one sample, 1 means 4 samples, 2 means 9
     /// samples, etc.
@@ -76,7 +79,8 @@ pub struct Options {
 
     /// Number of CPU render threads to use. Setting this to 0 means default to
     /// the system concurrency, if available.
-    pub threads: u8,
+    pub threads: u8
+
 }
 
 /// Pre-computed supersampling settings for a pixel
@@ -160,7 +164,8 @@ impl Scene {
             width: 1,
             height: 1,
             supersampling: 0,
-            threads: 0
+            threads: 0,
+            smoothing: false
         })
     }
 
@@ -171,6 +176,8 @@ impl Scene {
 
     /// Add the given loaded Obj instance to the scene
     pub fn add_obj(&mut self, mesh: Obj) -> ObjRef {
+        let mut mesh = mesh;
+        if !self.options.smoothing { mesh.normal.clear() };
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(mesh);
         reference
