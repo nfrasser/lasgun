@@ -15,7 +15,7 @@ fn spooky() -> Scene {
         height: 768,
 
         fov: 50.0,
-        supersampling: 3,
+        supersampling: 2,
         threads: 0
     };
 
@@ -46,10 +46,8 @@ fn spooky() -> Scene {
     item_group.add_group(skull_group);
     item_group.add_sphere([4.0, 4.0, -11.0], 4.0, purple);
     item_group.add_cube([-2.5, 0.001, -3.0], 1.75, glass);
-    item_group.add_sphere([2.5, 0.5, -2.0], 0.5, glass);
     item_group.add_sphere([0.0, 2.0, -15.0], 2.0, glass);
     item_group.add_sphere([2.5, 1.0, -2.0], 1.0, glass);
-    // item_group.add_sphere([-1.5, 3.0, -3.0], 3.0, glass);
 
     let mut floor_group = Aggregate::new();
     floor_group.scale(100.0, 1.0, 100.0);
