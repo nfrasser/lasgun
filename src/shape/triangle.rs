@@ -72,24 +72,38 @@ impl<'a> Triangle<'a> {
     }
 
     #[inline]
-    pub fn n0(&self) -> Normal {
+    pub fn n0(&self) -> Vector {
         debug_assert!(self.has_n());
         let n = self.obj.normal[self.poly().0 as usize];
-        Normal::new(n[0].into(), n[1].into(), n[2].into())
+        Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
-    pub fn n1(&self) -> Normal {
+    pub fn n1(&self) -> Vector {
         debug_assert!(self.has_n());
         let n = self.obj.normal[self.poly().1 as usize];
-        Normal::new(n[0].into(), n[1].into(), n[2].into())
+        Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
-    pub fn n2(&self) -> Normal {
+    pub fn n2(&self) -> Vector {
         debug_assert!(self.has_n());
         let n = self.obj.normal[self.poly().2 as usize];
-        Normal::new(n[0].into(), n[1].into(), n[2].into())
+        Vector::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    /// Find all triangle UV texture coordinates
+    #[inline]
+    pub fn uv(&self) -> [Point2f; 3] {
+        if self.has_uv() {
+            [self.uv0(), self.uv1(), self.uv2()]
+        } else {
+            [
+                Point2f { x: 0.0, y: 0.0 },
+                Point2f { x: 1.0, y: 0.0 },
+                Point2f { x: 1.0, y: 1.0 }
+            ]
+        }
     }
 
     #[inline]
@@ -256,37 +270,64 @@ impl<'a> Primitive for Triangle<'a> {
         // compute barycentric coordinates and t value for triangle intersection
         // barycentric coordinates can be used to "interpolate" the sheared z value across the triangle
         let invdet = 1.0 / det;
-        // let b0 = e0 * invdet;
-        // let b1 = e1 * invdet;
-        // let b2 = e2 * invdet;
+        let b0 = e0 * invdet;
+        let b1 = e1 * invdet;
+        let b2 = e2 * invdet;
         let t = tscaled * invdet;
         if t >= isect.t { return None };
 
         // TODO: ensure that computed triangle t is conservatively greater than 0
 
         // TODO: shading normals
+
         // 3. Compute triangle partial derivatives
-        // let duv02 = (-1.0, -1.0); let duv12 = (0.0, -1.0);
-        // let dp02 = p0 - p2; let dp12 = p1 - p2;
-        // let determinant = duv02.0 * duv12.1 - duv02.1 * duv12.0;
-        let (dpdu, dpdv) = coordinate_system(&(p2 - p1).cross(p1 - p0));
-        // let (dpdu, dpdv) = if determinant == 0.0 {
-        //     coordinate_system(&(p2 - p1).cross(p1 - p0))
-        // } else {
-        //     let invdet = 1.0 / determinant;
-        //     (
-        //         (duv12.1 * dp02 - duv02.1 * dp12) * invdet,
-        //         (-duv12.0 * dp02 - duv02.0 * dp12) * invdet
-        //     )
-        // };
+        let uv = self.uv();
+        let duv02 = uv[0] - uv[2]; let duv12 = uv[1] - uv[2];
+        let dp02 = p0 - p2; let dp12 = p1 - p2;
+        let determinant = (duv02.x * duv12.y) - (duv02.y * duv12.x);
+        let (dpdu, dpdv) = if determinant == 0.0 {
+            coordinate_system(&(p2 - p1).cross(p1 - p0))
+        } else {
+            let invdet = 1.0 / determinant;
+            (
+                (duv12.y * dp02 - duv02.y * dp12) * invdet,
+                (-duv12.x * dp02 - duv02.x * dp12) * invdet
+            )
+        };
+
+        // Hit uv point
 
         // TODO: 4. compute error bounds for triangle intersections
-        // TODO: 5. Interpolate (u, v) parametric coordinates and hit point
+        // 5. Interpolate (u, v) parametric coordinates (hit point determined later)
+        let uv = b0 * uv[0].add_element_wise(b1 * uv[1]).add_element_wise(b2 * uv[2]);
+
         // TODO: 6. Test intersection against alpha texture, if present
 
         // 7. fill in Intersection from triangle hit
         // There is for sure an intersection at this point, compute the normal from original points
-        *isect = RayIntersection::new(t, Point2f::new(0.0, 0.0), dpdu, dpdv);
+        *isect = RayIntersection::new(t, uv, dpdu, dpdv);
+        isect.n = Some(normal::Normal3(dp02.cross(dp12)));
+
+        if self.has_n() {
+            // Calculate default normal
+            // let n = normal::Normal3(dp02.cross(dp12).normalize());
+
+            // Compute shading normal ns, surface tangent ss for triangle
+            let ns = b0 * self.n0() + b1 * self.n1() + b2 * self.n2();
+            let ss = isect.geometry.dpdu;
+
+            // Compute shading tangent ss for triangle
+            let ts = ns.cross(ss);
+            let (ss, ts) = if ts.magnitude2() > 0.0 {
+                let ts = ts.normalize();
+                (ts.cross(ns), ts)
+            } else {
+                coordinate_system(&ns)
+            };
+
+            isect.set_surface_shading(ss, ts)
+        }
+
         Some(self)
     }
 

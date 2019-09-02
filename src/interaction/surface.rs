@@ -17,7 +17,9 @@ pub struct Shading<N: BaseFloat> {
     /// Parametric differential ∂p/∂v at point of interaction.
     pub dpdv: Vector3<N>,
 
-    // TODO: Normal differentials ∂n∂u and ∂n∂v?
+    // TODO: Implement these
+    // pub dndu: Vector3<N>,
+    // pub dndv: Vector3<N>
 }
 
 
@@ -44,7 +46,11 @@ pub struct RayIntersection<N: BaseFloat> {
 
     /// Material at surface interaction. Use this when the shape doesn't provide
     /// a material on its own.
-    pub material: Material
+    pub material: Material,
+
+    /// Optional authoritative shading normal, to be used instead of surface
+    /// shading parameters for some shapes
+    pub n: Option<Normal3<N>>,
 }
 
 impl<N: BaseFloat> RayIntersection<N> {
@@ -52,7 +58,7 @@ impl<N: BaseFloat> RayIntersection<N> {
         let geometry = Shading { dpdu, dpdv };
         let material = Material::default();
         // Surface shading is copied geometry
-        RayIntersection { t, uv, geometry, surface: geometry, material }
+        RayIntersection { t, uv, geometry, surface: geometry, material, n: None }
     }
 
     /// Create a non-existent ray intersection that will be populated later
@@ -101,7 +107,11 @@ impl<N: BaseFloat> RayIntersection<N> {
 
     #[inline]
     pub fn ns(&self) -> Vector3<N> {
-        self.surface.dpdu.cross(self.surface.dpdv).normalize()
+        if let Some(n) = self.n {
+            n.0.normalize()
+        } else {
+            self.surface.dpdu.cross(self.surface.dpdv).normalize()
+        }
     }
 }
 

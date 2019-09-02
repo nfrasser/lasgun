@@ -247,12 +247,20 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
         let dpdv = self.transform_vector(isect.geometry.dpdv);
         let mut isect_t = RayIntersection::new(isect.t, isect.uv, dpdu, dpdv);
         isect_t.set_material(isect.material);
+
+        // Transform surface shading if required
         if isect.geometry.dpdu != isect.surface.dpdu
         || isect.geometry.dpdv != isect.surface.dpdv {
             let dpdu = self.transform_vector(isect.surface.dpdu);
             let dpdv = self.transform_vector(isect.surface.dpdv);
             isect_t.set_surface_shading(dpdu, dpdv);
         }
+
+        // Transform normal if available
+        if let Some(n) = isect.n {
+            isect_t.n = Some(self.transform_normal(n));
+        }
+
         isect_t
     }
 
@@ -281,11 +289,18 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
         let dpdu = self.inverse_transform_vector(isect.geometry.dpdu).unwrap_or(Vector3::zero());
         let dpdv = self.inverse_transform_vector(isect.geometry.dpdv).unwrap_or(Vector3::zero());
         let mut isect_inv = RayIntersection::new(isect.t, isect.uv, dpdu, dpdv);
+
+        // Transform surface shading if required
         if isect.geometry.dpdu != isect.surface.dpdu
         || isect.geometry.dpdv != isect.surface.dpdv {
             let dpdu = self.inverse_transform_vector(isect.surface.dpdu).unwrap_or(Vector3::zero());
             let dpdv = self.inverse_transform_vector(isect.surface.dpdv).unwrap_or(Vector3::zero());
             isect_inv.set_surface_shading(dpdu, dpdv);
+        }
+
+        // Transform normal if available
+        if let Some(n) = isect.n {
+            isect_inv.n = Some(self.inverse_transform_normal(n));
         }
         isect_inv
     }
