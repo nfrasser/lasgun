@@ -93,7 +93,7 @@ impl PrimaryRay {
 
         // Compute emitted and reflected light at intersection point
         // Initialize common vars
-        let n = interaction.ng.0; // Geometric shading normal vector
+        let n = interaction.ns.0; // Geometric shading normal vector
         let wo = interaction.wo; // Outgoing direction
         let p = interaction.p + interaction.p_err;
 

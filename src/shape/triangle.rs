@@ -325,22 +325,20 @@ impl<'a> Primitive for Triangle<'a> {
         isect.n = Some(normal::Normal3(dp02.cross(dp12)));
 
         if self.has_n() {
-            // Calculate default normal
-            // let n = normal::Normal3(dp02.cross(dp12).normalize());
-
             // Compute shading normal ns, surface tangent ss for triangle
-            let ns = b0 * self.n0() + b1 * self.n1() + b2 * self.n2();
-            let ss = -isect.geometry.dpdu;
+            let (n0, n1, n2) = (self.n0(), self.n1(), self.n2());
+            let ns = b0 * n0 + b1 * n1 + b2 * n2;
+            let ss = isect.geometry.dpdu;
 
             // Compute shading tangent ss for triangle
             let ts = ns.cross(ss);
             let (ss, ts) = if ts.magnitude2() > 0.0 {
-                let ts = ts.normalize();
                 (ts.cross(ns), ts)
             } else {
                 coordinate_system(&ns)
             };
 
+            isect.n = Some(normal::Normal3(ns));
             isect.set_surface_shading(ss, ts)
         }
 
