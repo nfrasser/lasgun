@@ -56,7 +56,7 @@ bitflags = "^1.1"
 num_cpus = { version = "^1.10", optional = true }
 
 [dependencies.image]
-version = "*"
+version = "^0.22"
 optional = true
 default-features = false
 features = ["png_codec"]

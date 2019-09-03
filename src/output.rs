@@ -36,7 +36,7 @@ impl Index<usize> for Image {
             (index % self.0.width() as usize) as u32,
             (index / self.0.height() as usize) as u32
         );
-        &self.0.get_pixel(x, y).data
+        &self.0.get_pixel(x, y).0
     }
 }
 
@@ -47,7 +47,7 @@ impl IndexMut<usize> for Image {
             (index % self.0.width() as usize) as u32,
             (index / self.0.height() as usize) as u32
         );
-        &mut self.0.get_pixel_mut(x, y).data
+        &mut self.0.get_pixel_mut(x, y).0
     }
 }
 
