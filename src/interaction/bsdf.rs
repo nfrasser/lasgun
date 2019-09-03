@@ -1,4 +1,3 @@
-use std::mem;
 use crate::space::*;
 use crate::core::bxdf::{BxDFType, BxDF, BxDFSample};
 use super::SurfaceInteraction;
@@ -37,7 +36,7 @@ impl BSDF {
 
         // Allocate initial scattering functions
         let mut num_bxdfs = 0;
-        let mut bxdfs: [BxDF; MAX_BXDFS] = unsafe { mem::uninitialized() };
+        let mut bxdfs: [BxDF; MAX_BXDFS] = [BxDF::Constant(Color::zero()); MAX_BXDFS];
         for bxdf in funcs.iter() {
             bxdfs[num_bxdfs] = *bxdf;
             num_bxdfs += 1;
