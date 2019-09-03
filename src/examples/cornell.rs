@@ -71,7 +71,7 @@ fn cornell() -> Scene {
 
     // Make and aggregate some spheres
     scene.root.add_sphere([1.0, -1.25, 0.0], 1.0, glass);
-    scene.root.add_cube([-2.0, -2.0, 0.0], 1.0, glass);
+    scene.root.add_cube([-1.999, -1.999, 0.0], 1.0, glass);
 
     scene
 }
