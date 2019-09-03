@@ -37,6 +37,16 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Spooky Example",
+            "program": "${workspaceFolder}/target/debug/examples/spooky",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build example spooky"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Cornell Example",
             "program": "${workspaceFolder}/target/debug/examples/cornell",
             "args": [],
