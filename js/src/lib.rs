@@ -1,7 +1,7 @@
 mod utils;
 
 use cfg_if::cfg_if;
-use std::mem;
+use std::mem::{self, MaybeUninit};
 use lasgun;
 use lasgun::PixelBuffer;
 use wasm_bindgen::prelude::*;
@@ -239,7 +239,7 @@ pub struct Hunk {
 impl Hunk {
     /// Create a new empty hunk for the given scene with the given index
     pub fn new() -> Hunk {
-        Hunk { x: 0, y: 0, data: unsafe { mem::uninitialized() } }
+        Hunk { x: 0, y: 0, data: unsafe { MaybeUninit::uninit().assume_init() } }
     }
 
     /// Get a pointer to the pixel data in the hunk for use in JavaScript
