@@ -58,8 +58,8 @@ impl Primitive for Bounds {
         let mut tfar = f64::INFINITY;
 
         // The dpdu and dpdv values for the near and far planes
-        let mut near_differentials = CUBE_DIFFERENTIALS[0];
-        let mut far_differentials = CUBE_DIFFERENTIALS[0];
+        let mut near_differentials = &CUBE_DIFFERENTIALS[0];
+        let mut far_differentials = &CUBE_DIFFERENTIALS[0];
 
         // i ranges from X to Z
         for i in 0..3 {
@@ -67,15 +67,15 @@ impl Primitive for Bounds {
             let t1 = (self.min[i] - ray.origin[i]) * ray.dinv[i];
             let t2 = (self.max[i] - ray.origin[i]) * ray.dinv[i];
 
-            let (tmin, tmax, dp0, dp1) = if t1 < t2 {
-                (t1, t2, dp.1, dp.0)
+            let (tmin, tmax) = if t1 < t2 {
+                (t1, t2)
             } else {
-                (t2, t1, dp.0, dp.1)
+                (t2, t1)
             };
 
             // Check for better intersection axes
-            if tmin > tnear { near_differentials = (dp0, dp1) }
-            if tmax < tfar { far_differentials = (dp1, dp0) }
+            if tmin > tnear { near_differentials = dp }
+            if tmax < tfar { far_differentials = dp }
 
             tnear = tnear.max(tmin);
             tfar = tfar.min(tmax);
@@ -97,6 +97,7 @@ impl Primitive for Bounds {
 
         // TODO: uvs
         *isect = RayIntersection::new(t, Point2f::new(0.0, 0.0), dp.0, dp.1);
+        isect.n = Some(normal::Normal3(dp.0.cross(dp.1)).face_forward(-ray.d));
 
         Some(self)
     }

@@ -157,7 +157,7 @@ impl<N: BaseFloat> SurfaceInteraction<N> {
 
         let wo = -ray.d.normalize();
         let ng = Normal3(isect.ng()).face_forward(wo);
-        let ns = Normal3(isect.ns()).face_forward(wo);
+        let ns = Normal3(isect.ns());
 
         // Add a small fraction of the normal to avoid speckling due to
         // floating point errors (the calculated point ends up inside the

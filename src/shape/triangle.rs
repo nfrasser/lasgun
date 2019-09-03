@@ -319,7 +319,6 @@ impl<'a> Primitive for Triangle<'a> {
         // 7. fill in Intersection from triangle hit
         // There is for sure an intersection at this point, compute the normal from original points
         *isect = RayIntersection::new(t, uv, dpdu, dpdv);
-        isect.n = Some(normal::Normal3(dp02.cross(dp12)));
 
         if self.has_n() {
             // Compute shading normal ns, surface tangent ss for triangle
@@ -337,6 +336,10 @@ impl<'a> Primitive for Triangle<'a> {
 
             isect.n = Some(normal::Normal3(ns));
             isect.set_surface_shading(ss, ts)
+        } else {
+            // Set to default normal so that it faces towards the ray.
+            // This prevents invalid shading on meshes with missing normals
+            isect.n = Some(normal::Normal3(dp02.cross(dp12)).face_forward(-ray.d));
         }
 
         Some(self)

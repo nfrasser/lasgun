@@ -12,7 +12,7 @@ fn playground() -> Scene {
         height: 512,
         fov: 60.0,
         smoothing: true,
-        supersampling: 0,
+        supersampling: 2,
         threads: 0
     };
 
