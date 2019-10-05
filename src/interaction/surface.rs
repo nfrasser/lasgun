@@ -95,7 +95,7 @@ impl<N: BaseFloat> RayIntersection<N> {
         self.surface.dpdv = dpdu;
 
         // Swap custom shading normal
-        if let Some(n) = self.n { self.n = Some(-self.n) }
+        if let Some(n) = self.n { self.n = Some(-n) }
     }
 
     /// Whether an intersection exists
