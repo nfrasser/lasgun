@@ -1,7 +1,7 @@
 use crate::space::*;
 use crate::{core::bxdf::*, interaction::{SurfaceInteraction, BSDF}};
-use super::Material;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Metal {
     eta: Color,
     k: Color,
@@ -13,10 +13,8 @@ impl Metal {
     pub fn new(eta: Color, k: Color, u_roughness: f64, v_roughness: f64) -> Metal {
         Metal { eta, k, u_roughness, v_roughness }
     }
-}
 
-impl Material for Metal {
-    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
+    pub fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
         let mut bsdf = BSDF::empty(interaction);
 
         // Microfacet conductor component

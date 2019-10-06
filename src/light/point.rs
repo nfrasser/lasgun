@@ -3,7 +3,7 @@ use crate::{
     space::*,
     ray::Ray,
     primitive::Primitive,
-    interaction::SurfaceInteraction,
+    interaction::RayIntersection,
     Accel
 };
 
@@ -45,9 +45,9 @@ impl Light for PointLight {
         let ray = Ray::new(*p, d);
 
         // See if there's anything that intersects
-        let mut interaction = SurfaceInteraction::default();
-        root.intersect(&ray, &mut interaction);
-        if interaction.material != None && interaction.t < 1.0 {
+        let mut isect = RayIntersection::default();
+        root.intersect(&ray, &mut isect);
+        if isect.t < 1.0 {
             None
         } else {
             Some(*self)

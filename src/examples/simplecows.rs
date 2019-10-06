@@ -1,5 +1,6 @@
 use ::lasgun::{
     scene::{Scene, Options, Aggregate},
+    Material,
     output
 };
 
@@ -14,33 +15,34 @@ fn simplecows() -> Scene {
         ambient: [0.2, 0.2, 0.2],
         width: 512,
         height: 512,
+        smoothing: false,
         supersampling: 2,
         threads: 0
     });
 
-    scene.set_radial_background([218, 210, 153], [176, 218, 185]);
+    scene.set_radial_background([0.85, 0.82, 0.6], [0.69, 0.85, 0.73]);
 
     scene.add_point_light([200.0, 202.0, 430.0], [0.8, 0.8, 0.8], [1.0, 0.0, 0.0]);
 
     // Materials
-    let stone = scene.add_metal_material([0.0, 0.0, 0.0], [0.7, 0.7, 0.7], 0.5, 0.5);
-    let grass = scene.add_plastic_material([0.1, 0.7, 0.1], [0.0, 0.0, 0.0], 0.0);
-    let hide = scene.add_plastic_material([0.84, 0.6, 0.53], [0.3, 0.3, 0.3], 0.2);
+    let stone = Material::metal([0.0, 0.0, 0.0], [0.7, 0.7, 0.7], 0.5, 0.5);
+    let grass = Material::plastic([0.1, 0.7, 0.1], [0.0, 0.0, 0.0], 0.0);
+    let hide = Material::plastic([0.84, 0.6, 0.53], [0.3, 0.3, 0.3], 0.2);
 
     // Meshes
-    let planemesh = scene.add_mesh_at(meshes::path("plane").as_path()).unwrap();
-    let buckyballmesh = scene.add_mesh_at(meshes::path("buckyball").as_path()).unwrap();
+    let planemesh = scene.load_obj(meshes::path("plane").as_path()).unwrap();
+    let buckyballmesh = scene.load_obj(meshes::path("buckyball").as_path()).unwrap();
 
     // The Floor
     let mut plane = Aggregate::new();
     plane.scale(30.0, 30.0, 30.0);
-    plane.add_mesh(planemesh, grass);
+    plane.add_obj_of(planemesh, grass);
     scene.root.add_group(plane);
 
     // Central altar
     let mut buckyball = Aggregate::new();
-    buckyball.scale(1.5, 1.5, 1.5);;
-    buckyball.add_mesh(buckyballmesh, stone);
+    buckyball.scale(1.5, 1.5, 1.5);
+    buckyball.add_obj_of(buckyballmesh, stone);
     scene.root.add_group(buckyball);
 
     // Ring of arches

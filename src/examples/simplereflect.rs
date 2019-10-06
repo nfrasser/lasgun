@@ -1,4 +1,4 @@
-use ::lasgun::{ scene::{Scene, Options}, output };
+use ::lasgun::{ scene::{Scene, Options}, Material, output };
 
 mod meshes;
 
@@ -13,23 +13,23 @@ fn simple() -> Scene {
         width: 512,
         height: 512,
         fov: 45.0,
+        smoothing: false,
         supersampling: 2,
         threads: 0
     };
 
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new(options);
-    scene.set_radial_background([237, 222, 93], [240, 152, 25]);
-
+    scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1]);
 
     // Add materials to the scene
-    let mat0 = scene.add_glass_material([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 1.333);
-    let mat1 = scene.add_mirror_material([0.5, 0.5, 0.5]);
-    let mat2 = scene.add_glass_material([1.0, 0.6, 0.1], [0.7, 0.7, 1.0], 1.75);
-    let mat3 = scene.add_glass_material([0.7, 0.6, 1.0], [0.5, 0.4, 0.8], 1.5);
+    let mat0 = Material::glass([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 1.333);
+    let mat1 = Material::mirror([0.5, 0.5, 0.5]);
+    let mat2 = Material::glass([1.0, 0.6, 0.1], [0.7, 0.7, 1.0], 1.75);
+    let mat3 = Material::glass([0.7, 0.6, 1.0], [0.5, 0.4, 0.8], 1.5);
 
     // Instantiate meshes to be shown in the scene
-    let smstdodeca = scene.add_mesh_at(meshes::path("smstdodeca").as_path()).unwrap();
+    let smstdodeca = scene.load_obj(meshes::path("smstdodeca").as_path()).unwrap();
 
     // Set up scene lights
     scene.add_point_light([-100.0, 150.0, 400.0], [0.9, 0.9, 0.9], [1.0, 0.0, 0.0]);
@@ -42,7 +42,7 @@ fn simple() -> Scene {
     scene.root.add_sphere([-100.0, 25.0, -300.0], 50.0, mat2);
     scene.root.add_sphere([0.0, 100.0, -250.0], 25.0, mat0);
     scene.root.add_cube([-200.0, -125.0, 0.0], 100.0, mat3);
-    scene.root.add_mesh(smstdodeca, mat2);
+    scene.root.add_obj_of(smstdodeca, mat2);
 
     scene
 }

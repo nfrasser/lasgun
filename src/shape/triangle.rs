@@ -1,25 +1,35 @@
 // use std::ops::Index;
-use std::f64;
+use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
 use obj;
 
 use crate::{
     space::*,
     ray::Ray,
     primitive::{Primitive, OptionalPrimitive},
-    interaction::SurfaceInteraction,
+    interaction::RayIntersection,
+    Material
 };
-
-use super::Shape;
 
 // TODO: Is this okay?
 pub type Obj = obj::Obj<'static, TriangleIndex>;
 
+/// Similar to the obj::IndexTuple but without optionals The first item is the
+/// vertex index, the second is the texture coordinate (uv) index, and the third
+/// is the normal index.
+///
+/// If not specified in the .obj file, the second and third items default to the
+/// value of the first.
 #[derive(Debug, Copy, Clone)]
-pub struct TriangleIndex(pub u32, pub u32, pub u32);
+pub struct IndexTuple(pub usize, pub usize, pub usize);
 
-/// A triangle references its parent mesh and the index within the faces array. The triangle's
-/// lifetime depends on the mesh it references. This implementation ensures the smallest possible
-/// triangle implementation when storing large triangle meshes in memory.
+#[derive(Debug, Copy, Clone)]
+pub struct TriangleIndex(pub IndexTuple, pub IndexTuple, pub IndexTuple);
+
+/// A triangle references its parent mesh and the index within the faces array.
+/// The triangle's lifetime depends on the mesh it references.
+///
+/// This implementation ensures the smallest possible triangle implementation
+/// when storing large triangle meshes in memory (16 bytes on 64 bit systems)
 #[derive(Copy, Clone)]
 pub struct Triangle<'a> {
 
@@ -37,11 +47,21 @@ pub struct Triangle<'a> {
     obj: &'a Obj,
 }
 
+impl IndexTuple {
+    /// From the IndexTuple provided by the obj crate
+    fn from_native(tuple: &obj::IndexTuple) -> IndexTuple {
+        IndexTuple(tuple.0, tuple.1.unwrap_or(tuple.0), tuple.2.unwrap_or(tuple.0))
+    }
+}
 
 impl obj::GenPolygon for TriangleIndex {
     fn new(data: obj::SimplePolygon) -> Self {
         match data.len() {
-            3 => TriangleIndex(data[0].0 as u32, data[1].0 as u32, data[2].0 as u32),
+            3 => TriangleIndex(
+                IndexTuple::from_native(&data[0]),
+                IndexTuple::from_native(&data[1]),
+                IndexTuple::from_native(&data[2])
+            ),
             _ => panic!("Not a triangle mesh!")
         }
     }
@@ -54,32 +74,94 @@ impl<'a> Triangle<'a> {
 
     #[inline]
     pub fn p0(&self) -> Point {
-        let v = self.obj.position[self.poly().0 as usize];
+        let v = self.obj.position[(self.poly().0).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn p1(&self) -> Point {
-        let v = self.obj.position[self.poly().1 as usize];
+        let v = self.obj.position[(self.poly().1).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn p2(&self) -> Point {
-        let v = self.obj.position[self.poly().2 as usize];
+        let v = self.obj.position[(self.poly().2).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
-    /// Get the point at the given index
     #[inline]
-    pub fn p(&self, i: usize) -> Point {
-        debug_assert!(i < 3);
-        match i {
-            0 => self.p0(),
-            1 => self.p1(),
-            2 => self.p2(),
-            _ => Point::from_value(f64::NAN)
+    pub fn n0(&self) -> Vector {
+        debug_assert!(self.has_n());
+        let tuple = self.poly().0;
+        let n = self.obj.normal[tuple.2];
+        Vector::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    #[inline]
+    pub fn n1(&self) -> Vector {
+        debug_assert!(self.has_n());
+        let tuple = self.poly().1;
+        let n = self.obj.normal[tuple.2];
+        Vector::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    #[inline]
+    pub fn n2(&self) -> Vector {
+        debug_assert!(self.has_n());
+        let tuple = self.poly().2;
+        let n = self.obj.normal[tuple.2];
+        Vector::new(n[0].into(), n[1].into(), n[2].into())
+    }
+
+    /// Find all triangle UV texture coordinates
+    #[inline]
+    pub fn uv(&self) -> [Point2f; 3] {
+        if self.has_uv() {
+            [self.uv0(), self.uv1(), self.uv2()]
+        } else {
+            [
+                Point2f { x: 0.0, y: 0.0 },
+                Point2f { x: 1.0, y: 0.0 },
+                Point2f { x: 1.0, y: 1.0 }
+            ]
         }
+    }
+
+    #[inline]
+    pub fn uv0(&self) -> Point2f {
+        debug_assert!(self.has_uv());
+        let tuple = self.poly().0;
+        let uv = self.obj.texture[tuple.1];
+        Point2f::new(uv[0].into(), uv[1].into())
+    }
+
+    #[inline]
+    pub fn uv1(&self) -> Point2f {
+        debug_assert!(self.has_uv());
+        let tuple = self.poly().1;
+        let uv = self.obj.texture[tuple.1];
+        Point2f::new(uv[0].into(), uv[1].into())
+    }
+
+    #[inline]
+    pub fn uv2(&self) -> Point2f {
+        debug_assert!(self.has_uv());
+        let tuple = self.poly().2;
+        let uv = self.obj.texture[tuple.1];
+        Point2f::new(uv[0].into(), uv[1].into())
+    }
+
+    // Whether this mesh has normals mapped
+    #[inline]
+    pub fn has_n(&self) -> bool {
+        self.obj.normal.len() > 0
+    }
+
+    // Whether this mesh has UV texture coordinates mapped
+    #[inline]
+    pub fn has_uv(&self) -> bool {
+        self.obj.texture.len() > 0
     }
 
     #[inline]
@@ -115,7 +197,7 @@ impl<'a> Primitive for Triangle<'a> {
         Bounds::new(self.p0(), self.p1()).point_union(&self.p2())
     }
 
-    fn intersect(&self, ray: &Ray, interaction: &mut SurfaceInteraction) -> OptionalPrimitive {
+    fn intersect(&self, ray: &Ray, isect: &mut RayIntersection) -> OptionalPrimitive {
         // 1. Get triangle vertices
         let (p0, p1, p2) = (self.p0(), self.p1(), self.p2());
 
@@ -201,41 +283,212 @@ impl<'a> Primitive for Triangle<'a> {
         // compute barycentric coordinates and t value for triangle intersection
         // barycentric coordinates can be used to "interpolate" the sheared z value across the triangle
         let invdet = 1.0 / det;
-        // let b0 = e0 * invdet;
-        // let b1 = e1 * invdet;
-        // let b2 = e2 * invdet;
+        let b0 = e0 * invdet;
+        let b1 = e1 * invdet;
+        let b2 = e2 * invdet;
         let t = tscaled * invdet;
-        if t >= interaction.t { return None };
+        if t >= isect.t { return None };
 
         // TODO: ensure that computed triangle t is conservatively greater than 0
 
         // TODO: shading normals
+
         // 3. Compute triangle partial derivatives
-        // let duv02 = (-1.0, -1.0); let duv12 = (0.0, -1.0);
-        // let dp02 = p0 - p2; let dp12 = p1 - p2;
-        // let determinant = duv02.0 * duv12.1 - duv02.1 * duv12.0;
-        let (dpdu, dpdv) = coordinate_system(&(p2 - p1).cross(p1 - p0));
-        // let (dpdu, dpdv) = if determinant == 0.0 {
-        //     coordinate_system(&(p2 - p1).cross(p1 - p0))
-        // } else {
-        //     let invdet = 1.0 / determinant;
-        //     (
-        //         (duv12.1 * dp02 - duv02.1 * dp12) * invdet,
-        //         (-duv12.0 * dp02 - duv02.0 * dp12) * invdet
-        //     )
-        // };
+        let uv = self.uv();
+        let duv02 = uv[0] - uv[2]; let duv12 = uv[1] - uv[2];
+        let dp02 = p0 - p2; let dp12 = p1 - p2;
+        let determinant = (duv02.x * duv12.y) - (duv02.y * duv12.x);
+        let (dpdu, dpdv) = if determinant == 0.0 {
+            coordinate_system(&(p2 - p1).cross(p1 - p0))
+        } else {
+            let invdet = 1.0 / determinant;
+            (
+                (duv12.y * dp02 - duv02.y * dp12) * invdet,
+                (-duv12.x * dp02 - duv02.x * dp12) * invdet
+            )
+        };
+
+        // Hit uv point
 
         // TODO: 4. compute error bounds for triangle intersections
-        // TODO: 5. Interpolate (u, v) parametric coordinates and hit point
+        // 5. Interpolate (u, v) parametric coordinates (hit point determined later)
+        let uv = b0 * uv[0].add_element_wise(b1 * uv[1]).add_element_wise(b2 * uv[2]);
+
         // TODO: 6. Test intersection against alpha texture, if present
 
         // 7. fill in Intersection from triangle hit
         // There is for sure an intersection at this point, compute the normal from original points
-        interaction.t = t;
-        interaction.dpdu = dpdu;
-        interaction.dpdv = dpdv;
+        *isect = RayIntersection::new(t, uv, dpdu, dpdv);
+
+        if self.has_n() {
+            // Compute shading normal ns, surface tangent ss for triangle
+            let (n0, n1, n2) = (self.n0(), self.n1(), self.n2());
+            let ns = b0 * n0 + b1 * n1 + b2 * n2;
+            let ss = isect.geometry.dpdu;
+
+            // Compute shading tangent ss for triangle
+            let ts = ns.cross(ss);
+            let (ss, ts) = if ts.magnitude2() > 0.0 {
+                (ts.cross(ns), ts)
+            } else {
+                coordinate_system(&ns)
+            };
+
+            isect.n = Some(normal::Normal3(ns));
+            isect.set_surface_shading(ss, ts)
+        } else {
+            // Set to default normal so that it faces towards the ray.
+            // This prevents invalid shading on meshes with missing normals
+            isect.n = Some(normal::Normal3(dp02.cross(dp12)).face_forward(-ray.d));
+        }
+
         Some(self)
+    }
+
+    // TODO: Grab a material from the loaded Mtl libraries if one is available
+    fn material(&self) -> Option<Material> { None }
+}
+
+/// Structure that allows using a obj as an iterator
+/// Each item in the iterator is a triangle that references the parent obj
+pub struct TriangleIterator<'a> {
+    obj: &'a Obj,
+    // Current iteration indeces
+    size_hint: usize,
+    object_index: usize,
+    group_index: usize,
+    poly_index: usize
+}
+
+impl<'a> TriangleIterator<'a> {
+    pub fn new(obj: &'a Obj) -> TriangleIterator<'a> {
+        TriangleIterator {
+            obj,
+            size_hint: face_count(obj),
+            object_index: 0,
+            group_index: 0,
+            poly_index: 0,
+        }
     }
 }
 
-impl<'a> Shape for Triangle<'a> {}
+impl<'a> Iterator for TriangleIterator<'a> {
+    type Item = Triangle<'a>;
+
+    fn next(&mut self) -> Option<Triangle<'a>> {
+        if self.size_hint == 0 { return None };
+        let triangle = Triangle::new(
+            &self.obj,
+            self.object_index as u16,
+            self.group_index as u16,
+            self.poly_index as u32);
+
+        self.poly_index += 1;
+
+        if self.poly_index == self.obj.objects[self.object_index].groups[self.group_index].polys.len() {
+            self.poly_index = 0;
+            self.group_index += 1;
+        }
+
+        if self.group_index == self.obj.objects[self.object_index].groups.len() {
+            self.group_index = 0;
+            self.object_index += 1;
+        }
+
+        if self.object_index == self.obj.objects.len() {
+            self.size_hint = 0;
+        } else {
+            self.size_hint -= 1;
+        }
+
+        return Some(triangle)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.size_hint, Some(self.size_hint))
+    }
+}
+
+/// Load from an object file at the given path
+#[inline]
+pub fn load_obj(path: &Path) -> io::Result<Obj> {
+    let f = File::open(path)?;
+    let mut obj = Obj::load_buf(&mut BufReader::new(f))?;
+    // unwrap is safe as we've read this file before
+    obj.path = path.parent().unwrap().to_owned();
+    Ok(obj)
+}
+
+/// Parse the string contents of a .obj file into a `Obj` instance.
+#[inline]
+pub fn parse_obj(slice: &str) -> io::Result<Obj> {
+    let mut buf = io::Cursor::new(slice);
+    obj_from_buf(&mut buf)
+}
+
+/// Parse the given readable buffer of a .obj file into a `Obj` instance.
+#[inline]
+pub fn obj_from_buf<B>(input: &mut B) -> io::Result<Obj> where B: BufRead {
+    let obj = Obj::load_buf(input)?;
+    Ok(obj)
+}
+
+/// Number of faces on this obj
+pub fn face_count(obj: &Obj) -> usize {
+    obj.objects.iter().fold(0, |size, object| {
+        object.groups.iter().fold(size, |size, group| {
+            size + group.polys.len()
+        })
+    })
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn plane_intersection() {
+        let plane = parse_obj(r#"o plane
+v -1 0 -1
+v 1 0 -1
+v 1 0 1
+v -1 0 1
+
+f 1 2 3
+f 1 3 4
+"#
+        ).unwrap();
+
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
+        let mut isect = RayIntersection::default();
+        for triangle in TriangleIterator::new(&plane) {
+            triangle.intersect(&ray, &mut isect);
+        }
+
+        assert_eq!(isect.t, 1.0);
+        assert_eq!(isect.ng(), Vector::unit_y());
+    }
+
+    #[test]
+    fn plane_intersection_with_normals_and_texture() {
+        let plane = parse_obj(r#"o plane
+v -1 0 -1
+v 1 0 -1
+v 1 0 1
+v -1 0 1
+
+f 1 2 3
+f 1 3 4
+"#
+        ).unwrap();
+
+        let ray = Ray::new(Point::new(0.0, 1.0, 0.0), Vector::new(0.0, -1.0, 0.0));
+        let mut isect = RayIntersection::default();
+        for triangle in TriangleIterator::new(&plane) {
+            triangle.intersect(&ray, &mut isect);
+        }
+
+        assert_eq!(isect.t, 1.0);
+        assert_eq!(isect.ng(), Vector::unit_y());
+    }
+}

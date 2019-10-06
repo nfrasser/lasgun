@@ -1,17 +1,9 @@
-use std::{io, path::Path, f64};
+use std::{f64, io, path::Path};
 
 use crate::space::*;
 use crate::light::{Light, point::PointLight};
-use crate::material::{
-    Material,
-    background::Background,
-    matte::Matte,
-    plastic::Plastic,
-    metal::Metal,
-    glass::Glass,
-    mirror::Mirror
-};
-use crate::shape::mesh::Mesh;
+use crate::material::Background;
+use crate::shape::triangle::*;
 
 /// Description of the world to render and how it should be rendered
 pub struct Scene {
@@ -50,17 +42,11 @@ pub struct Scene {
     // Background material
     pub background: Background,
 
-    materials: Vec<Box<dyn Material>>, // available materials for primitives in the scene
     lights: Vec<Box<dyn Light>>, // point-light sources in the scene
-    meshes: Vec<Mesh>,
+    meshes: Vec<Obj>,
 }
 
-/// Opaque reference to a material within a scene. May be passed around and
-/// copied freely but is not relevant outside the noted scene.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct MaterialRef(usize);
-
-/// Opaque reference to a .object file mesh in a scene
+/// Opaque reference to a .obj-powered file mesh in a scene
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ObjRef(usize);
 
@@ -83,6 +69,9 @@ pub struct Options {
     /// Field of View angle
     pub fov: f64,
 
+    /// Enable normal smoothing for triangle meshes that support it
+    pub smoothing: bool,
+
     /// Represents the number of times a pixel will be divided for supersampling
     /// operations. e.g., 0 means one sample, 1 means 4 samples, 2 means 9
     /// samples, etc.
@@ -90,7 +79,8 @@ pub struct Options {
 
     /// Number of CPU render threads to use. Setting this to 0 means default to
     /// the system concurrency, if available.
-    pub threads: u8,
+    pub threads: u8
+
 }
 
 /// Pre-computed supersampling settings for a pixel
@@ -158,8 +148,8 @@ impl Scene {
                 radius: pixel_radius * supersample_scale,
                 power: supersample_power
             },
-            background: Background::solid(Color::zero(), view, options.fov),
-            lights: vec![], materials: vec![], meshes: vec![],
+            background: Background::solid(Color::zero()),
+            lights: vec![], meshes: vec![],
         }
     }
 
@@ -174,42 +164,9 @@ impl Scene {
             width: 1,
             height: 1,
             supersampling: 0,
-            threads: 0
+            threads: 0,
+            smoothing: false
         })
-    }
-
-    pub fn add_matte_material(&mut self, kd: [f64; 3], sigma: f64) -> MaterialRef {
-        let kd = Color::new(kd[0], kd[1], kd[2]);
-        let material = Matte::new(kd, sigma);
-        self.add_material(Box::new(material))
-    }
-
-    pub fn add_plastic_material(&mut self, kd: [f64; 3], ks: [f64; 3], roughness: f64) -> MaterialRef {
-        let kd = Color::new(kd[0], kd[1], kd[2]);
-        let ks = Color::new(ks[0], ks[1], ks[2]);
-        let material = Plastic::new(kd, ks, roughness);
-        self.add_material(Box::new(material))
-    }
-
-    pub fn add_metal_material(&mut self, eta: [f64; 3], k: [f64; 3], u_roughness: f64, v_roughness: f64) -> MaterialRef {
-        let eta = Color::new(eta[0], eta[1], eta[2]);
-        let k = Color::new(k[0], k[1], k[2]);
-        let material = Metal::new(eta, k, u_roughness, v_roughness);
-        self.add_material(Box::new(material))
-    }
-
-    pub fn add_mirror_material(&mut self, kr: [f64; 3]) -> MaterialRef {
-        let kr = Color::new(kr[0], kr[1], kr[2]);
-        let material = Mirror::new(kr);
-        self.add_material(Box::new(material))
-    }
-
-    pub fn add_glass_material(&mut self, kr: [f64; 3], kt: [f64; 3], eta: f64) -> MaterialRef {
-        let kr = Color::new(kr[0], kr[1], kr[2]);
-        let kt = Color::new(kt[0], kt[1], kt[2]);
-        // TODO: Roughness isn't working
-        let material = Glass::new(kr, kt, eta, 0.0, 0.0);
-        self.add_material(Box::new(material))
     }
 
     pub fn add_point_light(&mut self, position: [f64; 3], intensity: [f64; 3], falloff: [f64; 3]) {
@@ -217,79 +174,51 @@ impl Scene {
         self.lights.push(Box::new(light))
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh) -> ObjRef {
+    /// Add the given loaded Obj instance to the scene
+    pub fn add_obj(&mut self, mesh: Obj) -> ObjRef {
+        let mut mesh = mesh;
+        if !self.options.smoothing { mesh.normal.clear() };
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(mesh);
         reference
     }
 
-    /// Add a mesh from a obj file loaded as a string
-    pub fn add_mesh_from(&mut self, obj: &str) -> io::Result<ObjRef> {
-        let reference = ObjRef(self.meshes.len());
-        self.meshes.push(Mesh::from(obj)?);
-        Ok(reference)
+    /// Generate triangle mesh from the given string contents of a .obj file and
+    /// add it to the scene. If parsed correctly, returns a reference to the
+    /// mesh for use in scene node construction.
+    pub fn parse_obj(&mut self, obj: &str) -> io::Result<ObjRef> {
+        let obj = parse_obj(obj)?;
+        Ok(self.add_obj(obj))
     }
 
-    // Add the .obj file mesh at the given file-system path
-    pub fn add_mesh_at(&mut self, obj_path: &Path) -> io::Result<ObjRef> {
-        let reference = ObjRef(self.meshes.len());
-        self.meshes.push(Mesh::load(obj_path)?);
-        Ok(reference)
+    // Load the .obj file mesh at the given file-system path and add it to the
+    // scene.
+    pub fn load_obj(&mut self, obj_path: &Path) -> io::Result<ObjRef> {
+        let obj = load_obj(obj_path)?;
+        Ok(self.add_obj(obj))
     }
 
     pub fn set_root(&mut self, node: Aggregate) {
         self.root = node
     }
 
-    pub fn material(&self, material: &MaterialRef) -> Option<&dyn Material> {
-        debug_assert!(material.0 < self.materials.len());
-        if let Some(material) = self.materials.get(material.0) {
-            Some(&**material)
-        } else {
-            None
-        }
-    }
-
-    pub fn material_or_background(&self, m: &Option<MaterialRef>) -> &dyn Material {
-        if let Some(mref) = m {
-            self.material(mref).unwrap_or(&self.background)
-        } else {
-            &self.background
-        }
-    }
-
     pub fn lights(&self) -> &Vec<Box<dyn Light>> { &self.lights }
 
-    pub fn mesh<'a>(&'a self, mesh: &ObjRef) -> Option<&'a Mesh> {
-        self.meshes.get(mesh.0)
+    /// Return a reference to the object instance for the given ObjRef, if
+    /// available.
+    pub fn obj<'a>(&'a self, obj: ObjRef) -> Option<&'a Obj> {
+        self.meshes.get(obj.0)
     }
 
-    pub fn background(&self) -> &dyn Material {
-        &self.background
+    pub fn set_solid_background(&mut self, color: [f64; 3]) {
+        let color = Color::new(color[0], color[1], color[2]);
+        self.background = Background::solid(color)
     }
 
-    pub fn set_solid_background(&mut self, color: [u8; 3]) {
-        self.background = Background::solid(from_pixel_bytes(color), self.view, self.options.fov)
-    }
-
-    pub fn set_radial_background(&mut self, inner: [u8; 3], outer: [u8; 3]) {
-        self.background = Background::radial(from_pixel_bytes(inner), from_pixel_bytes(outer), self.view, self.options.fov)
-    }
-
-    fn add_material(&mut self, material: Box<dyn Material>) -> MaterialRef {
-        let reference = MaterialRef(self.materials.len());
-        self.materials.push(material);
-        reference
-    }
-}
-
-/// Convert a colour channel from between 0 and 1 to an integer between 0 and 255
-#[inline]
-fn from_pixel_bytes(bytes: [u8; 3]) -> Color {
-    Color {
-        x: (bytes[0] as f64) / 255.0,
-        y: (bytes[1] as f64) / 255.0,
-        z: (bytes[2] as f64) / 255.0
+    pub fn set_radial_background(&mut self, inner: [f64; 3], outer: [f64; 3]) {
+        let inner = Color::new(inner[0], inner[1], inner[2]);
+        let outer = Color::new(outer[0], outer[1], outer[2]);
+        self.background = Background::radial(inner, outer, self.view, self.options.fov)
     }
 }
 

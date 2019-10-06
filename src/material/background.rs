@@ -1,6 +1,6 @@
-use crate::{core::bxdf::BxDF, space::*, interaction::{SurfaceInteraction, BSDF}};
-use super::Material;
+use crate::space::*;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Background {
     pub inner: Color,
     pub outer: Color,
@@ -13,14 +13,14 @@ impl Background {
         Background { inner, outer, view: view.normalize(), fov }
     }
 
-    pub fn solid(color: Color, view: Vector, fov: f64) -> Background {
-        Background::radial(color, color, view, fov)
+    pub fn solid(color: Color) -> Background {
+        Background::radial(color, color, Vector::unit_z(), 1.0)
     }
 
-    /// Compute the background colour based on the interaction
-    pub fn li(&self, interaction: &SurfaceInteraction) -> Color {
-        let d = interaction.d();
-        let mut t = (1.0 - self.view.dot(d).abs())/(d.magnitude() * self.view.magnitude());
+    /// Compute the background colour based on the direction vector
+    /// Assume d is normalized
+    pub fn bg(&self, d: &Vector) -> Color {
+        let mut t = 1.0 - self.view.dot(*d).abs();
         t *= 270.0/self.fov;
         t = t.min(1.0);
 
@@ -29,11 +29,5 @@ impl Background {
             y: lerp(t, self.inner.y, self.outer.y),
             z: lerp(t, self.inner.z, self.outer.z)
         }
-    }
-}
-
-impl Material for Background {
-    fn scattering(&self, interaction: &SurfaceInteraction) -> BSDF {
-        BSDF::new(interaction, &[BxDF::Constant(self.li(interaction))])
     }
 }

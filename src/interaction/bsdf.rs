@@ -6,11 +6,11 @@ use super::SurfaceInteraction;
 pub struct BSDF {
     pub eta: f64,
 
-    /// Shading normal (Not implemented yet)
-    ns: Normal,
-
     /// Geometry surface normal
     ng: Normal,
+
+    /// Shading normal
+    ns: Normal,
 
     // Orthogonal shading differential vectors (normalized). As we currently
     // don't have shading normals, these are generated from the geometric
@@ -29,11 +29,10 @@ impl BSDF {
     pub fn new_with_eta(si: &SurfaceInteraction, funcs: &[BxDF], eta: f64) -> BSDF {
         debug_assert!(funcs.len() < MAX_BXDFS);
 
-        // TODO: Generate these from shading parameters
-        let n = si.n();
-        let ss = si.dpdu;
-        let ts = n.cross(ss);
-        let n = normal::Normal3(n);
+        let ng = si.ng;
+        let ns = si.ns;
+        let ss = si.surface.dpdu;
+        let ts = ns.0.cross(ss);
 
         // Allocate initial scattering functions
         let mut num_bxdfs = 0;
@@ -43,7 +42,7 @@ impl BSDF {
             num_bxdfs += 1;
         }
 
-        BSDF { eta, ns: n, ng: n, ss, ts, bxdfs, num_bxdfs }
+        BSDF { eta, ns, ng, ss, ts, bxdfs, num_bxdfs }
     }
 
     /// Simple in that it doesn't include eta

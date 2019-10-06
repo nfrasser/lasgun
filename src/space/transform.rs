@@ -5,7 +5,7 @@ use cgmath::{
     InnerSpace, num_traits::identities::Zero
 };
 use super::{normal::Normal3, bounds::Bounds3};
-use crate::{ray::Ray3, interaction::surface::SurfaceInteraction};
+use crate::{ray::Ray3, interaction::surface::RayIntersection};
 
 /// Identity transformation
 pub const ID: Transform3<f64> = Transform3 { m: ID_MATRIX, minv: ID_MATRIX };
@@ -23,8 +23,8 @@ pub trait Trans<N: BaseFloat>: Transform<Point3<N>> {
     fn transform_normal(&self, normal: Normal3<N>) -> Normal3<N>;
     fn transform_ray(&self, ray: Ray3<N>) -> Ray3<N>;
     fn transform_bounds(&self, bounds: Bounds3<N>) -> Bounds3<N>;
-    fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
-    -> SurfaceInteraction<N>;
+    fn transform_ray_intersection(&self, isect: &RayIntersection<N>)
+    -> RayIntersection<N>;
 
     // Default implementations
     fn inverse_transform_normal(&self, normal: Normal3<N>) -> Normal3<N> {
@@ -38,9 +38,9 @@ pub trait Trans<N: BaseFloat>: Transform<Point3<N>> {
         self.inverse_transform().unwrap().transform_bounds(bounds)
     }
 
-    fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
-    -> SurfaceInteraction<N> {
-        self.inverse_transform().unwrap().transform_surface_interaction(interaction)
+    fn inverse_transform_ray_intersection(&self, isect: &RayIntersection<N>)
+    -> RayIntersection<N> {
+        self.inverse_transform().unwrap().transform_ray_intersection(isect)
     }
 }
 
@@ -241,11 +241,27 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     }
 
     #[inline]
-    fn transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
-    -> SurfaceInteraction<N> {
-        let dpdu = self.transform_vector(interaction.dpdu);
-        let dpdv = self.transform_vector(interaction.dpdv);
-        SurfaceInteraction::new(interaction.t, dpdu, dpdv, interaction.material)
+    fn transform_ray_intersection(&self, isect: &RayIntersection<N>)
+    -> RayIntersection<N> {
+        let dpdu = self.transform_vector(isect.geometry.dpdu);
+        let dpdv = self.transform_vector(isect.geometry.dpdv);
+        let mut isect_t = RayIntersection::new(isect.t, isect.uv, dpdu, dpdv);
+        isect_t.set_material(isect.material);
+
+        // Transform surface shading if required
+        if isect.geometry.dpdu != isect.surface.dpdu
+        || isect.geometry.dpdv != isect.surface.dpdv {
+            let dpdu = self.transform_vector(isect.surface.dpdu);
+            let dpdv = self.transform_vector(isect.surface.dpdv);
+            isect_t.set_surface_shading(dpdu, dpdv);
+        }
+
+        // Transform normal if available
+        if let Some(n) = isect.n {
+            isect_t.n = Some(self.transform_normal(n));
+        }
+
+        isect_t
     }
 
     #[inline]
@@ -268,11 +284,25 @@ impl<N: BaseFloat> Trans<N> for Transform3<N> {
     }
 
     #[inline]
-    fn inverse_transform_surface_interaction(&self, interaction: &SurfaceInteraction<N>)
-    -> SurfaceInteraction<N> {
-        let dpdu = self.inverse_transform_vector(interaction.dpdu).unwrap_or(Vector3::zero());
-        let dpdv = self.inverse_transform_vector(interaction.dpdv).unwrap_or(Vector3::zero());
-        SurfaceInteraction::new(interaction.t, dpdu, dpdv, interaction.material)
+    fn inverse_transform_ray_intersection(&self, isect: &RayIntersection<N>)
+    -> RayIntersection<N> {
+        let dpdu = self.inverse_transform_vector(isect.geometry.dpdu).unwrap_or(Vector3::zero());
+        let dpdv = self.inverse_transform_vector(isect.geometry.dpdv).unwrap_or(Vector3::zero());
+        let mut isect_inv = RayIntersection::new(isect.t, isect.uv, dpdu, dpdv);
+
+        // Transform surface shading if required
+        if isect.geometry.dpdu != isect.surface.dpdu
+        || isect.geometry.dpdv != isect.surface.dpdv {
+            let dpdu = self.inverse_transform_vector(isect.surface.dpdu).unwrap_or(Vector3::zero());
+            let dpdv = self.inverse_transform_vector(isect.surface.dpdv).unwrap_or(Vector3::zero());
+            isect_inv.set_surface_shading(dpdu, dpdv);
+        }
+
+        // Transform normal if available
+        if let Some(n) = isect.n {
+            isect_inv.n = Some(self.inverse_transform_normal(n));
+        }
+        isect_inv
     }
 
 }

@@ -29,6 +29,7 @@ pub use crate::scene::Scene;
 pub use crate::img::{Film, Pixel, PixelBuffer};
 pub use crate::ray::primary::PrimaryRay;
 pub use crate::primitive::Primitive;
+pub use crate::material::Material;
 
 /// A 16×16 portion of pixels taken from a film, arranged in row-major order.
 /// Used for streaming render results. NOT a slice of `Film::data`.

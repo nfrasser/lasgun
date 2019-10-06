@@ -12,15 +12,18 @@ let scene = lasgun.scene({
     sampling: 0,
 })
 
-scene.set_radial_background({ inner: [237, 222, 93], outer: [240, 152, 25] });
+scene.set_radial_background({
+    inner: [0.93, 0.87, 0.36],
+    outer: [0.94, 0.6, 0.1]
+});
 
-let mat0 = scene.add_metal_material({ eta: [0.9, 0.1, 0.9], k: [0.7, 1.0, 0.7], roughness: 0.25 })
-let bunny = scene.add_obj(await lasgun.mesh("./meshes/bunny.obj"))
+let mat0 = lasgun.metal({ eta: [0.9, 0.1, 0.9], k: [0.7, 1.0, 0.7], roughness: 0.25 })
+let bunny = scene.add_obj(await lasgun.obj("./meshes/bunny.obj"))
 
 scene.add_point_light({ position: [0.0, 2.0, 3.0], intensity: [0.9, 0.9, 0.9], falloff: [1.0, 0.0, 0.0] })
 
 let root = lasgun.group()
-root.add_mesh(bunny, mat0)
+root.add_obj(bunny, mat0)
 scene.set_root(root)
 
 resolve(scene)

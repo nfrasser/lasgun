@@ -50,6 +50,8 @@ extern {
     pub fn sampling(this: &Settings) -> Option<u8>;
     #[wasm_bindgen(method, getter, structural)]
     pub fn threads(this: &Settings) -> Option<u8>;
+    #[wasm_bindgen(method, getter, structural)]
+    pub fn smoothing(this: &Settings) -> Option<bool>;
 
     /// Duck-type Plastic material settings
     /// For JavaScript objects that have the form
@@ -207,14 +209,6 @@ pub fn hunk_count(scene: &Scene) -> u32 {
     (hcount as u32) * (vcount as u32)
 }
 
-// Reference to a material in a scene
-#[wasm_bindgen]
-#[derive(Clone, Copy, Debug)]
-pub struct MaterialRef(lasgun::scene::MaterialRef); impl MaterialRef {
-    #[inline] pub fn native(&self) -> lasgun::scene::MaterialRef { self.0 }
-    #[inline] pub fn as_native(self) -> lasgun::scene::MaterialRef { self.0 }
-}
-
 // Triangle mesh reference in a scene
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug)]
@@ -278,7 +272,8 @@ impl Scene {
             height: settings.height(),
             fov: settings.fov(),
             supersampling: settings.sampling().unwrap_or(0),
-            threads: settings.threads().unwrap_or(0)
+            threads: settings.threads().unwrap_or(0),
+            smoothing: settings.smoothing().unwrap_or(true)
         };
 
         Scene { data: lasgun::Scene::new(options) }
@@ -297,64 +292,18 @@ impl Scene {
     }
 
     pub fn set_solid_background(&mut self, color: Box<[JsValue]>) {
-        let color = utils::to_vec3u8(color);
+        let color = utils::to_vec3f(color);
         self.data.set_solid_background(color)
     }
 
     pub fn set_radial_background(&mut self, background: RadialBackground) {
-        let inner = utils::to_vec3u8(background.inner());
-        let outer = utils::to_vec3u8(background.outer());
+        let inner = utils::to_vec3f(background.inner());
+        let outer = utils::to_vec3f(background.outer());
         self.data.set_radial_background(inner, outer)
     }
 
-    pub fn add_plastic_material(&mut self, settings: &Plastic) -> MaterialRef {
-        let kd = utils::to_vec3f(settings.kd());
-        let ks = utils::to_vec3f(settings.ks());
-        let roughness = settings.roughness().unwrap_or(0.0);
-        MaterialRef(self.data.add_plastic_material(kd, ks, roughness))
-    }
-
-    pub fn add_matte_material(&mut self, settings: &Matte) -> MaterialRef {
-        let kd = utils::to_vec3f(settings.kd());
-        let sigma = settings.sigma().unwrap_or(0.0);
-        MaterialRef(self.data.add_matte_material(kd, sigma))
-    }
-
-    pub fn add_metal_material(&mut self, settings: &Metal) -> MaterialRef {
-        let eta = utils::to_vec3f(settings.eta());
-        let k = utils::to_vec3f(settings.k());
-        let (mut u_roughness, mut v_roughness) = (0.0, 0.0);
-        if let Some(roughness) = settings.roughness() {
-            u_roughness = roughness;
-            v_roughness = roughness;
-        }
-
-        if let Some(u) = settings.u_roughness() { u_roughness = u }
-        if let Some(v) = settings.v_roughness() { v_roughness = v }
-
-        MaterialRef(self.data.add_metal_material(eta, k, u_roughness, v_roughness))
-    }
-
-    pub fn add_mirror_material(&mut self, settings: &Mirror) -> MaterialRef {
-        let kr = if let Some(value) = settings.kr() {
-            utils::to_vec3f(value)
-        } else {
-            [1.0, 1.0, 1.0]
-        };
-        MaterialRef(self.data.add_mirror_material(kr))
-    }
-
-    pub fn add_glass_material(&mut self, settings: &Plastic) -> MaterialRef {
-        let kr = if let Some(val) = settings.kr()
-            { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
-        let kt = if let Some(val) = settings.kt()
-            { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
-        let eta = if let Some(val) = settings.eta() { val } else { 1.5 };
-        MaterialRef(self.data.add_glass_material(kr, kt, eta))
-    }
-
     pub fn add_obj(&mut self, obj: &str) -> ObjRef {
-        ObjRef(self.data.add_mesh_from(obj).unwrap())
+        ObjRef(self.data.parse_obj(obj).unwrap())
     }
 
     pub fn add_point_light(&mut self, settings: &PointLight) {
@@ -376,7 +325,8 @@ impl Scene {
             height: 0,
             fov: 0.0,
             supersampling: 0,
-            threads: 0
+            threads: 0,
+            smoothing: true
         };
 
         Scene { data: lasgun::Scene::new(options) }
@@ -412,26 +362,27 @@ impl Aggregate {
         self.data.add_group(node.data)
     }
 
-    pub fn add_sphere(&mut self, sphere: &Sphere, material: &MaterialRef) {
+    pub fn add_sphere(&mut self, sphere: &Sphere, material: &Material) {
         let origin = utils::to_vec3f(sphere.origin());
         let radius = sphere.radius();
-        self.data.add_sphere(origin, radius, material.native())
+        self.data.add_sphere(origin, radius, *material.native())
     }
 
-    pub fn add_cube(&mut self, cube: &Cube, material: &MaterialRef) {
+    pub fn add_cube(&mut self, cube: &Cube, material: &Material) {
         let origin = utils::to_vec3f(cube.origin());
         let dim = cube.dim();
-        self.data.add_cube(origin, dim, material.native())
+        self.data.add_cube(origin, dim, *material.native())
     }
 
-    pub fn add_box(&mut self, cuboid: &Cuboid, material: &MaterialRef) {
+    pub fn add_box(&mut self, cuboid: &Cuboid, material: &Material) {
         let start = utils::to_vec3f(cuboid.start());
         let end = utils::to_vec3f(cuboid.end());
-        self.data.add_box(start, end, material.native())
+        self.data.add_box(start, end, *material.native())
     }
 
-    pub fn add_mesh(&mut self, mesh: &ObjRef, material: &MaterialRef) {
-        self.data.add_mesh(mesh.native(), material.native())
+    // FIXME: Implement add_obj and add_obj_of, which takes a material
+    pub fn add_obj(&mut self, mesh: &ObjRef, material: &Material) {
+        self.data.add_obj_of(mesh.native(), *material.native())
     }
 
     /// Translate by the given delta values, x y and z
@@ -520,5 +471,61 @@ impl Film {
         4
         * self.0.width as usize
         * self.0.height as usize
+    }
+}
+
+// Lasgun-exposed material
+#[wasm_bindgen]
+pub struct Material(lasgun::Material); impl Material {
+    pub fn native(&self) -> &lasgun::Material { &self.0 }
+    pub fn native_mut(&mut self) -> &mut lasgun::Material { &mut self.0 }
+}
+
+#[wasm_bindgen]
+impl Material {
+    pub fn plastic(settings: &Plastic) -> Material {
+        let kd = utils::to_vec3f(settings.kd());
+        let ks = utils::to_vec3f(settings.ks());
+        let roughness = settings.roughness().unwrap_or(0.0);
+        Material(lasgun::Material::plastic(kd, ks, roughness))
+    }
+
+    pub fn matte(settings: &Matte) -> Material {
+        let kd = utils::to_vec3f(settings.kd());
+        let sigma = settings.sigma().unwrap_or(0.0);
+        Material(lasgun::Material::matte(kd, sigma))
+    }
+
+    pub fn metal(settings: &Metal) -> Material {
+        let eta = utils::to_vec3f(settings.eta());
+        let k = utils::to_vec3f(settings.k());
+        let (mut u_roughness, mut v_roughness) = (0.0, 0.0);
+        if let Some(roughness) = settings.roughness() {
+            u_roughness = roughness;
+            v_roughness = roughness;
+        }
+
+        if let Some(u) = settings.u_roughness() { u_roughness = u }
+        if let Some(v) = settings.v_roughness() { v_roughness = v }
+
+        Material(lasgun::Material::metal(eta, k, u_roughness, v_roughness))
+    }
+
+    pub fn mirror(settings: &Mirror) -> Material {
+        let kr = if let Some(value) = settings.kr() {
+            utils::to_vec3f(value)
+        } else {
+            [1.0, 1.0, 1.0]
+        };
+        Material(lasgun::Material::mirror(kr))
+    }
+
+    pub fn glass(settings: &Plastic) -> Material {
+        let kr = if let Some(val) = settings.kr()
+            { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
+        let kt = if let Some(val) = settings.kt()
+            { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
+        let eta = if let Some(val) = settings.eta() { val } else { 1.5 };
+        Material(lasgun::Material::glass(kr, kt, eta))
     }
 }

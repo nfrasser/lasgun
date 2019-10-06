@@ -1,5 +1,6 @@
 use cgmath::prelude::*;
 use cgmath::{ BaseNum, BaseFloat, Vector3 };
+use std::ops::Neg;
 
 /// Normal vector representation. Used for cases where we want the vector to be
 /// treated as a normal e.g., when doing transformations to maintain normal
@@ -31,11 +32,11 @@ impl<S: BaseNum> Normal3<S> {
 }
 
 impl<S: BaseFloat> Normal3<S> {
-    /// Ensure the normal is facing toward the given d vector
+    /// Ensure the normal is facing the same hemisphere as `v`
     #[inline]
-    pub fn face_forward(self, d: Vector3<S>) -> Normal3<S> {
+    pub fn face_forward(self, v: Vector3<S>) -> Normal3<S> {
         let zero = S::zero();
-        Normal3(if self.0.dot(d) > zero { -self.0 } else { self.0 })
+        Normal3(if self.0.dot(v) < zero { -self.0 } else { self.0 })
     }
 
     /// Normalize the inner vector
@@ -51,4 +52,9 @@ impl<S: BaseNum> Into<Vector3<S>> for Normal3<S> {
 
 impl<'a, S: BaseNum> Into<&'a Vector3<S>> for &'a Normal3<S> {
     fn into(self) -> &'a Vector3<S> { &self.0 }
+}
+
+impl<S: BaseFloat> Neg for Normal3<S> {
+    type Output = Normal3<S>;
+    fn neg(self) -> Normal3<S> { Normal3(-self.0) }
 }
