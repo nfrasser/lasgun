@@ -4,6 +4,8 @@ declare const self: DedicatedWorkerGlobalScope
 import * as wasm from 'lasgun-js/lasgun_js_bg'
 import * as lasgun from 'lasgun-js'
 
+type Vec3f = [ number, number, number ]
+
 async function capture(sceneFunctionBody: string) {
 
     // Can't call directly because webpack rewrites this :(
@@ -14,11 +16,14 @@ async function capture(sceneFunctionBody: string) {
     );
 
     // Array of free-able items
-    const allocations: Array<lasgun.Scene | lasgun.Aggregate> = []
+    const allocations: Array<lasgun.Scene | lasgun.Aggregate | lasgun.Material> = []
 
     // Expose a new lasgun with just the bare essentials for use
     // in the user-scene code
     const lasgunLite = Object.freeze({
+        async obj(url: string): Promise<string> {
+            return await (await fetch(url)).text()
+        },
         scene(options: any): lasgun.Scene {
             let scene = lasgun.scene(options)
             allocations.push(scene)
@@ -29,9 +34,33 @@ async function capture(sceneFunctionBody: string) {
             allocations.push(contents)
             return contents
         },
-        async mesh(url: string): Promise<string> {
-            let response = await fetch(url)
-            return await response.text()
+        matte(settings: { kd: Vec3f, sigma?: number }): lasgun.Material {
+            let mat = lasgun.Material.matte(settings)
+            allocations.push(mat)
+            return mat
+        },
+        plastic(settings: { kd: Vec3f, ks: Vec3f, roughness?: number }): lasgun.Material {
+            let mat = lasgun.Material.plastic(settings)
+            allocations.push(mat)
+            return mat
+        },
+        metal(settings: {
+            eta: Vec3f, k: Vec3f,
+            roughness?: number, u_roughness?: number, v_roughness?: number
+        }): lasgun.Material {
+            let mat = lasgun.Material.metal(settings)
+            allocations.push(mat)
+            return mat
+        },
+        mirror(settings?: { kr?: Vec3f }): lasgun.Material {
+            let mat = lasgun.Material.metal(settings || {})
+            allocations.push(mat)
+            return mat
+        },
+        glass(settings?: { kr?: Vec3f, kt?: Vec3f, eta?: number }): lasgun.Material {
+            let mat = lasgun.Material.metal(settings || {})
+            allocations.push(mat)
+            return mat
         }
     })
 

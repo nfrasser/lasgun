@@ -11,9 +11,11 @@ const scene = lasgun.scene({
     fov: 50.0,
     sampling: 0
 })
-let contents = lasgun.group();
 
-scene.set_radial_background({ inner: [218, 210, 153], outer: [176, 218, 185] });
+scene.set_radial_background({
+    inner: [0.85, 0.82, 0.6],
+    outer: [0.69, 0.85, 0.73]
+});
 
 scene.add_point_light({
     position: [200.0, 202.0, 430.0],
@@ -21,12 +23,17 @@ scene.add_point_light({
     falloff: [1.0, 0.0, 0.0]
 })
 
-let stone = scene.add_metal_material({ eta: [0.01, 0.01, 0.01], k: [0.7, 0.7, 0.7], roughness: 0.5 })
-let grass = scene.add_plastic_material({ kd: [0.1, 0.7, 0.1], ks: [0.0, 0.0, 0.0], roughness: 0.75 })
-let hide = scene.add_plastic_material({ kd: [0.84, 0.6, 0.53], ks: [0.3, 0.3, 0.3], roughness: 0.05 })
+// Load shared object instances
+let planemesh = scene.add_obj(await lasgun.obj('./meshes/plane.obj'))
+let buckyballmesh = scene.add_obj(await lasgun.obj('./meshes/buckyball.obj'))
 
-let planemesh = scene.add_obj(await lasgun.mesh('./meshes/plane.obj'))
-let buckyballmesh = scene.add_obj(await lasgun.mesh('./meshes/buckyball.obj'))
+// Materials
+let stone = lasgun.metal({ eta: [0.01, 0.01, 0.01], k: [0.7, 0.7, 0.7], roughness: 0.5 })
+let grass = lasgun.plastic({ kd: [0.1, 0.7, 0.1], ks: [0.0, 0.0, 0.0], roughness: 0.75 })
+let hide = lasgun.plastic({ kd: [0.84, 0.6, 0.53], ks: [0.3, 0.3, 0.3], roughness: 0.05 })
+
+// Scene contents
+let contents = lasgun.group();
 
 // Ring of arches
 for (let i = 0; i < 6; i++) {
@@ -86,13 +93,13 @@ for (let [translation, rotation] of [
 // The Floor
 let plane = lasgun.group()
 plane.scale(30.0, 30.0, 30.0)
-plane.add_mesh(planemesh, grass)
+plane.add_obj(planemesh, grass)
 contents.add_group(plane)
 
 // Central altar
 let buckyball = lasgun.group()
 buckyball.scale(1.5, 1.5, 1.5)
-buckyball.add_mesh(buckyballmesh, stone)
+buckyball.add_obj(buckyballmesh, stone)
 contents.add_group(buckyball)
 
 contents.rotate_x(23.0)
