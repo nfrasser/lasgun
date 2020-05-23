@@ -1,6 +1,6 @@
 // use std::ops::Index;
-use std::{path::Path, io::{self, BufRead, BufReader}, fs::File};
-use obj;
+use std::{path::{Path, PathBuf}, io::{self, BufRead, BufReader}, fs::File};
+use obj::{Obj};
 
 use crate::{
     space::*,
@@ -9,21 +9,6 @@ use crate::{
     interaction::RayIntersection,
     Material
 };
-
-// TODO: Is this okay?
-pub type Obj = obj::Obj<'static, TriangleIndex>;
-
-/// Similar to the obj::IndexTuple but without optionals The first item is the
-/// vertex index, the second is the texture coordinate (uv) index, and the third
-/// is the normal index.
-///
-/// If not specified in the .obj file, the second and third items default to the
-/// value of the first.
-#[derive(Debug, Copy, Clone)]
-pub struct IndexTuple(pub usize, pub usize, pub usize);
-
-#[derive(Debug, Copy, Clone)]
-pub struct TriangleIndex(pub IndexTuple, pub IndexTuple, pub IndexTuple);
 
 /// A triangle references its parent mesh and the index within the faces array.
 /// The triangle's lifetime depends on the mesh it references.
@@ -47,30 +32,6 @@ pub struct Triangle<'a> {
     obj: &'a Obj,
 }
 
-impl IndexTuple {
-    /// From the IndexTuple provided by the obj crate
-    fn from_native(tuple: &obj::IndexTuple) -> IndexTuple {
-        IndexTuple(tuple.0, tuple.1.unwrap_or(tuple.0), tuple.2.unwrap_or(tuple.0))
-    }
-}
-
-impl obj::GenPolygon for TriangleIndex {
-    fn new(data: obj::SimplePolygon) -> Self {
-        Self::try_new(data).unwrap()
-    }
-
-    fn try_new(data: obj::SimplePolygon) -> Result<Self, String> {
-        match data.len() {
-            3 => Ok(TriangleIndex(
-                IndexTuple::from_native(&data[0]),
-                IndexTuple::from_native(&data[1]),
-                IndexTuple::from_native(&data[2])
-            )),
-            _ => Err("Not a triangle mesh!".to_string())
-        }
-    }
-}
-
 impl<'a> Triangle<'a> {
     pub fn new(obj: &'a Obj, object: u16, group: u16, poly: u32) -> Triangle<'a> {
         Triangle { object, group, poly, obj }
@@ -78,43 +39,40 @@ impl<'a> Triangle<'a> {
 
     #[inline]
     pub fn p0(&self) -> Point {
-        let v = self.obj.position[(self.poly().0).0];
+        let v = self.obj.data.position[((self.poly().0)[0]).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn p1(&self) -> Point {
-        let v = self.obj.position[(self.poly().1).0];
+        let v = self.obj.data.position[((self.poly().0)[1]).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn p2(&self) -> Point {
-        let v = self.obj.position[(self.poly().2).0];
+        let v = self.obj.data.position[((self.poly().0)[2]).0];
         Point::new(v[0].into(), v[1].into(), v[2].into())
     }
 
     #[inline]
     pub fn n0(&self) -> Vector {
         debug_assert!(self.has_n());
-        let tuple = self.poly().0;
-        let n = self.obj.normal[tuple.2];
+        let n = self.obj.data.normal[(((self.poly().0)[0]).2).unwrap()];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
     pub fn n1(&self) -> Vector {
         debug_assert!(self.has_n());
-        let tuple = self.poly().1;
-        let n = self.obj.normal[tuple.2];
+        let n = self.obj.data.normal[(((self.poly().0)[1]).2).unwrap()];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
     #[inline]
     pub fn n2(&self) -> Vector {
         debug_assert!(self.has_n());
-        let tuple = self.poly().2;
-        let n = self.obj.normal[tuple.2];
+        let n = self.obj.data.normal[(((self.poly().0)[2]).2).unwrap()];
         Vector::new(n[0].into(), n[1].into(), n[2].into())
     }
 
@@ -135,51 +93,51 @@ impl<'a> Triangle<'a> {
     #[inline]
     pub fn uv0(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let tuple = self.poly().0;
-        let uv = self.obj.texture[tuple.1];
+        let tuple = (self.poly().0)[0];
+        let uv = self.obj.data.texture[(tuple.1).unwrap()];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     #[inline]
     pub fn uv1(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let tuple = self.poly().1;
-        let uv = self.obj.texture[tuple.1];
+        let tuple = (self.poly().0)[1];
+        let uv = self.obj.data.texture[(tuple.1).unwrap()];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     #[inline]
     pub fn uv2(&self) -> Point2f {
         debug_assert!(self.has_uv());
-        let tuple = self.poly().2;
-        let uv = self.obj.texture[tuple.1];
+        let tuple = (self.poly().0)[2];
+        let uv = self.obj.data.texture[(tuple.1).unwrap()];
         Point2f::new(uv[0].into(), uv[1].into())
     }
 
     // Whether this mesh has normals mapped
     #[inline]
     pub fn has_n(&self) -> bool {
-        self.obj.normal.len() > 0
+        self.obj.data.normal.len() > 0
     }
 
     // Whether this mesh has UV texture coordinates mapped
     #[inline]
     pub fn has_uv(&self) -> bool {
-        self.obj.texture.len() > 0
+        self.obj.data.texture.len() > 0
     }
 
     #[inline]
-    fn object(&self) -> &obj::Object<'a, TriangleIndex> {
-        &self.obj.objects[self.object as usize]
+    fn object(&self) -> &obj::Object {
+        &self.obj.data.objects[self.object as usize]
     }
 
     #[inline]
-    fn group(&self) -> &obj::Group<'a, TriangleIndex> {
+    fn group(&self) -> &obj::Group {
         &self.object().groups[self.group as usize]
     }
 
     #[inline]
-    fn poly(&self) -> &TriangleIndex {
+    fn poly(&self) -> &obj::SimplePolygon {
         &self.group().polys[self.poly as usize]
     }
 }
@@ -389,17 +347,17 @@ impl<'a> Iterator for TriangleIterator<'a> {
 
         self.poly_index += 1;
 
-        if self.poly_index == self.obj.objects[self.object_index].groups[self.group_index].polys.len() {
+        if self.poly_index == self.obj.data.objects[self.object_index].groups[self.group_index].polys.len() {
             self.poly_index = 0;
             self.group_index += 1;
         }
 
-        if self.group_index == self.obj.objects[self.object_index].groups.len() {
+        if self.group_index == self.obj.data.objects[self.object_index].groups.len() {
             self.group_index = 0;
             self.object_index += 1;
         }
 
-        if self.object_index == self.obj.objects.len() {
+        if self.object_index == self.obj.data.objects.len() {
             self.size_hint = 0;
         } else {
             self.size_hint -= 1;
@@ -415,9 +373,9 @@ impl<'a> Iterator for TriangleIterator<'a> {
 
 /// Load from an object file at the given path
 #[inline]
-pub fn load_obj(path: &Path) -> io::Result<Obj> {
+pub fn load_obj(path: &Path) -> Result<Obj, obj::ObjError> {
     let f = File::open(path)?;
-    let mut obj = Obj::load_buf(&mut BufReader::new(f))?;
+    let mut obj = obj_from_buf(&mut BufReader::new(f))?;
     // unwrap is safe as we've read this file before
     obj.path = path.parent().unwrap().to_owned();
     Ok(obj)
@@ -425,21 +383,21 @@ pub fn load_obj(path: &Path) -> io::Result<Obj> {
 
 /// Parse the string contents of a .obj file into a `Obj` instance.
 #[inline]
-pub fn parse_obj(slice: &str) -> io::Result<Obj> {
+pub fn parse_obj(slice: &str) -> Result<Obj, obj::ObjError> {
     let mut buf = io::Cursor::new(slice);
     obj_from_buf(&mut buf)
 }
 
 /// Parse the given readable buffer of a .obj file into a `Obj` instance.
 #[inline]
-pub fn obj_from_buf<B>(input: &mut B) -> io::Result<Obj> where B: BufRead {
-    let obj = Obj::load_buf(input)?;
-    Ok(obj)
+pub fn obj_from_buf<B>(input: &mut B) -> Result<Obj, obj::ObjError> where B: BufRead {
+    let data = obj::ObjData::load_buf(input)?;
+    Ok(Obj { data, path: PathBuf::new() })
 }
 
 /// Number of faces on this obj
 pub fn face_count(obj: &Obj) -> usize {
-    obj.objects.iter().fold(0, |size, object| {
+    obj.data.objects.iter().fold(0, |size, object| {
         object.groups.iter().fold(size, |size, group| {
             size + group.polys.len()
         })

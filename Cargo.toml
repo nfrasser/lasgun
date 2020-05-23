@@ -10,7 +10,7 @@ edition = "2018"
 [features]
 default = ["bin"]
 lib = []
-bin = ["image/png_codec", "num_cpus"]
+bin = ["image/png", "num_cpus"]
 
 [[bin]]
 name = "cli"
@@ -47,16 +47,16 @@ path = "src/examples/spooky.rs"
 required-features = ["bin"]
 
 [dependencies]
-rand = "^0.6"
+rand = "^0.7"
 cgmath = "^0.17"
-obj = "^0.9"
-typed-arena = "^1.4"
+obj = "^0.10"
+typed-arena = "^2.0"
 partition = "^0.1"
 bitflags = "^1.1"
 num_cpus = { version = "^1.10", optional = true }
 
 [dependencies.image]
-version = "^0.22"
+version = "^0.23"
 optional = true
 default-features = false
-features = ["png_codec"]
+features = ["png"]

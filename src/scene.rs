@@ -1,5 +1,6 @@
-use std::{f64, io, path::Path};
+use std::{f64, path::Path};
 
+use obj::Obj;
 use crate::space::*;
 use crate::light::{Light, point::PointLight};
 use crate::material::Background;
@@ -177,7 +178,7 @@ impl Scene {
     /// Add the given loaded Obj instance to the scene
     pub fn add_obj(&mut self, mesh: Obj) -> ObjRef {
         let mut mesh = mesh;
-        if !self.options.smoothing { mesh.normal.clear() };
+        if !self.options.smoothing { mesh.data.normal.clear() };
         let reference = ObjRef(self.meshes.len());
         self.meshes.push(mesh);
         reference
@@ -186,14 +187,14 @@ impl Scene {
     /// Generate triangle mesh from the given string contents of a .obj file and
     /// add it to the scene. If parsed correctly, returns a reference to the
     /// mesh for use in scene node construction.
-    pub fn parse_obj(&mut self, obj: &str) -> io::Result<ObjRef> {
+    pub fn parse_obj(&mut self, obj: &str) -> Result<ObjRef, obj::ObjError> {
         let obj = parse_obj(obj)?;
         Ok(self.add_obj(obj))
     }
 
     // Load the .obj file mesh at the given file-system path and add it to the
     // scene.
-    pub fn load_obj(&mut self, obj_path: &Path) -> io::Result<ObjRef> {
+    pub fn load_obj(&mut self, obj_path: &Path) -> Result<ObjRef, obj::ObjError> {
         let obj = load_obj(obj_path)?;
         Ok(self.add_obj(obj))
     }
