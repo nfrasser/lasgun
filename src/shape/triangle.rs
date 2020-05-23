@@ -56,13 +56,17 @@ impl IndexTuple {
 
 impl obj::GenPolygon for TriangleIndex {
     fn new(data: obj::SimplePolygon) -> Self {
+        Self::try_new(data).unwrap()
+    }
+
+    fn try_new(data: obj::SimplePolygon) -> Result<Self, String> {
         match data.len() {
-            3 => TriangleIndex(
+            3 => Ok(TriangleIndex(
                 IndexTuple::from_native(&data[0]),
                 IndexTuple::from_native(&data[1]),
                 IndexTuple::from_native(&data[2])
-            ),
-            _ => panic!("Not a triangle mesh!")
+            )),
+            _ => Err("Not a triangle mesh!".to_string())
         }
     }
 }
