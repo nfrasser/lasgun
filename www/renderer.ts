@@ -53,12 +53,12 @@ async function capture(sceneFunctionBody: string) {
             return mat
         },
         mirror(settings?: { kr?: Vec3f }): lasgun.Material {
-            let mat = lasgun.Material.metal(settings || {})
+            let mat = lasgun.Material.mirror(settings || {})
             allocations.push(mat)
             return mat
         },
         glass(settings?: { kr?: Vec3f, kt?: Vec3f, eta?: number }): lasgun.Material {
-            let mat = lasgun.Material.metal(settings || {})
+            let mat = lasgun.Material.glass(settings || {})
             allocations.push(mat)
             return mat
         }

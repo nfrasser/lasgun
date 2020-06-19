@@ -119,11 +119,11 @@ extern {
     /// }
     pub type Glass;
     #[wasm_bindgen(method, getter, structural)]
-    pub fn kr(this: &Plastic) -> Option<Box<[JsValue]>>; // Vector
+    pub fn kr(this: &Glass) -> Option<Box<[JsValue]>>; // Vector
     #[wasm_bindgen(method, getter, structural)]
-    pub fn kt(this: &Plastic) -> Option<Box<[JsValue]>>; // Vector
+    pub fn kt(this: &Glass) -> Option<Box<[JsValue]>>; // Vector
     #[wasm_bindgen(method, getter, structural)]
-    pub fn eta(this: &Plastic) -> Option<f64>;
+    pub fn eta(this: &Glass) -> Option<f64>;
 
     /// Duck-type Point Light settings
     /// For JavaScript objects that have the form
@@ -520,7 +520,7 @@ impl Material {
         Material(lasgun::Material::mirror(kr))
     }
 
-    pub fn glass(settings: &Plastic) -> Material {
+    pub fn glass(settings: &Glass) -> Material {
         let kr = if let Some(val) = settings.kr()
             { utils::to_vec3f(val) } else { [1.0, 1.0, 1.0] };
         let kt = if let Some(val) = settings.kt()
