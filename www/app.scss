@@ -1,7 +1,13 @@
 @import "~codemirror/lib/codemirror.css";
 @import "~codemirror/theme/solarized.css";
 
+#canvas {
+    background-color: lightgrey;
+}
 canvas {
-    float: right;
     max-width: 100%;
+}
+
+#code > * {
+    height: 100%;
 }

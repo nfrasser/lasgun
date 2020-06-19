@@ -35,7 +35,7 @@ async function main() {
     let response = await fetch('./scenes/playground.js')
     let scene = await response.text()
 
-    let code = CodeMirror(document.body, {
+    let code = CodeMirror(document.getElementById('code'), {
         value: scene,
         lineNumbers: true,
         theme: 'solarized'

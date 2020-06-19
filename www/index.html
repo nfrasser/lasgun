@@ -3,9 +3,17 @@
   <head>
     <meta charset="utf-8">
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
   </head>
   <body>
-    <canvas id="output" width="512" height="512"></canvas>
-    <button id="render-button" disabled>Render</button>
+    <h1>Lasgun</h1>
+    <section id="canvas">
+      <canvas id="output" width="512" height="512"></canvas>
+    </section>
+    <section>
+      <button id="render-button" disabled>Render</button>
+    </section>
+    <div id="code"></div>
   </body>
 </html>
