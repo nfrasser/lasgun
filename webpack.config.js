@@ -1,7 +1,18 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin")
 const CopyWebpackPlugin = require("copy-webpack-plugin")
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const TerserJSPlugin = require('terser-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const path = require('path')
+
+const mode = process.env.NODE_ENV || 'development'
+const opt = mode === 'development'
+  ? {}
+  : {
+    optimization: {
+      minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})],
+    }
+  }
 
 const resolve = {
   extensions: [ '.tsx', '.ts', '.js', '.wasm']
@@ -14,6 +25,7 @@ const tsRule = {
 }
 
 const browserConfig = {
+  ...opt,
   entry: './www/app.ts',
   devtool: 'inline-source-map',
   resolve, module: {
@@ -36,7 +48,7 @@ const browserConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "app.js",
   },
-  mode: "development",
+  mode,
   plugins: [
     new CopyWebpackPlugin([
       { from: './www/scenes/*.js', to: './scenes', flatten: true },
@@ -56,6 +68,7 @@ const browserConfig = {
 }
 
 const workerConfig = {
+  ...opt,
   entry: "./www/worker.ts",
   devtool: 'inline-source-map',
   resolve, module: { rules: [tsRule] },
@@ -64,7 +77,7 @@ const workerConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "worker.js"
   },
-  mode: "development",
+  mode
 }
 
 module.exports = [browserConfig, workerConfig]
