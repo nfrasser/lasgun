@@ -1,7 +1,7 @@
 [package]
 name = "lasgun-js"
 version = "0.1.0"
-authors = ["Nick Frasser <nfrasser@gmail.com>"]
+authors = ["Nick Frasser <nick@nfrasser.com>"]
 description = "A ray tracing library in Rust that works in the browser"
 repository = "https://github.com/nfrasser/lasgun.git"
 license = "MIT"
