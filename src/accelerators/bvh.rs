@@ -5,7 +5,6 @@ use crate::{
     space::*,
     shape::*,
     Material,
-    ray::Ray,
     primitive::{Primitive, OptionalPrimitive},
     interaction::RayIntersection,
     scene::{Scene, ObjRef, node::{self, SceneNode}}

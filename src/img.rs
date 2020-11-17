@@ -1,4 +1,4 @@
-use crate::{space::Color, Scene};
+use crate::space::*;
 use std::ops::{Index, IndexMut};
 
 /// RGBA pixel representation, with A being the Alpha channel
@@ -10,44 +10,45 @@ pub type Pixel = [u8; 4];
 pub trait PixelBuffer: Index<usize> + IndexMut<usize> {
     fn raw_pixels(&self) -> *const Pixel;
     fn raw_pixels_mut(&mut self) -> *mut Pixel;
-    fn as_slice(&self) -> &[u8];
+    fn as_bytes(&self) -> &[u8];
     fn save(&self, _filename: &str) { unimplemented!() }
 }
 
 impl PixelBuffer for Vec<Pixel> {
     fn raw_pixels(&self) -> *const Pixel { self[..].as_ptr() }
     fn raw_pixels_mut(&mut self) -> *mut Pixel { self[..].as_mut_ptr() }
-    fn as_slice(&self) -> &[u8] { unsafe { std::mem::transmute(self.as_slice()) } }
+    fn as_bytes(&self) -> &[u8] { unsafe { std::mem::transmute(self.as_slice()) } }
 }
 
 impl PixelBuffer for [Pixel] {
     fn raw_pixels(&self) -> *const Pixel { self.as_ptr() }
     fn raw_pixels_mut(&mut self) -> *mut Pixel { self.as_mut_ptr() }
-    fn as_slice(&self) -> &[u8] { unsafe { std::mem::transmute(self) } }
+    fn as_bytes(&self) -> &[u8] { unsafe { std::mem::transmute(self) } }
 }
 
 /// Queriable store of pixels that will eventually be saved to a file. By
 /// default, pixel data is internally represented by a Vector of pixels arranged
 /// in row-major order.
 pub struct Film {
-    pub width: u16,
-    pub height: u16,
-    data: Box<dyn PixelBuffer<Output = Pixel>>
+    pub resolution: Vector2u,
+    pub inv_resolution: Vector2f,
+    pub aspect_ratio: f64,
+
+    /// Output pixel buffer that eventually gets written out to disk or wherever
+    output: Box<dyn PixelBuffer<Output = Pixel>>,
 }
+
+unsafe impl std::marker::Send for Film {}
+unsafe impl std::marker::Sync for Film {}
 
 impl Film {
 
     /// Initialize a new film with the given dimensions, with each pixel
     /// initialized to Black
-    pub fn new(width: u16, height: u16) -> Film {
-        let data = vec![[0, 0, 0, 0]; (width as usize) * (height as usize)];
-        let data = Box::new(data);
-        Film { width, height, data }
-    }
-
-    /// Create a new film based on the parameters in the given scene
-    pub fn from(scene: &Scene) -> Film {
-        Film::new(scene.options.width, scene.options.height)
+    pub fn new(width: u32, height: u32) -> Film {
+        let area = (width as usize) * (height as usize);
+        let output = Box::new(vec![[0, 0, 0, 0]; area]);
+        Film::new_with_output(width, height, output)
     }
 
     /// Create a new film with a pre-allocated box of data/ Use this when a
@@ -58,40 +59,27 @@ impl Film {
     ///
     /// Assumes that that data has room for width * height * 4 bytes worth of
     /// pixels.
-    pub fn new_with_data(width: u16, height: u16, data: Box<dyn PixelBuffer<Output = Pixel>>) -> Film {
-        Film { width, height, data }
+    pub fn new_with_output(width: u32, height: u32, output: Box<dyn PixelBuffer<Output = Pixel>>) -> Film {
+        let resolution = Vector2u::new(width, height);
+        let inv_resolution = Vector2f::new(1. / width as f64, 1. / height as f64);
+        let aspect_ratio = width as f64 / height as f64;
+        Film { resolution, inv_resolution, aspect_ratio, output }
     }
 
     /// Returns the total number of pixels of the image (width * height)
     pub fn num_pixels(&self) -> usize {
-        self.width as usize * self.height as usize
-    }
-
-    /// Get the pixel at the given x/y dimensions
-    pub fn get(&self, x: usize, y: usize) -> &Pixel {
-        let offset = self.offset(x, y);
-        &self.data[offset]
+        self.resolution.x as usize * self.resolution.y as usize
     }
 
     pub fn set(&mut self, x: usize, y: usize, color: &Color) {
         let offset = self.offset(x, y);
-        set_pixel_color(&mut self.data[offset], color)
-    }
-
-    pub fn foreach<F>(&self, func: F) where F: Fn(u16, u16, &Pixel) -> () {
-        let mut offset = 0;
-        for x in 0..self.width {
-            for y in 0..self.height {
-                func(x, y, &self.data[offset]);
-                offset += 1;
-            }
-        }
+        set_pixel_color(&mut self.output[offset], color)
     }
 
     // Retrieves the offset into the pixel vector
     #[inline]
     fn offset(&self, x: usize, y: usize) -> usize {
-        (self.width as usize) * y + x
+        (self.resolution.x as usize) * y + x
     }
 }
 
@@ -99,31 +87,31 @@ impl Index<usize> for Film {
     type Output = Pixel;
 
     fn index(&self, at: usize) -> &Self::Output {
-        &self.data[at]
+        &self.output[at]
     }
 }
 
 impl IndexMut<usize> for Film {
     fn index_mut(&mut self, at: usize) -> &mut Self::Output {
-        &mut self.data[at]
+        &mut self.output[at]
     }
 }
 
 impl PixelBuffer for Film {
     fn raw_pixels(&self) -> *const Pixel {
-        self.data.raw_pixels()
+        self.output.raw_pixels()
     }
 
     fn raw_pixels_mut(&mut self) -> *mut Pixel {
-        self.data.raw_pixels_mut()
+        self.output.raw_pixels_mut()
     }
 
-    fn as_slice(&self) -> &[u8] {
-        self.data.as_slice()
+    fn as_bytes(&self) -> &[u8] {
+        self.output.as_bytes()
     }
 
     fn save(&self, filename: &str) {
-        self.data.save(filename)
+        self.output.save(filename)
     }
 }
 

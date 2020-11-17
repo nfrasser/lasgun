@@ -1,5 +1,5 @@
 use cgmath::{prelude::*, Point2, Point3, Vector3, BaseFloat };
-use crate::{space::normal::Normal3, ray::Ray3, Material};
+use crate::{space::{normal::Normal3, ray::Ray3}, Material};
 
 /// Collection of shading parameters, used for either geometry or surface
 /// shading.

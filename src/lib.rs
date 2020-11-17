@@ -7,7 +7,7 @@ extern crate bitflags;
 #[macro_use]
 pub(crate) mod macros;
 pub(crate) mod core;
-pub(crate) mod ray;
+pub(crate) mod camera;
 pub(crate) mod img;
 pub(crate) mod space;
 pub(crate) mod interaction;
@@ -16,6 +16,7 @@ pub(crate) mod shape;
 pub(crate) mod primitive;
 pub(crate) mod light;
 mod accelerators;
+mod integrate;
 
 pub mod scene;
 
@@ -27,7 +28,6 @@ use std::ptr::NonNull;
 
 pub use crate::scene::Scene;
 pub use crate::img::{Film, Pixel, PixelBuffer};
-pub use crate::ray::primary::PrimaryRay;
 pub use crate::primitive::Primitive;
 pub use crate::material::Material;
 
@@ -46,27 +46,26 @@ pub type Accel<'s> = self::accelerators::bvh::BVHAccel<'s>;
 
 /// Render the given scene. Returns a Film instance, over you may iterate with
 /// the foreach method.
-pub fn render(scene: &Scene) -> Film {
-    let (width, height) = (scene.options.width, scene.options.height);
-    let mut film = Film::new(width, height);
+pub fn render(scene: &Scene, resolution: (u32, u32)) -> Film {
+    let mut film = Film::new(resolution.0, resolution.1);
     capture(scene, &mut film);
     film
 }
 
 /// Record an image of the scene on the given film. The film must have at least
-/// (scene.options.width * scene.options.height) pixels reserved in the Film
+/// (scene.width * scene.height) pixels reserved in the Film
 /// data field.
 pub fn capture(scene: &Scene, film: &mut Film) {
 
     // Get number of threads to use. Uses one by default
-    let barrel_count = if scene.options.threads == 0 {
+    let barrel_count = if scene.threads == 0 {
         get_max_threads()
     } else {
-        scene.options.threads
+        scene.threads
     };
 
     let root = Accel::from(scene);
-    let mut threads = Vec::with_capacity(barrel_count as usize - 1);
+    let mut threads = Vec::with_capacity(barrel_count - 1);
 
     for i in 1..barrel_count {
 
@@ -109,50 +108,41 @@ pub fn capture(scene: &Scene, film: &mut Film) {
 
 /// Get a 16×16 view into the film for the scene starting at coordinates
 /// startx/starty. Puts the result in the given film chunk.
-pub fn capture_hunk(startx: u16, starty: u16, root: &Accel, hunk: &mut FilmDataHunk) {
+// FIXME: Restore this, or do some kind of checkpoint tracing
+/*
+pub fn capture_hunk(offset: [u32; 2], resolution: [u32; 2], root: &Accel, hunk: &mut FilmDataHunk) {
     let scene = root.scene;
-    let (width, height) = (scene.options.width, scene.options.height);
+    let (width, height) = (resolution[0], resolution[1]);
+    let (startx, starty) = (offset[0], offset[1]);
     debug_assert!(startx < width && starty < height);
 
-    let up = scene.up;
-    let aux = scene.aux;
-    let sample_distance = scene.pixel_radius * 2.0;
+    let samples = scene.camera.allocate_samples();
+    let weight = 1. / samples.len() as f64;
 
     for (i, pixel) in hunk.chunks_mut(4).enumerate() { // Iterates 256 times
-        let x = (startx as usize + i % 16) as u16;
-        let y = (starty as usize + i / 16) as u16;
+        let i = i as u32;
+        let x = startx + i % 16;
+        let y = starty + i / 16;
 
         // Don't bother rendering pixels outside the frame
         if x >= width || x >= height { continue };
 
-        // Calculate offsets distances from the view vector
-        let hoffset = (x as f64 - ((width as f64 - 1.0) * 0.5)) * sample_distance;
-        let voffset = ((height as f64 - 1.0) * 0.5 - y as f64) * sample_distance;
-
-        // The direction in which this ray travels
-        let d = scene.view + (voffset * up) + (hoffset * aux);
-
-        let ray = PrimaryRay::new(scene.eye, d);
+        scene.camera.sample(x, y, )
         let color = ray.cast(root);
 
-        let pixel: &mut [Pixel] = unsafe { std::mem::transmute(pixel) };
+        let pixel: &mut [RgbaPixel] = unsafe { std::mem::transmute(pixel) };
         img::set_pixel_color(&mut pixel[0], &color)
     }
 }
+*/
 
 /// Capture subset k of n for the given scene. That is, every kth pixel in the
 /// pixel buffer, arranged in row-major order. The pixel pointer is the start of
 /// the image buffer. The pointer must allow data access into
 /// (scene.width * scene.height) pixels.
-fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
+fn capture_subset(k: usize, n: usize, root: &Accel, film: &mut Film) {
     let scene = root.scene;
-    let (width, height) = (
-        scene.options.width as usize,
-        scene.options.height as usize
-    );
-    let up = scene.up;
-    let aux = scene.aux;
-    let sample_distance = scene.pixel_radius * 2.0;
+    let (width, height) = (film.resolution.x as usize, film.resolution.y as usize);
 
     // Render Concurrency Overview
     //
@@ -186,6 +176,8 @@ fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
     // Calculate the chunk size such that we can yield n chunks,
     // where n is the number of threads
     let capacity = width * height; // total image capacity
+    let mut samples = scene.camera.allocate_samples();
+    let weight = 1. / samples.len() as f64;
 
     // Skip over chunks that other threads are processing/ Assuming
     // capture_subset is never called concurrently with the same k and n values,
@@ -193,18 +185,8 @@ fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
     for offset in ((k as usize)..capacity).step_by(n as usize) {
         let x = offset % width;
         let y = offset / height;
-
-        let (xf, yf) = (x as f64, y as f64);
-
-        // Calculate offsets distances from the view vector
-        let hoffset = (xf - ((width as f64 - 1.0) * 0.5)) * sample_distance;
-        let voffset = ((height as f64 - 1.0) * 0.5 - yf) * sample_distance;
-
-        // The direction in which this ray travels
-        let d = scene.view + (voffset * up) + (hoffset * aux);
-
-        let ray = PrimaryRay::new(scene.eye, d);
-        let color = ray.cast(root);
+        scene.camera.sample(x as u32, y as u32, film, &mut samples);
+        let color = integrate::integrate(root, &samples, weight);
 
         film.set(x, y, &color)
     }
@@ -212,9 +194,9 @@ fn capture_subset(k: u8, n: u8, root: &Accel, film: &mut Film) {
 
 
 #[cfg(feature = "bin")]
-fn get_max_threads() -> u8 { num_cpus::get() as u8 }
+fn get_max_threads() -> usize { num_cpus::get() }
 #[cfg(not(feature = "bin"))]
-fn get_max_threads() -> u8 { 1 }
+fn get_max_threads() -> usize { 1 }
 
 // Funky Pointer containers to allow sharing pointers between threads
 // Need this for the capture function.

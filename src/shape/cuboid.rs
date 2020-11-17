@@ -1,7 +1,6 @@
 use std::f64;
 
 use crate::space::*;
-use crate::ray::Ray;
 use crate::interaction::RayIntersection;
 use crate::primitive::{Primitive, OptionalPrimitive};
 use crate::material::Material;

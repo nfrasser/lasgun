@@ -1,26 +1,19 @@
-use ::lasgun::{ scene::{Scene, Options}, Material, output };
+use ::lasgun::{ scene::Scene, Material, output };
 
 mod meshes;
 
-fn main() { output::render(&simple(), "simple.png"); }
+fn main() { output::render(&simple(), [512, 512], "simple.png"); }
 
 fn simple() -> Scene {
-    let options = Options {
-        eye: [25.0, 0.0, 800.0],
-        view: [0.0, 0.0, -800.0],
-        up: [0.0, 1.0, 0.0],
-        ambient: [0.2, 0.2, 0.2],
-        width: 512,
-        height: 512,
-        fov: 45.0,
-        smoothing: false,
-        supersampling: 2,
-        threads: 0
-    };
 
     // Initialize a new empty scene with the given options
-    let mut scene = Scene::new(options);
+    let mut scene = Scene::new();
     scene.set_radial_background([0.26, 0.78, 0.67], [0.1, 0.09, 0.33]);
+
+    // FIXME: Not rendering :(
+    let camera = scene.set_perspective_camera(45., [0., 0., 800.]);
+    camera.look_at([0., 0., 0.], [0., 1., 0.]);
+    camera.set_supersampling(1);
 
     // Add materials to the scene
     let mat0 = Material::plastic([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 0.25);

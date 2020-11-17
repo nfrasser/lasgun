@@ -4,7 +4,8 @@ use crate::space::*;
 pub struct Background {
     pub inner: Color,
     pub outer: Color,
-    view: Vector,
+    pub view: Vector,
+    // FIXME: Convert to scale
     fov: f64
 }
 

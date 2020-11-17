@@ -4,7 +4,6 @@ use obj::{Obj};
 
 use crate::{
     space::*,
-    ray::Ray,
     primitive::{Primitive, OptionalPrimitive},
     interaction::RayIntersection,
     Material

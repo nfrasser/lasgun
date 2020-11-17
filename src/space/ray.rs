@@ -33,4 +33,13 @@ impl<N: BaseFloat> Ray3<N> {
     }
 }
 
-pub mod primary;
+impl<N: BaseFloat> Default for Ray3<N> {
+    fn default() -> Self {
+        let (zero, one) = (N::zero(), N::one());
+        let origin = Point3::new(zero, zero, zero);
+        let d = Vector3::new(one, one, one);
+        let dinv = Vector3::new(one, one, one);
+        Ray3 { origin, d, dinv }
+    }
+}
+

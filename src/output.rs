@@ -2,13 +2,13 @@ use std::{mem, ops::{Index, IndexMut}};
 use ::image::RgbaImage;
 use crate::{capture, Scene, Film, Pixel, PixelBuffer};
 
-pub fn render(scene: &Scene, filename: &str) {
-    let (width, height) = (scene.options.width, scene.options.height);
+pub fn render(scene: &Scene, resolution: [u32; 2], filename: &str) {
+    let (width, height) = (resolution[0], resolution[1]);
 
     // Pre-allocate traced image data
-    let rgba = RgbaImage::new(width as u32, height as u32);
+    let rgba = RgbaImage::new(width, height);
     let image = Box::new(Image(rgba));
-    let mut film = Film::new_with_data(width, height, image);
+    let mut film = Film::new_with_output(width, height, image);
 
     // Capture the image
     capture(&scene, &mut film);
@@ -17,13 +17,13 @@ pub fn render(scene: &Scene, filename: &str) {
 }
 
 /// Create a film in the correct x/y dimensions for the given scene
-pub fn film_for(scene: &Scene) -> Film {
-    let (width, height) = (scene.options.width, scene.options.height);
+pub fn film(resolution: [u32; 2]) -> Film {
+    let (width, height) = (resolution[0], resolution[1]);
 
     // Pre-allocate traced image data
-    let rgba = RgbaImage::new(width as u32, height as u32);
+    let rgba = RgbaImage::new(width, height);
     let image = Box::new(Image(rgba));
-    Film::new_with_data(width, height, image)
+    Film::new_with_output(width, height, image)
 }
 
 struct Image(RgbaImage);
@@ -66,5 +66,5 @@ impl PixelBuffer for Image {
         pixels.as_mut_ptr()
     }
 
-    fn as_slice(&self) -> &[u8] { &*self.0 }
+    fn as_bytes(&self) -> &[u8] { &*self.0 }
 }

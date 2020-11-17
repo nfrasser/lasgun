@@ -1,4 +1,4 @@
-use crate::{ space::*, ray::Ray, material::Material, interaction::RayIntersection };
+use crate::{ space::*, material::Material, interaction::RayIntersection };
 
 /// A primitive is a 3D shape placed in the scene. All primitives can intersect
 /// with a Ray defined by an origin point and (d)irection vector.
