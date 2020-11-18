@@ -87,7 +87,7 @@ impl Camera {
     }
 
     pub fn look_at(&mut self, point: [f64; 3], up: [f64; 3]) {
-        let view = self.origin - Point::from(point);
+        let view = Point::from(point) -  self.origin;
         let aux = view.cross(up.into());
         self.up = aux.cross(view).normalize();
         self.aux = aux.normalize();
@@ -120,7 +120,7 @@ impl Camera {
         let sample_separation = self.supersampling.distance() * pixel_size;
         let sample_origin = Point2f {
             x: (x as f64 * film.inv_resolution.x - 0.5) * img_plane_width,
-            y: (y as f64 * film.inv_resolution.y - 0.5) * img_plane_height
+            y: (0.5 - y as f64 * film.inv_resolution.y) * img_plane_height
         };
 
         // All rays have the same origin
@@ -159,7 +159,7 @@ impl Projection {
     pub fn image_plane_height(&self, focal_distance: f64) -> f64 {
         match self {
             Self::Perspective(fov) =>
-                focal_distance * f64::tan(*fov * f64::consts::FRAC_PI_2 / 180.),
+                focal_distance * f64::tan(*fov * f64::consts::PI / 360.) * 2.,
             Self::Orthographic(height) => *height
         }
     }
