@@ -1,26 +1,17 @@
-use ::lasgun::{ scene::{Scene, Options}, Material, output };
+use ::lasgun::{ scene::Scene, Material, output };
 
 mod meshes;
 
-fn main() { output::render(&simple(), "simplereflect.png"); }
+fn main() { output::render(&simple(), [512, 512], "simplereflect.png"); }
 
 fn simple() -> Scene {
-    let options = Options {
-        eye: [25.0, 0.0, 800.0],
-        view: [0.0, 0.0, -800.0],
-        up: [0.0, 1.0, 0.0],
-        ambient: [0.1, 0.1, 0.1],
-        width: 512,
-        height: 512,
-        fov: 45.0,
-        smoothing: false,
-        supersampling: 2,
-        threads: 0
-    };
-
-    // Initialize a new empty scene with the given options
-    let mut scene = Scene::new(options);
+    let mut scene = Scene::new();
+    scene.set_ambient_light([0.2, 0.2, 0.2]);
     scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1]);
+
+    let camera = scene.set_perspective_camera(45., [25., 0., 800.]);
+    camera.look_at([25., 0., 0.], [0., 1., 0.]);
+    camera.set_supersampling(2);
 
     // Add materials to the scene
     let mat0 = Material::glass([0.7, 1.0, 0.7], [0.5, 0.7, 0.5], 1.333);

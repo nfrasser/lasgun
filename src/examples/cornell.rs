@@ -1,25 +1,17 @@
-use ::lasgun::{ scene::{Scene, Options, Aggregate}, Material, output };
+use ::lasgun::{ scene::{Scene, Aggregate}, Material, output };
 
 mod meshes;
 
-fn main() { output::render(&cornell(), "cornell.png"); }
+fn main() { output::render(&cornell(), [512, 512], "cornell.png"); }
 
 fn cornell() -> Scene {
-    let options = Options {
-        eye: [0.0, 0.0, 5.0],
-        view: [0.0, 0.0, -5.0],
-        up: [0.0, 1.0, 0.0],
-        ambient: [0.05, 0.05, 0.05],
-        width: 512,
-        height: 512,
-        fov: 60.0,
-        smoothing: false,
-        supersampling: 2,
-        threads: 0
-    };
-
     // Initialize a new empty scene with the given options
-    let mut scene = Scene::new(options);
+    let mut scene = Scene::new();
+    scene.set_ambient_light([0.2, 0.2, 0.2]);
+
+    let camera = scene.set_perspective_camera(60., [0., 0., 5.]);
+    camera.look_at([0., 0., 0.], [0., 1., 0.]);
+    camera.set_supersampling(2);
 
     // Add materials to the scene
     let white = Material::plastic([0.9, 0.9, 0.9], [0.5, 0.7, 0.5], 0.25);
