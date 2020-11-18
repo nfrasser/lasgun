@@ -64,7 +64,7 @@ fn li(root: &Accel, ray: &Ray, depth: u32) -> Color {
 
             output + ((f64::consts::PI * light.intensity).mul_element_wise(f) * wi_dot_n / f_att)
         })
-    });
+    }) + root.scene.ambient.mul_element_wise(bsdf.f(&wo, &n));
 
     let (refracted, reflected) = if depth + 1 < MAX_DEPTH {
         // Add reflection/transmission contribution
