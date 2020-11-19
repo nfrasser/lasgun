@@ -6,7 +6,7 @@ fn playground() -> Scene {
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new();
     scene.set_ambient_light([0.1, 0.1, 0.1]);
-    scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1]);
+    scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1], 0.8);
 
     let camera = scene.set_perspective_camera(60., [0., 1., 4.]);
     camera.look_at([-0.1, 1., 3.], [0., 1., 0.]);

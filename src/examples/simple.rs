@@ -9,7 +9,7 @@ fn simple() -> Scene {
     // Initialize a new empty scene with the given options
     let mut scene = Scene::new();
     scene.set_ambient_light([0.2, 0.2, 0.2]);
-    scene.set_radial_background([0.26, 0.78, 0.67], [0.1, 0.09, 0.33]);
+    scene.set_radial_background([0.26, 0.78, 0.67], [0.1, 0.09, 0.33], 0.5);
 
     let camera = scene.set_perspective_camera(45., [25., 0., 800.]);
     camera.look_at([25., 0., 0.], [0., 1., 0.]);

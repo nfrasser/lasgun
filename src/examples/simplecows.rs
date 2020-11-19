@@ -5,7 +5,7 @@ mod meshes;
 fn simplecows() -> Scene {
     let mut scene = Scene::new();
     scene.set_ambient_light([0.2, 0.2, 0.2]);
-    scene.set_radial_background([0.85, 0.82, 0.6], [0.69, 0.85, 0.73]);
+    scene.set_radial_background([0.85, 0.82, 0.6], [0.69, 0.85, 0.73], 0.5);
 
     let camera = scene.set_perspective_camera(50., [0., 2., 30.]);
     camera.look_at([0., 2., 29.], [0., 1., 0.]);

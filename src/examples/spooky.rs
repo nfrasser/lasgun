@@ -6,7 +6,7 @@ fn main() { output::render(&spooky(), [768, 768], "spooky.png"); }
 fn spooky() -> Scene {
     let mut scene = Scene::new();
     scene.set_ambient_light([1., 1., 1.]);
-    scene.set_radial_background([0.39, 0.29, 0.29], [0.1, 0., 0.]);
+    scene.set_radial_background([0.39, 0.29, 0.29], [0.1, 0., 0.], 1.);
 
     let camera = scene.set_perspective_camera(50., [-5., 2., 6.]);
     camera.look_at([-3., 2.2, 1.], [0., 1., 0.]);

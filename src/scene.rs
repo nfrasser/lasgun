@@ -59,13 +59,11 @@ impl Scene {
 
     pub fn set_perspective_camera(&mut self, fov: f64, origin: [f64; 3]) -> &mut Camera {
         self.camera = Camera::perspective(fov, origin);
-        self.background.view = self.camera.view;
         return &mut self.camera
     }
 
     pub fn set_orthographic_camera(&mut self, height: f64, origin: [f64; 3]) -> &mut Camera {
         self.camera = Camera::orthographic(height, origin);
-        self.background.view = self.camera.view;
         return &mut self.camera
     }
 
@@ -73,8 +71,8 @@ impl Scene {
         self.background = Background::solid(color.into())
     }
 
-    pub fn set_radial_background(&mut self, inner: [f64; 3], outer: [f64; 3]) {
-        self.background = Background::radial(inner.into(), outer.into(), self.camera.view, 60.)
+    pub fn set_radial_background(&mut self, inner: [f64; 3], outer: [f64; 3], scale: f64) {
+        self.background = Background::radial(inner.into(), outer.into(), scale)
     }
 
     pub fn set_ambient_light(&mut self, color: [f64; 3]) {
