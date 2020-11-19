@@ -57,10 +57,6 @@ struct Supersampling {
     distance: f64
 }
 
-/// Supersampling root
-// #[derive(Debug)]
-// struct PixelSampling(pub u32) {
-
 impl Camera {
     fn new(projection: Projection, origin: [f64; 3]) -> Self {
         Camera {
