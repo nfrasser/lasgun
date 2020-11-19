@@ -66,7 +66,7 @@ fn li(root: &Accel, ray: &Ray, depth: u32) -> Color {
         })
     }) + root.scene.ambient.mul_element_wise(bsdf.f(&wo, &n));
 
-    let (refracted, reflected) = if depth + 1 < MAX_DEPTH {
+    let (refracted, reflected) = if depth < root.scene.recursion {
         // Add reflection/transmission contribution
         (
             specular_transmit(root, &interaction, &bsdf, depth),
@@ -130,6 +130,3 @@ fn specular_transmit(root: &Accel, interaction: &SurfaceInteraction, bsdf: &BSDF
 
     output
 }
-
-// TODO: Parametrize
-const MAX_DEPTH: u32 = 4;

@@ -25,8 +25,11 @@ pub struct Scene {
     /// Enable normal smoothing for triangle meshes that support it
     pub smoothing: bool,
 
-    // Number of parallel render threads, if applicable. Zero means use as many
-    // threads as the system allows (bin feature required)
+    /// Maximum depth of ray recursion, defaults to 3
+    pub recursion: u32,
+
+    /// Number of parallel render threads, if applicable. Zero means use as many
+    /// threads as the system allows (bin feature required)
     pub threads: usize,
 
     // Point-light sources in the scene (more formats to come)
@@ -51,6 +54,7 @@ impl Scene {
             background: Background::solid(Color::zero()),
             ambient: Color::new(0., 0., 0.),
             smoothing: true,
+            recursion: 3,
             threads: 0,
             lights: vec![],
             meshes: vec![],
@@ -81,6 +85,10 @@ impl Scene {
 
     pub fn set_mesh_smoothing(&mut self, enabled: bool) {
         self.smoothing = enabled
+    }
+
+    pub fn set_max_recursion_depth(&mut self, max_depth: u32) {
+        self.recursion = max_depth
     }
 
     pub fn set_threads(&mut self, threads: usize) {
