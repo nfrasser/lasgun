@@ -120,7 +120,7 @@ impl Camera {
         let sample_separation = self.supersampling.distance() * pixel_size;
         let sample_origin = Point2f {
             x: (x as f64 * film.inv_resolution.x - 0.5) * img_plane_width,
-            y: (0.5 - y as f64 * film.inv_resolution.y) * img_plane_height
+            y: (0.5 - (y + 1) as f64 * film.inv_resolution.y) * img_plane_height
         };
 
         // All rays have the same origin
