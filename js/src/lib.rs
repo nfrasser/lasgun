@@ -198,25 +198,6 @@ pub fn capture_subset(k: usize, n: usize, accel: &Accel, film: &mut Film) {
     lasgun::capture_subset(k, n, accel.as_native(), film)
 }
 
-/// Capture just one of the 16×16 portions of the scene onto the given hunk of
-/// film. Used to progressively stream scene data back to the client. In
-/// addition to writing data, writes the target start and end x/y coordinates
-/// into the hunk.
-// #[wasm_bindgen]
-// pub fn capture_hunk(i: u32, scene: &Scene, root: &Accel, hunk: &mut Hunk) {
-//     let (hhunks, _) = scene.hunk_dims();
-//     hunk.x = (i % hhunks as u32 * 16) as u16;
-//     hunk.y = (i / hhunks as u32 * 16) as u16;
-//     lasgun::capture_hunk(hunk.x, hunk.y, root.as_native(), hunk.data_mut())
-// }
-
-/// The number of 16x16 hunks that make up this scene
-// #[wasm_bindgen]
-// pub fn hunk_count(scene: &Scene) -> u32 {
-//     let (hcount, vcount) = scene.hunk_dims();
-//     (hcount as u32) * (vcount as u32)
-// }
-
 // Triangle mesh reference in a scene
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug)]
@@ -226,38 +207,6 @@ pub struct ObjRef(lasgun::scene::ObjRef); impl Native for ObjRef {
     #[inline] fn as_native(&self) -> &Self::Output { &self.0 }
     #[inline] fn as_native_mut(&mut self) -> &mut Self::Output { &mut self.0 }
 }
-
-// /// A 16×16 view into some scene, starting at the given x/y coordinates
-// /// (from the top-left)
-// #[wasm_bindgen]
-// pub struct Hunk {
-//     /// Staring x coordinate
-//     pub x: u16,
-//     /// Staring y coordinate
-//     pub y: u16,
-
-//     data: lasgun::FilmDataHunk
-// }
-
-// #[wasm_bindgen]
-// impl Hunk {
-//     /// Create a new empty hunk for the given scene with the given index
-//     pub fn new() -> Hunk {
-//         Hunk { x: 0, y: 0, data: unsafe { MaybeUninit::uninit().assume_init() } }
-//     }
-
-//     /// Get a pointer to the pixel data in the hunk for use in JavaScript
-//     pub fn as_ptr(&self) -> *const u8 {
-//         &self.data as *const u8
-//     }
-// }
-
-// impl Hunk {
-//     #[inline]
-//     pub fn data_mut(&mut self) -> &mut lasgun::FilmDataHunk {
-//         &mut self.data
-//     }
-// }
 
 #[wasm_bindgen]
 pub struct Camera(lasgun::Camera); impl Native for Camera {
@@ -347,20 +296,6 @@ impl Scene {
         self.0.add_point_light(position, intensity, falloff);
     }
 }
-
-// impl Scene {
-//     /// Returns the number of width-wise and height-wise number of hunks for
-//     /// this scene
-//     #[inline]
-//     pub fn hunk_dims(&self) -> (u16, u16) {
-//         let (width, height) = (self.width(), self.height());
-//         (
-//             width / 16 + (if width % 16 == 0 { 0 } else { 1 }),
-//             height / 16 + (if height % 16 == 0 { 0 } else { 1 })
-//         )
-//     }
-// }
-
 
 #[wasm_bindgen]
 pub struct Aggregate(lasgun::scene::Aggregate); impl Native for Aggregate {

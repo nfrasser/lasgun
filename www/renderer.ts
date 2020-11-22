@@ -99,12 +99,8 @@ async function capture(sceneFunctionBody: string, width: number, height: number)
     const subsets = shuffle(Array.from(Array(Math.min(100, area)).keys()))
     const film = lasgun.film(width, height)
     const startPtr = film.data_ptr()
-    const endPtr = startPtr + area * 4;
-
-    console.log(film.size())
-    // let hunkCount = lasgun.hunk_count(scene)
-    // let hunk = lasgun.Hunk.new()
-    let root = lasgun.Accel.from(scene)
+    const endPtr = startPtr + area * 4; // *4 because each pixel is 4 bytes
+    const root = lasgun.Accel.from(scene)
 
     // Stream bits of the scene over to main as we go
     for (const k of subsets) {

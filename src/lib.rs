@@ -34,12 +34,6 @@ pub use crate::film::Film;
 pub use crate::primitive::Primitive;
 pub use crate::material::Material;
 
-/// A 16×16 portion of pixels taken from a film, arranged in row-major order.
-/// Used for streaming render results. NOT a slice of `Film::data`.
-///
-/// 16 * 16 pixels = 256 pixels = 4 * 256 bytes = 1024 bytes
-pub type FilmDataHunk = [u8; 1024];
-
 /// An acceleration structure to reduce the number of ray-object intersection
 /// tests. Call the associated `from` method with a scene reference to get back
 /// a new primitive to be used for ray intersection.
@@ -108,36 +102,6 @@ pub fn capture(scene: &Scene, film: &mut Film) {
     // the Scene reference might disappear and everything will explode.
     for thread in threads { thread.join().unwrap() }
 }
-
-/// Get a 16×16 view into the film for the scene starting at coordinates
-/// startx/starty. Puts the result in the given film chunk.
-// FIXME: Restore this, or do some kind of checkpoint tracing
-/*
-pub fn capture_hunk(offset: [u32; 2], resolution: [u32; 2], root: &Accel, hunk: &mut FilmDataHunk) {
-    let scene = root.scene;
-    let (width, height) = (resolution[0], resolution[1]);
-    let (startx, starty) = (offset[0], offset[1]);
-    debug_assert!(startx < width && starty < height);
-
-    let samples = scene.camera.allocate_samples();
-    let weight = 1. / samples.len() as f64;
-
-    for (i, pixel) in hunk.chunks_mut(4).enumerate() { // Iterates 256 times
-        let i = i as u32;
-        let x = startx + i % 16;
-        let y = starty + i / 16;
-
-        // Don't bother rendering pixels outside the frame
-        if x >= width || x >= height { continue };
-
-        scene.camera.sample(x, y, )
-        let color = ray.cast(root);
-
-        let pixel: &mut [RgbaPixel] = unsafe { std::mem::transmute(pixel) };
-        img::set_pixel_color(&mut pixel[0], &color)
-    }
-}
-*/
 
 /// Capture subset k of n for the given scene. That is, every kth pixel in the
 /// pixel buffer, arranged in row-major order. The pixel pointer is the start of
