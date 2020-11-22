@@ -9,6 +9,7 @@ pub(crate) mod macros;
 pub(crate) mod core;
 pub(crate) mod camera;
 pub(crate) mod img;
+pub(crate) mod film;
 pub(crate) mod space;
 pub(crate) mod interaction;
 pub(crate) mod material;
@@ -28,7 +29,8 @@ use std::ptr::NonNull;
 
 pub use crate::scene::Scene;
 pub use crate::camera::Camera;
-pub use crate::img::{Pixel, PixelBuffer, Img, Film};
+pub use crate::img::{Pixel, PixelBuffer, Img};
+pub use crate::film::Film;
 pub use crate::primitive::Primitive;
 pub use crate::material::Material;
 
