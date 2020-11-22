@@ -21,3 +21,11 @@ pub fn to_vec3f(values: Box<[JsValue]>) -> [f64; 3] {
         values.get(2).unwrap_or(&JsValue::NULL).as_f64().unwrap_or(0.0)
     ]
 }
+
+pub trait Native {
+    type Output: Sized;
+
+    fn into_native(self) -> Self::Output;
+    fn as_native(&self) -> &Self::Output;
+    fn as_native_mut(&mut self) -> &mut Self::Output;
+}
