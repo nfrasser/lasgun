@@ -8,8 +8,8 @@ fn playground() -> Scene {
     scene.set_ambient_light([0.1, 0.1, 0.1]);
     scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1], 0.8);
 
-    let camera = scene.set_perspective_camera(60., [0., 1., 4.]);
-    camera.look_at([-0.1, 1., 3.], [0., 1., 0.]);
+    let camera = scene.set_perspective_camera(60.);
+    camera.look_at([0., 1., 4.], [-0.1, 1., 3.], [0., 1., 0.]);
     camera.set_supersampling(2);
 
     let mat0 = Material::metal([0.9, 0.1, 0.9], [0.7, 1.0, 0.7], 0.25, 0.25);

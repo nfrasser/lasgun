@@ -8,8 +8,8 @@ fn spooky() -> Scene {
     scene.set_ambient_light([1., 1., 1.]);
     scene.set_radial_background([0.39, 0.29, 0.29], [0.1, 0., 0.], 1.);
 
-    let camera = scene.set_perspective_camera(50., [-5., 2., 6.]);
-    camera.look_at([-3., 2.2, 1.], [0., 1., 0.]);
+    let camera = scene.set_perspective_camera(50.);
+    camera.look_at([-5., 2., 6.], [-3., 2.2, 1.], [0., 1., 0.]);
     camera.set_supersampling(2);
 
     let skull = scene.load_obj(obj_path("skull").as_path()).unwrap();

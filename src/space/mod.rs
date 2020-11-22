@@ -11,7 +11,6 @@ pub use self::ray::Ray;
 
 pub type Point2f = Point2<f64>;
 pub type Vector2f = Vector2<f64>;
-pub type Vector2u = Vector2<u32>;
 pub type Point = Point3<f64>;
 pub type Vector = Vector3<f64>;
 pub type Color = Vector3<f64>;

@@ -2,7 +2,7 @@ use ::lasgun::{ scene::Scene, Material, output };
 
 mod meshes;
 
-fn main() { output::render(&simple(), [512, 512], "simple.png"); }
+fn main() { output::render(&simple(), [512, 400], "simple.png"); }
 
 fn simple() -> Scene {
 
@@ -11,8 +11,8 @@ fn simple() -> Scene {
     scene.set_ambient_light([0.2, 0.2, 0.2]);
     scene.set_radial_background([0.26, 0.78, 0.67], [0.1, 0.09, 0.33], 0.5);
 
-    let camera = scene.set_perspective_camera(45., [25., 0., 800.]);
-    camera.look_at([25., 0., 0.], [0., 1., 0.]);
+    let camera = scene.set_perspective_camera(45.);
+    camera.look_at([25., 0., 800.], [25., 0., 0.], [0., 1., 0.]);
     camera.set_supersampling(2);
 
     // Add materials to the scene

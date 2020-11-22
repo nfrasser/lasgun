@@ -195,7 +195,6 @@ impl<N: BaseFloat> Transform<Point3<N>> for Transform3<N> {
         self.m = m;
         self.minv = minv;
     }
-
 }
 
 impl<N: BaseFloat> Trans<N> for Transform3<N> {

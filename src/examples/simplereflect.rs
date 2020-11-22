@@ -10,8 +10,8 @@ fn simple() -> Scene {
     scene.set_radial_background([0.93, 0.87, 0.36], [0.94, 0.6, 0.1], 0.5);
     scene.set_max_recursion_depth(4);
 
-    let camera = scene.set_perspective_camera(45., [25., 0., 800.]);
-    camera.look_at([25., 0., 0.], [0., 1., 0.]);
+    let camera = scene.set_perspective_camera(45.);
+    camera.look_at([25., 0., 800.], [25., 0., 0.], [0., 1., 0.]);
     camera.set_supersampling(2);
 
     // Add materials to the scene

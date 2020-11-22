@@ -27,7 +27,8 @@ use std::thread;
 use std::ptr::NonNull;
 
 pub use crate::scene::Scene;
-pub use crate::img::{Film, Pixel, PixelBuffer};
+pub use crate::camera::Camera;
+pub use crate::img::{Pixel, PixelBuffer, Img, Film};
 pub use crate::primitive::Primitive;
 pub use crate::material::Material;
 
@@ -140,9 +141,9 @@ pub fn capture_hunk(offset: [u32; 2], resolution: [u32; 2], root: &Accel, hunk: 
 /// pixel buffer, arranged in row-major order. The pixel pointer is the start of
 /// the image buffer. The pointer must allow data access into
 /// (scene.width * scene.height) pixels.
-fn capture_subset(k: usize, n: usize, root: &Accel, film: &mut Film) {
+pub fn capture_subset(k: usize, n: usize, root: &Accel, img: &mut impl Img) {
     let scene = root.scene;
-    let (width, height) = (film.resolution.x as usize, film.resolution.y as usize);
+    let (width, height) = (img.w() as usize, img.h() as usize);
 
     // Render Concurrency Overview
     //
@@ -175,23 +176,24 @@ fn capture_subset(k: usize, n: usize, root: &Accel, film: &mut Film) {
 
     // Calculate the chunk size such that we can yield n chunks,
     // where n is the number of threads
-    let capacity = width * height; // total image capacity
+    let area = width * height; // total image area
     let mut samples = scene.camera.allocate_samples();
     let weight = 1. / samples.len() as f64;
 
     // Skip over chunks that other threads are processing/ Assuming
     // capture_subset is never called concurrently with the same k and n values,
     // this will never cause contention/race conditions.
-    for offset in ((k as usize)..capacity).step_by(n as usize) {
-        let x = offset % width;
-        let y = offset / height;
-        scene.camera.sample(x as u32, y as u32, film, &mut samples);
+    for offset in ((k as usize)..area).step_by(n as usize) {
+        debug_assert!(offset < area);
+        let x = (offset % width) as u32;
+        let y = (offset / width) as u32;
+        debug_assert!(x < img.w());
+        debug_assert!(y < img.h());
+        scene.camera.sample(x, y, img, &mut samples);
         let color = integrate::integrate(root, &samples, weight);
-
-        film.set(x, y, &color)
+        img.set(x, y, &color.into())
     }
 }
-
 
 #[cfg(feature = "bin")]
 fn get_max_threads() -> usize { num_cpus::get() }

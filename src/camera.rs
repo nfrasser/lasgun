@@ -1,6 +1,6 @@
 use std::f64;
 use crate::space::*;
-use crate::img::Film;
+use crate::img::Img;
 
 #[derive(Debug)]
 pub struct Camera {
@@ -58,10 +58,10 @@ struct Supersampling {
 }
 
 impl Camera {
-    fn new(projection: Projection, origin: [f64; 3]) -> Self {
+    fn new(projection: Projection) -> Self {
         Camera {
             projection,
-            origin: origin.into(),
+            origin: Point::new(0., 0., 0.),
             view: Vector::unit_z(),
             up: Vector::unit_y(),
             aux: Vector::unit_x(),
@@ -72,19 +72,21 @@ impl Camera {
         }
     }
 
-    pub fn perspective(fov: f64, origin: [f64; 3]) -> Self {
+    pub fn perspective(fov: f64) -> Self {
         debug_assert!(fov > 0.);
-        Camera::new(Projection::Perspective(fov), origin)
+        Camera::new(Projection::Perspective(fov))
     }
 
-    pub fn orthographic(height: f64, origin: [f64; 3]) -> Self {
+    pub fn orthographic(height: f64) -> Self {
         debug_assert!(height > 0.);
-        Camera::new(Projection::Orthographic(height), origin)
+        Camera::new(Projection::Orthographic(height))
     }
 
-    pub fn look_at(&mut self, point: [f64; 3], up: [f64; 3]) {
-        let view = Point::from(point) -  self.origin;
+    pub fn look_at(&mut self, origin: [f64; 3], look: [f64; 3], up: [f64; 3]) {
+        let origin = Point::from(origin);
+        let view = Point::from(look) - origin;
         let aux = view.cross(up.into());
+        self.origin = origin;
         self.up = aux.cross(view).normalize();
         self.aux = aux.normalize();
         self.view = view;
@@ -108,21 +110,21 @@ impl Camera {
         vec![Ray::default(); self.num_samples()]
     }
 
-    pub fn sample(&self, x: u32, y: u32, film: &Film, rays: &mut [Ray]) {
+    pub fn sample(&self, x: u32, y: u32, img: &impl Img, rays: &mut [Ray]) {
         debug_assert!(self.num_samples() == rays.len());
         let img_plane_height = self.image_plane_height;
-        let img_plane_width = img_plane_height * film.aspect_ratio;
-        let pixel_size = img_plane_height * film.inv_resolution.y;
+        let img_plane_width = img_plane_height * img.aspect();
+        let pixel_size = img_plane_height * img.hinv();
         let sample_separation = self.supersampling.distance() * pixel_size;
         let sample_origin = Point2f {
-            x: (x as f64 * film.inv_resolution.x - 0.5) * img_plane_width,
-            y: (0.5 - (y + 1) as f64 * film.inv_resolution.y) * img_plane_height
+            x: (x as f64 * img.winv() - 0.5) * img_plane_width,
+            y: (0.5 - (y + 1) as f64 * img.hinv()) * img_plane_height
         };
 
-        // All rays have the same origin
+        // All sampled rays have the same origin
         let origin = self.origin
             + (sample_origin.y * self.pixel_separation * self.up)
-            + (sample_origin.y * self.pixel_separation * self.aux);
+            + (sample_origin.x * self.pixel_separation * self.aux);
 
         // Target direction at bottom-left corner of target pixel
         let d = self.view + (sample_origin.y * self.up) + (sample_origin.x * self.aux);
@@ -137,6 +139,7 @@ impl Camera {
                 let idx = i * dim + j;
                 let (i, j) = (i as f64, j as f64);
                 let d = d + (j * updiff) + (i * auxdiff) + halfdiff;
+                // TODO: Integrate aperture radius
                 rays[idx] = Ray::new(origin, d)
             }
         }
@@ -145,7 +148,7 @@ impl Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera::perspective(60., [0., 0., 0.])
+        Camera::perspective(45.)
     }
 }
 

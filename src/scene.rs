@@ -61,13 +61,18 @@ impl Scene {
         }
     }
 
-    pub fn set_perspective_camera(&mut self, fov: f64, origin: [f64; 3]) -> &mut Camera {
-        self.camera = Camera::perspective(fov, origin);
+    pub fn set_camera(&mut self, camera: Camera) -> &mut Camera {
+        self.camera = camera;
         return &mut self.camera
     }
 
-    pub fn set_orthographic_camera(&mut self, height: f64, origin: [f64; 3]) -> &mut Camera {
-        self.camera = Camera::orthographic(height, origin);
+    pub fn set_perspective_camera(&mut self, fov: f64) -> &mut Camera {
+        self.camera = Camera::perspective(fov);
+        return &mut self.camera
+    }
+
+    pub fn set_orthographic_camera(&mut self, scale: f64) -> &mut Camera {
+        self.camera = Camera::orthographic(scale);
         return &mut self.camera
     }
 

@@ -9,8 +9,8 @@ fn cornell() -> Scene {
     let mut scene = Scene::new();
     scene.set_ambient_light([0.2, 0.2, 0.2]);
 
-    let camera = scene.set_perspective_camera(60., [0., 0., 5.]);
-    camera.look_at([0., 0., 0.], [0., 1., 0.]);
+    let camera = scene.set_perspective_camera(60.);
+    camera.look_at([0., 0., 5.], [0., 0., 0.], [0., 1., 0.]);
     camera.set_supersampling(2);
 
     // Add materials to the scene
