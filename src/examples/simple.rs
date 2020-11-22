@@ -2,7 +2,7 @@ use ::lasgun::{ scene::Scene, Material, output };
 
 mod meshes;
 
-fn main() { output::render(&simple(), [512, 400], "simple.png"); }
+fn main() { output::render(&simple(), [512, 512], "simple.png"); }
 
 fn simple() -> Scene {
 
