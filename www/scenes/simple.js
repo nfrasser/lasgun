@@ -2,15 +2,21 @@
 /* global reject */
 
 const scene = lasgun.scene({
-  eye: [0.0, 0.0, 800.0],
-  view: [0.0, 0.0, -800.0],
-  up: [0.0, 1.0, 0.0],
   ambient: [0.2, 0.2, 0.2],
-  width: 512,
-  height: 512,
-  fov: 47.0,
-  sampling: 0
+  smoothing: true // smooth meshes with provided vertex normals, not applicable to this scene
 })
+
+const camera = lasgun.camera({
+  projection: 'perspective', // or 'orthographic'
+  fov: 47,
+  origin: [0, 0, 800],
+  look: [0, 0, 0],
+  up: [0, 1, 0],
+  supersampling: 0,
+  aperture: 0
+})
+
+scene.set_camera(camera)
 
 // Available Materials
 const mat0 = lasgun.plastic({ kd: [0.7, 1.0, 0.7], ks: [0.5, 0.7, 0.5], roughness: 0.5 })

@@ -2,20 +2,25 @@
 /* global reject */
 
 const scene = lasgun.scene({
-    eye: [0.0, 2.0, 30.0],
-    view: [0.0, 0.0, -1.0],
-    up: [0.0, 1.0, 0.0],
     ambient: [0.2, 0.2, 0.2],
     width: 512,
     height: 512,
-    fov: 50.0,
-    sampling: 0
 })
 
+const camera = lasgun.camera({
+    projection: 'perspective',
+    fov: 50,
+    origin: [0, 2, 30],
+    look: [0, 2, 0],
+    up: [0, 1, 0],
+    supersampling: 0
+})
+
+scene.set_camera(camera)
 scene.set_radial_background({
     inner: [0.85, 0.82, 0.6],
     outer: [0.69, 0.85, 0.73]
-});
+})
 
 scene.add_point_light({
     position: [200.0, 202.0, 430.0],
@@ -33,7 +38,7 @@ let grass = lasgun.plastic({ kd: [0.1, 0.7, 0.1], ks: [0.0, 0.0, 0.0], roughness
 let hide = lasgun.plastic({ kd: [0.84, 0.6, 0.53], ks: [0.3, 0.3, 0.3], roughness: 0.05 })
 
 // Scene contents
-let contents = lasgun.group();
+let contents = lasgun.group()
 
 // Ring of arches
 for (let i = 0; i < 6; i++) {
