@@ -1,7 +1,6 @@
 use std::f64;
 use crate::{
     space::*,
-    ray::Ray,
     primitive::Primitive,
     interaction::RayIntersection,
     Accel
@@ -21,8 +20,8 @@ pub struct PointLight {
 impl PointLight {
     pub fn new(position: [f64; 3], intensity: [f64; 3], falloff: [f64; 3]) -> PointLight {
         PointLight {
-            position: Point::new(position[0], position[1], position[2]),
-            intensity: Color::new(intensity[0], intensity[1], intensity[2]),
+            position: position.into(),
+            intensity: intensity.into(),
             falloff
         }
     }

@@ -4,14 +4,17 @@ use cgmath::{ Point2, Point3, Vector2, Vector3, BaseFloat };
 pub mod normal;
 pub mod bounds;
 pub mod transform;
+pub mod ray;
 
 pub use self::transform::Trans;
+pub use self::ray::Ray;
 
 pub type Point2f = Point2<f64>;
 pub type Vector2f = Vector2<f64>;
 pub type Point = Point3<f64>;
 pub type Vector = Vector3<f64>;
 pub type Color = Vector3<f64>;
+
 #[allow(dead_code)] pub type Normal = normal::Normal3<f64>; // used in tests
 pub type Bounds = bounds::Bounds3<f64>;
 pub type Transformation = transform::Transform3<f64>;

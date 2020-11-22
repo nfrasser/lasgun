@@ -1,27 +1,17 @@
-use ::lasgun::{
-    scene::{Scene, Options, Aggregate},
-    Material,
-    output
-};
+use ::lasgun::{scene::{Scene, Aggregate}, Material, output};
 
 mod meshes;
 
 fn simplecows() -> Scene {
-    let mut scene = Scene::new(Options {
-        eye: [0.0, 2.0, 30.0],
-        view: [0.0, 0.0, -1.0],
-        up: [0.0, 1.0, 0.0],
-        fov: 50.0,
-        ambient: [0.2, 0.2, 0.2],
-        width: 512,
-        height: 512,
-        smoothing: false,
-        supersampling: 2,
-        threads: 0
-    });
+    let mut scene = Scene::new();
+    scene.set_ambient_light([0.2, 0.2, 0.2]);
+    scene.set_radial_background([0.85, 0.82, 0.6], [0.69, 0.85, 0.73], 0.5);
 
-    scene.set_radial_background([0.85, 0.82, 0.6], [0.69, 0.85, 0.73]);
+    let camera = scene.set_perspective_camera(50.);
+    camera.look_at([0., 2., 30.], [0., 2., 29.], [0., 1., 0.]);
+    camera.set_supersampling(2);
 
+    // Lights
     scene.add_point_light([200.0, 202.0, 430.0], [0.8, 0.8, 0.8], [1.0, 0.0, 0.0]);
 
     // Materials
@@ -101,4 +91,4 @@ fn simplecows() -> Scene {
     scene
 }
 
-fn main() { output::render(&simplecows(), "simplecows.png"); }
+fn main() { output::render(&simplecows(), [512, 512], "simplecows.png"); }

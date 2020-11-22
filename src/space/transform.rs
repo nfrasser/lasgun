@@ -4,8 +4,8 @@ use cgmath::{
     BaseFloat, Deg,
     InnerSpace, num_traits::identities::Zero
 };
-use super::{normal::Normal3, bounds::Bounds3};
-use crate::{ray::Ray3, interaction::surface::RayIntersection};
+use super::{normal::Normal3, ray::Ray3, bounds::Bounds3};
+use crate::interaction::surface::RayIntersection;
 
 /// Identity transformation
 pub const ID: Transform3<f64> = Transform3 { m: ID_MATRIX, minv: ID_MATRIX };
@@ -195,7 +195,6 @@ impl<N: BaseFloat> Transform<Point3<N>> for Transform3<N> {
         self.m = m;
         self.minv = minv;
     }
-
 }
 
 impl<N: BaseFloat> Trans<N> for Transform3<N> {

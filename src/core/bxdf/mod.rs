@@ -307,12 +307,19 @@ mod sampling {
     }
     */
 
+    /// Take a concentric circle sample and "project" it upward into the
+    /// hemispherical dome that encompasses the circle. It's not *quite* uniform
+    /// over the surface of the half-sphere, but good enough.
     #[inline] pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector {
         let d = concentric_sample_disk(u);
         let z = (1.0 - d.x * d.x - d.y * d.y).max(0.0).sqrt();
         Vector::new(d.x, d.y, z)
     }
 
+    /// Convert the sample point into a point within a unit circle. A uniform
+    /// mapping from the 1x1 square of possible samples to a uniform [r, Θ]
+    /// sample around the circle.
+    /// https://blog.thomaspoulet.fr/uniform-sampling-on-unit-hemisphere/
     fn concentric_sample_disk(u: &Point2f) -> Point2f {
         // Map uniform random numbers to $[-1,1]^2$
         let u_offset = 2.0 * u - Vector2f::new(1.0, 1.0);

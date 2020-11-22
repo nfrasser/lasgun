@@ -1,7 +1,6 @@
 use std::f64::{NEG_INFINITY, consts::PI};
 use crate::core::math;
 use crate::space::*;
-use crate::ray::Ray;
 use crate::primitive::{Primitive, OptionalPrimitive};
 use crate::interaction::RayIntersection;
 use crate::Material;

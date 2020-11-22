@@ -1,28 +1,16 @@
 use std::path::PathBuf;
-use ::lasgun::{ output, scene::{Scene, Options, Aggregate}, Material };
+use ::lasgun::{ output, scene::{Scene, Aggregate}, Material };
 
-fn main() { output::render(&spooky(), "spooky.png"); }
+fn main() { output::render(&spooky(), [768, 768], "spooky.png"); }
 
 fn spooky() -> Scene {
-    let options = Options {
-        eye: [-5.0, 2.0, 6.0],
-        view: [2.0, 0.2, -5.0],
-        up: [0.0, 1.0, 0.0],
+    let mut scene = Scene::new();
+    scene.set_ambient_light([1., 1., 1.]);
+    scene.set_radial_background([0.39, 0.29, 0.29], [0.1, 0., 0.], 1.);
 
-        ambient: [0.3, 0.3, 0.3],
-
-        width: 768,
-        height: 768,
-
-        fov: 50.0,
-        smoothing: true,
-        supersampling: 2,
-        threads: 0
-    };
-
-    // Initialize a new empty scene with the given options
-    let mut scene = Scene::new(options);
-    scene.set_radial_background([0.39, 0.29, 0.29], [0.1, 0.0, 0.0]);
+    let camera = scene.set_perspective_camera(50.);
+    camera.look_at([-5., 2., 6.], [-3., 2.2, 1.], [0., 1., 0.]);
+    camera.set_supersampling(2);
 
     let skull = scene.load_obj(obj_path("skull").as_path()).unwrap();
     let plane = scene.load_obj(obj_path("plane").as_path()).unwrap();
