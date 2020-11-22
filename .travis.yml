@@ -1,8 +1,0 @@
-git:
-  depth: 1
-language: rust
-cache: cargo
-rust:
-  - nightly
-matrix:
-  fast_finish: true
