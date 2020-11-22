@@ -6,7 +6,7 @@ import * as lasgun from 'lasgun-js'
 
 type Vec3f = [ number, number, number ]
 
-async function capture(sceneFunctionBody: string) {
+async function capture(sceneFunctionBody: string, width: number, height: number) {
 
     // Can't call directly because webpack rewrites this :(
     const AsyncFunction = (new Function("return Object.getPrototypeOf(async function () {}).constructor"))();
@@ -24,10 +24,15 @@ async function capture(sceneFunctionBody: string) {
         async obj(url: string): Promise<string> {
             return await (await fetch(url)).text()
         },
-        scene(options: any): lasgun.Scene {
-            let scene = lasgun.scene(options)
+        scene(settings: any): lasgun.Scene {
+            let scene = lasgun.scene(settings)
             allocations.push(scene)
             return scene
+        },
+        camera(settings: any): lasgun.Camera {
+            let camera = lasgun.camera(settings)
+            allocations.push(camera)
+            return camera
         },
         group(): lasgun.Aggregate {
             let contents = lasgun.Aggregate.new()
@@ -82,45 +87,39 @@ async function capture(sceneFunctionBody: string) {
     }
 
     if (!exports.scene) {
-        let message = 'No scene was exported from the given scene description. Did you forget to set `exports.scene = lasgun.scene({ ... })`?'
+        const message = 'No scene was exported from the given scene description. Did you forget to set `exports.scene = lasgun.scene({ ... })`?'
         console.error(message)
         return { error: message }
     }
 
-    let scene: lasgun.Scene = exports.scene
+    const scene: lasgun.Scene = exports.scene
+    const start = Date.now();
 
-    // Prepare the browser for rendering the scene
-    self.postMessage({
-        type: 'scene',
-        value: {
-            width: scene.width(),
-            height: scene.height()
-        }
-    })
+    const area = width * height
+    const subsets = shuffle(Array.from(Array(Math.min(100, area)).keys()))
+    const film = lasgun.film(width, height)
+    const startPtr = film.data_ptr()
+    const endPtr = startPtr + area * 4;
 
-    let start = Date.now();
-
-    let hunkCount = lasgun.hunk_count(scene)
-    let hunk = lasgun.Hunk.new()
+    console.log(film.size())
+    // let hunkCount = lasgun.hunk_count(scene)
+    // let hunk = lasgun.Hunk.new()
     let root = lasgun.Accel.from(scene)
-    let mem: ArrayBuffer = wasm.memory.buffer
 
     // Stream bits of the scene over to main as we go
-    for (let i = 0; i < hunkCount; i++) {
-        lasgun.capture_hunk(i, scene, root, hunk)
-        let start = hunk.as_ptr();
-        let end = start + 1024;
+    for (const k of subsets) {
+        lasgun.capture_subset(k, subsets.length, root, film)
         self.postMessage({
-            type: 'hunk',
+            type: 'progress',
             value: {
-                x: hunk.x,
-                y: hunk.y,
-                data: new Uint8ClampedArray(mem.slice(start, end))
+                output: wasm.memory.buffer.slice(startPtr, endPtr),
+                progress: (k + 1) / subsets.length
             }
         })
     }
 
-    hunk.free()
+    film.free()
+    root.free()
     let end = Date.now()
 
     // Deallocate everything
@@ -133,6 +132,16 @@ async function capture(sceneFunctionBody: string) {
     return { start, end }
 }
 
+function shuffle(a: any[]) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+    }
+    return a;
+}
 
 /**
  * All the unsafe variables in DedicatedWorkerGlobalScope that user scripts
@@ -162,7 +171,8 @@ const unsafeGlobals = [
 self.addEventListener('message', async (event) => {
     switch (event.data.type) {
     case 'scene':
-        let result = await capture(event.data.value)
+        const { scene, width, height } = JSON.parse(event.data.value)
+        const result = await capture(scene, width, height)
         if (result.error) {
             self.postMessage({ type: 'error', value: result.error })
         } else {

@@ -14,8 +14,14 @@
       <canvas id="output" width="512" height="512"></canvas>
     </section>
     <section>
-      <button id="render-button" disabled>Render</button>
-      <button id="cancel-button">Cancel</button>
+      <button id="cancel-button" disabled>Cancel</button>
+      <form id='render'>
+        <label for="width">Width: </label>
+        <input id="width" name="width" type="number" value="512" />
+        <label for="height">Height: </label>
+        <input id="height" name="height" type="number" value="512" />
+        <input id="render-button" type="submit" value="Render" disabled />
+      </form>
     </section>
     <section id="code"></section>
     <footer>

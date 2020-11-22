@@ -9,7 +9,19 @@ canvas {
     max-width: 100%;
     margin: 0 auto;
 }
-
+#width, #height {
+    max-width: 100px;
+}
 #code > * {
     height: 100%;
+}
+
+input {
+    margin-right: 1em;
+}
+
+#render-button, #cancel-button {
+    margin-right: 0;
+    margin-left: 1em;
+    float: right;
 }
