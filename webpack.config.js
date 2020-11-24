@@ -1,16 +1,19 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin")
 const CopyWebpackPlugin = require("copy-webpack-plugin")
-const TerserJSPlugin = require('terser-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const path = require('path')
 
 const mode = process.env.NODE_ENV || 'development'
 const opt = mode === 'development'
-  ? {}
+  ? {
+    devtool: 'inline-source-map'
+  }
   : {
     optimization: {
-      minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})],
+      minimize: true,
+      minimizer: [new TerserPlugin({}), new OptimizeCSSAssetsPlugin({})],
     }
   }
 
@@ -27,7 +30,6 @@ const tsRule = {
 const browserConfig = {
   ...opt,
   entry: './www/app.ts',
-  devtool: 'inline-source-map',
   resolve, module: {
     rules: [
       tsRule,
