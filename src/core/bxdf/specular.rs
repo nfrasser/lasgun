@@ -1,5 +1,5 @@
 use crate::space::*;
-use super::{util::*, fresnel::Substance, BxDFSample};
+use super::{util::*, fresnel::Substance, LightSample};
 
 /// Describes physically plausible specular reflection with the Substance model to
 /// compute fraction of light that is reflected.
@@ -14,13 +14,13 @@ impl Reflection {
         Reflection { r, substance }
     }
 
-    pub fn sample_f(&self, wo: &Vector, _sample: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector, _sample: &Point2f) -> LightSample {
         // Compute perfect specular reflection direction with normalized shading
         // coordinate axis.
         let wi = Vector::new(-wo.x, -wo.y, wo.z);
         let spectrum = self.substance.evaluate(cos_theta(&wi))
             .mul_element_wise(self.r) / abs_cos_theta(&wi);
-        BxDFSample::new(spectrum, wi, 1.0)
+        LightSample::new(spectrum, wi, 1.0)
     }
 }
 
@@ -40,7 +40,7 @@ impl Transmission {
         }
     }
 
-    pub fn sample_f(&self, wo: &Vector, _sample: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector, _sample: &Point2f) -> LightSample {
         // Determine which eta is incident and which is transmitted
         let entering = cos_theta(wo) > 0.0;
         let (eta_i, eta_t) = if entering {
@@ -56,9 +56,9 @@ impl Transmission {
                 .mul_element_wise(Color::from_value(1.0) - self.substance.evaluate(cos_theta(&wi)))
                 / abs_cos_theta(&wi);
 
-            BxDFSample::new(spectrum, wi, 1.0)
+            LightSample::new(spectrum, wi, 1.0)
         } else {
-            BxDFSample::zero() // No transmitted light from any direction
+            LightSample::zero() // No transmitted light from any direction
         }
     }
 }
@@ -83,6 +83,6 @@ impl Combined {
             substance: Substance::Dielectric(eta_a, eta_b)
         }
     }
-    // TODO: BxDFSample F
+    // TODO: LightSample F
 }
 */

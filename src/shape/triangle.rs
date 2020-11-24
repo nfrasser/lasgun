@@ -1,6 +1,6 @@
 // use std::ops::Index;
 use std::{path::{Path, PathBuf}, io::{self, BufRead, BufReader}, fs::File};
-use obj::{Obj};
+use obj::Obj;
 
 use crate::{
     space::*,

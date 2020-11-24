@@ -1,5 +1,5 @@
 use crate::space::*;
-use crate::core::bxdf::{BxDFType, BxDF, BxDFSample};
+use crate::core::bxdf::{BxDFType, BxDF, LightSample};
 use super::SurfaceInteraction;
 
 /// Collection of BRDF and BTDF, allowing system to work with composite BxDFs.
@@ -91,9 +91,9 @@ impl BSDF {
         })
     }
 
-    pub fn sample_f(&self, wo: &Vector, sample: &Point2f, flags: BxDFType) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f, flags: BxDFType) -> LightSample {
         let matching_comps = self.num_matching_components(flags);
-        if matching_comps == 0 { return BxDFSample::zero() }
+        if matching_comps == 0 { return LightSample::zero() }
 
         let comp = ((sample.x * matching_comps as f64)
             .floor() as usize)
@@ -110,7 +110,7 @@ impl BSDF {
 
         // Sample chosen BxDF
         let wo_local = self.to_local(wo);
-        if wo_local.z == 0.0 { return BxDFSample::zero() }; // No contribution
+        if wo_local.z == 0.0 { return LightSample::zero() }; // No contribution
         let f_sample = bxdf.sample_f(&wo_local, &sample);
         if f_sample.pdf == 0.0 { return f_sample } // No contribution from this sample
 
@@ -141,7 +141,7 @@ impl BSDF {
             f_sample.pdf
         } / matching_comps as f64; // Scale by contribution of each comp
 
-        BxDFSample::new(spectrum, wi, pdf)
+        LightSample::new(spectrum, wi, pdf)
     }
 
     #[inline]

@@ -35,20 +35,20 @@ bitflags! {
 pub enum TransportMode { Radiance, Importance }
 
 /// Details about the sample for a BxDF integral in some direction
-pub struct BxDFSample {
+pub struct LightSample {
     pub spectrum: Color,
     pub wi: Vector,
     pub pdf: f64,
     // pub t: BxDFType // for future use?
 }
-impl BxDFSample {
+impl LightSample {
     #[inline]
-    pub fn new(spectrum: Color, wi: Vector, pdf: f64) -> BxDFSample {
-        BxDFSample { spectrum, wi, pdf }
+    pub fn new(spectrum: Color, wi: Vector, pdf: f64) -> LightSample {
+        LightSample { spectrum, wi, pdf }
     }
 
     #[inline]
-    pub fn zero() -> BxDFSample {
+    pub fn zero() -> LightSample {
         Self::new(Color::zero(), Vector::zero(), 0.0)
     }
 }
@@ -173,10 +173,10 @@ impl BxDF {
         }
     }
 
-    /// BxDFSample the value of f - call this multiple times and average to
-    /// approximate the evaluation of the BxDF integral (i.e., Monte Carlo
-    /// Integration). Also returns the type of the resolved sample.
-    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
+    /// Get a LightSample for the value of f - call this multiple times and
+    /// average to approximate the evaluation of the BxDF integral (i.e., Monte
+    /// Carlo Integration). Also returns the type of the resolved sample.
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> LightSample {
         match self {
             BxDF::SpecularReflection(r) => r.sample_f(wo, sample),
             BxDF::SpecularTransmission(t) => t.sample_f(wo, sample),
@@ -188,7 +188,7 @@ impl BxDF {
                 if wo.z < 0.0 { wi.z *= -1.0 };
                 let spectrum = self.f(wo, &wi);
                 let pdf = sampling::pdf(wo, &wi);
-                BxDFSample::new(spectrum, wi, pdf)
+                LightSample::new(spectrum, wi, pdf)
             }
         }
     }

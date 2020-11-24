@@ -1,6 +1,6 @@
 use std::{f64::consts::PI, ops::Neg};
 use crate::space::*;
-use super::{util::*, sampling::*, fresnel::Substance, TransportMode, BxDFSample};
+use super::{util::*, sampling::*, fresnel::Substance, TransportMode, LightSample};
 
 /// Trowbridge-Reitz microfacet distribution model.
 #[derive(Debug, Copy, Clone)]
@@ -114,18 +114,18 @@ impl Reflection {
             / ( 4.0 * cos_theta_i * cos_theta_o)
     }
 
-    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> LightSample {
         // Sample microfacet orientation wh and reflected direction wi
-        if wo.z == 0.0 { return BxDFSample::zero() };
+        if wo.z == 0.0 { return LightSample::zero() };
         let wh = self.distribution.sample_wh(wo, sample);
         let wi = reflect(wo, &wh);
         if !same_hemisphere(wo, &wi) {
-            return BxDFSample::new(Color::zero(), wi, 0.0)
+            return LightSample::new(Color::zero(), wi, 0.0)
         }
 
         // Compute PDF of wi for microfacet reflection
         let pdf = self.distribution.pdf(wo, &wh) / (4.0 * wo.dot(wh));
-        BxDFSample::new(self.f(wo, &wi), wi, pdf)
+        LightSample::new(self.f(wo, &wi), wi, pdf)
     }
 
     pub fn pdf(&self, wo: &Vector, wi: &Vector) -> f64 {
@@ -185,15 +185,15 @@ impl Transmission {
         ).abs()
     }
 
-    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> BxDFSample {
-        if wo.z == 0.0 { return BxDFSample::zero() };
+    pub fn sample_f(&self, wo: &Vector, sample: &Point2f) -> LightSample {
+        if wo.z == 0.0 { return LightSample::zero() };
         let wh = self.distribution.sample_wh(wo, sample);
         let eta = self.eta(wo);
 
         if let Some(wi) = refract(wo, &normal::Normal3(wh), eta) {
-            BxDFSample::new(self.f(wo, &wi), wi, self.pdf(wo, &wi))
+            LightSample::new(self.f(wo, &wi), wi, self.pdf(wo, &wi))
         } else {
-            BxDFSample::zero()
+            LightSample::zero()
         }
     }
 
