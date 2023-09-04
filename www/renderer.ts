@@ -3,7 +3,7 @@ declare const self: DedicatedWorkerGlobalScope
 type Vec3f = [number, number, number]
 
 // @ts-ignore
-Promise.all([import('./lasgun/index_bg.wasm'), import('./lasgun')]).then(([wasm, lasgun]) => {
+Promise.all([import('./lasgun'), import('./lasgun/index_bg.wasm')]).then(([lasgun, wasm]) => {
     async function capture(sceneFunctionBody: string, width: number, height: number) {
         // Can't call directly because webpack rewrites this :(
         const AsyncFunction = new Function('return Object.getPrototypeOf(async function () {}).constructor')()
