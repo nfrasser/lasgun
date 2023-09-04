@@ -1,10 +1,13 @@
+import type * as Lasgun from './lasgun';
 declare const self: DedicatedWorkerGlobalScope
+type Vec3f = [ number, number, number ]
 
 // @ts-ignore
-import * as wasm from 'lasgun-js/lasgun_js_bg'
-import * as lasgun from 'lasgun-js'
+Promise.all([
+    import('./lasgun/index_bg'),
+    import('./lasgun')
+]).then(([wasm, lasgun]) => {
 
-type Vec3f = [ number, number, number ]
 
 async function capture(sceneFunctionBody: string, width: number, height: number) {
 
@@ -16,7 +19,7 @@ async function capture(sceneFunctionBody: string, width: number, height: number)
     );
 
     // Array of free-able items
-    const allocations: Array<lasgun.Scene | lasgun.Aggregate | lasgun.Material> = []
+    const allocations: Array<Lasgun.Scene | Lasgun.Aggregate | Lasgun.Material> = []
 
     // Expose a new lasgun with just the bare essentials for use
     // in the user-scene code
@@ -24,27 +27,27 @@ async function capture(sceneFunctionBody: string, width: number, height: number)
         async obj(url: string): Promise<string> {
             return await (await fetch(url)).text()
         },
-        scene(settings: any): lasgun.Scene {
+        scene(settings: any): Lasgun.Scene {
             let scene = lasgun.scene(settings)
             allocations.push(scene)
             return scene
         },
-        camera(settings: any): lasgun.Camera {
+        camera(settings: any): Lasgun.Camera {
             let camera = lasgun.camera(settings)
             allocations.push(camera)
             return camera
         },
-        group(): lasgun.Aggregate {
+        group(): Lasgun.Aggregate {
             let contents = lasgun.Aggregate.new()
             allocations.push(contents)
             return contents
         },
-        matte(settings: { kd: Vec3f, sigma?: number }): lasgun.Material {
+        matte(settings: { kd: Vec3f, sigma?: number }): Lasgun.Material {
             let mat = lasgun.Material.matte(settings)
             allocations.push(mat)
             return mat
         },
-        plastic(settings: { kd: Vec3f, ks: Vec3f, roughness?: number }): lasgun.Material {
+        plastic(settings: { kd: Vec3f, ks: Vec3f, roughness?: number }): Lasgun.Material {
             let mat = lasgun.Material.plastic(settings)
             allocations.push(mat)
             return mat
@@ -52,27 +55,27 @@ async function capture(sceneFunctionBody: string, width: number, height: number)
         metal(settings: {
             eta: Vec3f, k: Vec3f,
             roughness?: number, u_roughness?: number, v_roughness?: number
-        }): lasgun.Material {
+        }): Lasgun.Material {
             let mat = lasgun.Material.metal(settings)
             allocations.push(mat)
             return mat
         },
-        mirror(settings?: { kr?: Vec3f }): lasgun.Material {
+        mirror(settings?: { kr?: Vec3f }): Lasgun.Material {
             let mat = lasgun.Material.mirror(settings || {})
             allocations.push(mat)
             return mat
         },
-        glass(settings?: { kr?: Vec3f, kt?: Vec3f, eta?: number }): lasgun.Material {
+        glass(settings?: { kr?: Vec3f, kt?: Vec3f, eta?: number }): Lasgun.Material {
             let mat = lasgun.Material.glass(settings || {})
             allocations.push(mat)
             return mat
         }
     })
 
-    const exports: { scene?: lasgun.Scene } = { scene: null };
+    const exports: { scene?: Lasgun.Scene } = { scene: null };
 
     try {
-        exports.scene = await new Promise<lasgun.Scene>(async (resolve, reject) => {
+        exports.scene = await new Promise<Lasgun.Scene>(async (resolve, reject) => {
             try {
                 await sceneFunction(lasgunLite, resolve, reject)
             } catch (e) {
@@ -92,7 +95,7 @@ async function capture(sceneFunctionBody: string, width: number, height: number)
         return { error: message }
     }
 
-    const scene: lasgun.Scene = exports.scene
+    const scene: Lasgun.Scene = exports.scene
     const start = Date.now();
 
     const area = width * height
@@ -179,3 +182,5 @@ self.addEventListener('message', async (event) => {
 })
 
 self.postMessage({ type: 'status', value: 'ready' })
+
+})

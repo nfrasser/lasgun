@@ -1,7 +1,7 @@
 // @ts-ignore
-import './app.scss'
 import * as CodeMirror from 'codemirror'
 import 'codemirror/mode/javascript/javascript'
+import './app.scss'
 
 async function main() {
     const canvas = document.getElementById('output') as HTMLCanvasElement

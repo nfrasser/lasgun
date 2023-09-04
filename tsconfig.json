@@ -3,15 +3,13 @@
     "outDir": "./dist/",
     "sourceMap": true,
     "noImplicitAny": true,
-    "module": "esnext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "target": "es5",
-    "jsx": "react",
-    "allowJs": true,
     "lib": [
-      "es6",
-      "dom",
-      "webworker",
+      "ESNext",
+      "DOM",
+      "WebWorker"
     ],
-    "moduleResolution": "node"
   }
 }
