@@ -2,7 +2,6 @@
   "compilerOptions": {
     "outDir": "./dist/",
     "sourceMap": true,
-    "noImplicitAny": false,
     "module": "ESNext",
     "moduleResolution": "Node",
     "target": "es5",
@@ -10,10 +9,6 @@
       "ESNext",
       "DOM",
       "WebWorker"
-    ],
-    "typeRoots": [
-      "./www/lasgun",
-      "./node_modules/@types",
     ]
   }
 }
