@@ -11,5 +11,9 @@
       "DOM",
       "WebWorker"
     ],
+    "typeRoots": [
+      "./www/lasgun",
+      "./node_modules/@types",
+    ]
   }
 }
