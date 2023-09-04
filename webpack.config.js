@@ -47,7 +47,7 @@ const browserConfig = {
     ],
   },
   output: {
-    path: path.resolve("/dist"),
+    path: path.resolve("dist"),
     filename: "app.js",
   },
   mode,
@@ -81,7 +81,7 @@ const workerConfig = {
   module: { rules: [tsRule] },
   target: "webworker",
   output: {
-    path: path.resolve("/dist"),
+    path: path.resolve("dist"),
     filename: "worker.js",
   },
   mode,
