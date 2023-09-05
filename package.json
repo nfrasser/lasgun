@@ -4,8 +4,10 @@
   "description": "A ray tracer in the browser",
   "main": "index.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "start": "webpack-dev-server"
+    "build": "NODE_OPTIONS=--openssl-legacy-provider webpack --config webpack.config.js",
+    "deploy": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production webpack --config webpack.config.js && sleep 1 && netlify deploy",
+    "deploy:prod": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production webpack --config webpack.config.js && sleep 1 && netlify deploy --prod",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider webpack-dev-server"
   },
   "repository": {
     "type": "git",
@@ -29,17 +31,18 @@
     "html-webpack-plugin": "^4.5.2",
     "mini-css-extract-plugin": "^1.6.2",
     "node-sass": "^8.0.0",
-    "sass-loader": "^10.4.1",
     "sass": "^1.29.0",
+    "sass-loader": "^10.4.1",
     "style-loader": "^2.0.0",
     "terser-webpack-plugin": "^4.2.3",
     "ts-loader": "^8.0.0",
     "typescript": "^5.2.2",
-    "webpack-cli": "^4.10.0",
-    "webpack": "^4.42.0"
+    "webpack": "^4.42.0",
+    "webpack-cli": "^4.10.0"
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.10",
+    "netlify-cli": "^16.2.0",
     "webpack-dev-server": "^4.15.1"
   }
 }
