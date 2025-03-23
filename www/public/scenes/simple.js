@@ -28,11 +28,11 @@ const mat3 = lasgun.plastic({ kd: [0.7, 0.6, 1.0], ks: [0.5, 0.4, 0.8], roughnes
 // const mirror = lasgun.mirror({ kr: [0.5, 0.5, 0.5] });
 
 // Available meshes
-const smstdodeca = scene.add_obj(await lasgun.obj('./meshes/smstdodeca.obj'))
-// const plane = scene.add_obj(await lasgun.obj("./meshes/plane.obj"))
-// const skull = scene.add_obj(await lasgun.obj("./meshes/skull.obj"))
-// const buckyball = scene.add_obj(await lasgun.obj("./meshes/buckyball.obj"))
-// const bunny = scene.add_obj(await lasgun.obj("./meshes/bunny.obj"))
+const smstdodeca = scene.add_obj(await lasgun.obj('/meshes/smstdodeca.obj'))
+// const plane = scene.add_obj(await lasgun.obj("/meshes/plane.obj"))
+// const skull = scene.add_obj(await lasgun.obj("/meshes/skull.obj"))
+// const buckyball = scene.add_obj(await lasgun.obj("/meshes/buckyball.obj"))
+// const bunny = scene.add_obj(await lasgun.obj("/meshes/bunny.obj"))
 
 // Scene lighting
 scene.add_point_light({
