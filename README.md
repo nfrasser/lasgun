@@ -1,4 +1,4 @@
-# Lasgun
+# Lasgun [![Build](https://github.com/nfrasser/lasgun/actions/workflows/lib.yml/badge.svg)](https://github.com/nfrasser/lasgun/actions/workflows/lib.yml)
 
 A ray tracer that works in the browser.
 
