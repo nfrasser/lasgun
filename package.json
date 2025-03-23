@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite serve www",
     "build": "vite build www",
-    "wasm": "wasm-pack build js && sed -i '' 's/lasgun_js_bg/lasgun_js_bg.wasm/' js/pkg/lasgun_js.js",
-    "deploy": "vite build www && sleep 1 && netlify deploy",
-    "deploy:prod": "vite build www && sleep 1 && netlify deploy --prod"
+    "deploy": "npm run wasm && npm run build && sleep 1 && netlify deploy",
+    "deploy:prod": "npm run deploy -- --prod",
+    "wasm": "wasm-pack build js && sed -i '' 's/lasgun_js_bg/lasgun_js_bg.wasm/' js/pkg/lasgun_js.js"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.10",
-    "netlify-cli": "^16.2.0",
+    "netlify-cli": "^19.0.3",
     "sass": "^1.29.0",
     "typescript": "^5.2.2",
     "vite": "^6.2.2",
