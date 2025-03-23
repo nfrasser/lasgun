@@ -1,10 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <title><%= htmlWebpackPlugin.options.title %></title>
-    <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
+    <meta charset="utf-8" />
+    <title>lasgun web renderer</title>
+    <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
+    <style lang="scss">
+      @import './app.scss';
+    </style>
   </head>
   <body>
     <header>
@@ -15,7 +18,7 @@
     </section>
     <section>
       <button id="cancel-button" disabled>Cancel</button>
-      <form id='render'>
+      <form id="render">
         <label for="width">Width: </label>
         <input id="width" name="width" type="number" value="512" />
         <label for="height">Height: </label>
@@ -27,5 +30,6 @@
     <footer>
       <a href="https://github.com/nfrasser/lasgun">View on GitHub</a>
     </footer>
+    <script src="app.ts" type="module"></script>
   </body>
 </html>

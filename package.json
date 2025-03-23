@@ -4,14 +4,15 @@
   "description": "A ray tracer in the browser",
   "main": "index.js",
   "scripts": {
-    "build": "NODE_OPTIONS=--openssl-legacy-provider webpack --config webpack.config.js",
-    "deploy": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production webpack --config webpack.config.js && sleep 1 && netlify deploy",
-    "deploy:prod": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production webpack --config webpack.config.js && sleep 1 && netlify deploy --prod",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider webpack-dev-server"
+    "dev": "vite serve www",
+    "build": "vite build www",
+    "wasm": "wasm-pack build js && sed -i '' 's/lasgun_js_bg/lasgun_js_bg.wasm/' js/pkg/lasgun_js.js",
+    "deploy": "vite build www && sleep 1 && netlify deploy",
+    "deploy:prod": "vite build www && sleep 1 && netlify deploy --prod"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nfrasser/lasgun-js.git"
+    "url": "git+https://github.com/nfrasser/lasgun.git"
   },
   "keywords": [
     "webassembly",
@@ -19,30 +20,21 @@
     "rust",
     "webpack"
   ],
-  "author": "Nick Frasser <nick@nfrasser.com>",
+  "author": "Nick Frasser",
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
-    "@wasm-tool/wasm-pack-plugin": "^1.7.0",
-    "codemirror": "^5.58.2",
-    "copy-webpack-plugin": "^5.0.3",
-    "css-loader": "^5.2.7",
-    "esprima": "^4.0.1",
-    "fibers": "^5.0.3",
-    "html-webpack-plugin": "^4.5.2",
-    "mini-css-extract-plugin": "^1.6.2",
-    "node-sass": "^8.0.0",
-    "sass": "^1.29.0",
-    "sass-loader": "^10.4.1",
-    "style-loader": "^2.0.0",
-    "terser-webpack-plugin": "^4.2.3",
-    "ts-loader": "^8.0.0",
-    "typescript": "^5.2.2",
-    "webpack": "^4.42.0",
-    "webpack-cli": "^4.10.0"
+    "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/view": "^6.0.0",
+    "codemirror": "^6.0.0",
+    "thememirror": "^2.0.1"
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.10",
     "netlify-cli": "^16.2.0",
-    "webpack-dev-server": "^4.15.1"
+    "sass": "^1.29.0",
+    "typescript": "^5.2.2",
+    "vite": "^6.2.2",
+    "vite-plugin-top-level-await": "^1.5.0",
+    "vite-plugin-wasm": "^3.4.1"
   }
 }

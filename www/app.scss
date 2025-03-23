@@ -1,27 +1,26 @@
-@import "~codemirror/lib/codemirror.css";
-@import "~codemirror/theme/material-palenight.css";
-
 #canvas {
-    text-align: center;
-    background-color: lightgrey;
+  text-align: center;
+  background-color: lightgrey;
 }
 canvas {
-    max-width: 100%;
-    margin: 0 auto;
+  max-width: 100%;
+  margin: 0 auto;
 }
-#width, #height {
-    max-width: 100px;
+#width,
+#height {
+  max-width: 100px;
 }
 #code > * {
-    height: 100%;
+  height: 100%;
 }
 
 input {
-    margin-right: 1em;
+  margin-right: 1em;
 }
 
-#render-button, #cancel-button {
-    margin-right: 0;
-    margin-left: 1em;
-    float: right;
+#render-button,
+#cancel-button {
+  margin-right: 0;
+  margin-left: 1em;
+  float: right;
 }

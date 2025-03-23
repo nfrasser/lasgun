@@ -1,5 +1,4 @@
-Lasgun [![Build Status](https://travis-ci.org/nfrasser/lasgun.svg?branch=master)](https://travis-ci.org/nfrasser/lasgun)
-===
+# Lasgun
 
 A ray tracer that works in the browser.
 
@@ -29,14 +28,14 @@ Renders `simple.png`.
 ## Build lasgun for the browser
 
 ```
-wasm-pack build js
+npm run wasm
 ```
 
 Outputs to `js/pkg`
 
 ## Use lasgun in the browser
 
-Use this in Node.js/Webpack via [NPM](https://npmjs.com) by linking the `pkg`
+Use this in Node.js/Vite via [NPM](https://npmjs.com) by linking the `pkg`
 directory
 
 ```
@@ -45,12 +44,12 @@ npm link
 cd -
 ```
 
-Run the lasgun web client at [localhost:8080](http://localhost:8080)
+Run the lasgun web client at [localhost:5173](http://localhost:5173)
 
 ```
 npm install
 npm link lasgun-js
-npm start
+npm run dev
 ```
 
 Import in JavaScript with a module loader that supports WebAssembly.
@@ -59,31 +58,34 @@ Import in JavaScript with a module loader that supports WebAssembly.
 import * as lasgun from 'lasgun-js'
 
 let scene = lasgun.scene({
-    eye: [0, 0, 0],
-    view: [0, 0, 1],
-    up: [0, 1, 0],
-    width: 512,
-    height: 512,
-    fov: 45.0
+  eye: [0, 0, 0],
+  view: [0, 0, 1],
+  up: [0, 1, 0],
+  width: 512,
+  height: 512,
+  fov: 45.0
 })
 
 scene.add_point_light({
-    position: [100, 200, 400],
-    intensity: [0.8, 0.8, 0.8],
-    falloff: [1, 0, 0]
+  position: [100, 200, 400],
+  intensity: [0.8, 0.8, 0.8],
+  falloff: [1, 0, 0]
 })
 
 let mat = scene.add_plastic_material({
-    kd: [0.7, 1.0, 0.7],
-    ks: [0.5, 0.7, 0.5],
-    roughness: 0.25
+  kd: [0.7, 1.0, 0.7],
+  ks: [0.5, 0.7, 0.5],
+  roughness: 0.25
 })
 
 let node = lasgun.group()
-node.add_sphere({
+node.add_sphere(
+  {
     origin: [0, 0, 100],
     radius: 50
-},  mat)
+  },
+  mat
+)
 scene.set_root(node)
 
 let film = lasgun.film(scene)
@@ -109,10 +111,10 @@ ctx.putImageData(data)
 
 ## Resources
 
-* [Rust and WebAssembly Book](https://rustwasm.github.io/book/)
-* [`wasm-bindgen` API Reference](https://rustwasm.github.io/wasm-bindgen/)
-* [WebAssembly](https://developer.mozilla.org/en-US/docs/WebAssembly)
-* [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+- [Rust and WebAssembly Book](https://rustwasm.github.io/book/)
+- [`wasm-bindgen` API Reference](https://rustwasm.github.io/wasm-bindgen/)
+- [WebAssembly](https://developer.mozilla.org/en-US/docs/WebAssembly)
+- [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
 
 ## License
 
