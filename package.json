@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.10",
-    "netlify-cli": "^23.5.1",
+    "netlify-cli": "^23.15.1",
     "sass": "^1.29.0",
     "typescript": "^5.2.2",
     "vite": "^6.4.1",
