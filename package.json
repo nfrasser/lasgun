@@ -33,8 +33,8 @@
     "netlify-cli": "^26.0.2",
     "sass": "^1.29.0",
     "typescript": "^5.2.2",
-    "vite": "^6.4.2",
+    "vite": "^8.0.16",
     "vite-plugin-top-level-await": "^1.5.0",
-    "vite-plugin-wasm": "^3.4.1"
+    "vite-plugin-wasm": "^3.6.0"
   }
 }
